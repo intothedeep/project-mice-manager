@@ -166,7 +166,6 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 | `mate_id` | bigint |  |  | → `mates` |
 | `litter_code` | text | NOT NULL |  |  |
 | `seq` | bigint | NOT NULL | `nextval('litter_code_seq'::regclass)` |  |
-| `subcolony_id` | bigint |  |  | → `subcolonies` |
 | `mated_on` | date |  |  |  |
 | `is_mated_on_approx` | boolean | NOT NULL | `false` |  |
 | `mated_on_raw` | text |  |  |  |
@@ -200,6 +199,8 @@ CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (d
 | `mother_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `father_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `mate_raw_label` | text |  |  |  |
+| `subcolony_id` | bigint |  |  | → `subcolonies` |
+| `cage_id` | bigint |  |  | → `cages` |
 | `created_by` | bigint | NOT NULL |  | → `users` |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |

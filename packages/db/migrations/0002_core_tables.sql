@@ -264,6 +264,14 @@ CREATE TABLE mates (
     -- Byte-preserved mate cell, e.g. 'M4BCW Nf1 f/+;ccEGFP', kept when the
     -- father cannot be resolved to a row.
     mate_raw_label  TEXT,
+    -- WHERE the pairing happens. Recorded HERE, on the couple, because the app
+    -- creates matings going forward and the professor picks a cage at that
+    -- moment. (An earlier revision dropped cage_id from the breeding table on
+    -- the grounds that the WORKBOOK has no "mating cage" column. True for
+    -- IMPORT, irrelevant for new data — the value exists the moment a pairing
+    -- is made in the app.)
+    subcolony_id    BIGINT REFERENCES subcolonies (id),
+    cage_id         BIGINT REFERENCES cages (id),
     created_by      BIGINT      NOT NULL REFERENCES users (id),
     import_batch_id BIGINT REFERENCES import_batches (id),
     source_sheet    TEXT,
@@ -304,8 +312,11 @@ CREATE TABLE litters (
     litter_code           TEXT COLLATE "C" NOT NULL CHECK (litter_code ~ '^[A-Z]{1,5}$'),
     -- Base-26 ordinal of litter_code, stored so issue order is ORDER BY seq.
     seq                   BIGINT      NOT NULL DEFAULT nextval('litter_code_seq'),
-    -- The breeding programme (mouse line) this cycle belongs to.
-    subcolony_id          BIGINT REFERENCES subcolonies (id),
+    -- NO subcolony_id (2026-09-05, user): the programme is reachable through
+    -- mate_id -> mates.subcolony_id, so storing it here would be a second copy.
+    -- ACCEPTED LOSS: a litter with mate_id NULL (parents unknown in historical
+    -- data, or an is_from_outside shell) then has no programme of its own. The
+    -- information is not gone — every mouse in it carries mouse_meta.subcolony_id.
     mated_on              DATE,
     -- true when the source carried '~' (no copulatory plug seen: date estimated).
     is_mated_on_approx    BOOLEAN     NOT NULL DEFAULT false,
