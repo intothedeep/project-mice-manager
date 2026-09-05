@@ -1,8 +1,9 @@
--- Import provenance (P0.2). import_batches itself lives in 0002 because the
--- domain tables carry provenance FKs to it.
+-- Import provenance (P0.2, D2 amendments 2026-09-05). import_batches itself
+-- lives in 0002 because the domain tables carry provenance FKs to it.
 --
--- These are MUTABLE tables, deliberately NOT part of the append-only class
+-- These are MUTABLE tables, deliberately NOT part of any append-only class
 -- (import_errors.resolved_at is updated when an error is triaged).
+-- D2: every table gets created_at, updated_at, deleted_at and set_updated_at.
 
 -- Lossless archive of every row of all 9 sheets. The import normalizes only the
 -- Breeders sheet in P0-a, but nothing is discarded — a row we cannot parse is
@@ -13,8 +14,14 @@ CREATE TABLE raw_sheet_rows (
     sheet_name      TEXT        NOT NULL,
     row_index       INTEGER     NOT NULL,
     cells           JSONB       NOT NULL,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at      TIMESTAMPTZ
 );
+
+CREATE TRIGGER raw_sheet_rows_set_updated_at
+    BEFORE UPDATE ON raw_sheet_rows
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE INDEX raw_sheet_rows_batch_idx
     ON raw_sheet_rows (import_batch_id, sheet_name, row_index);
@@ -22,6 +29,8 @@ CREATE INDEX raw_sheet_rows_batch_idx
 -- The import-error report is a first-class deliverable: a row is NEVER silently
 -- dropped. Anything unparseable lands here with enough provenance to find the
 -- original cell.
+-- entity/entity_id: triage can navigate directly to the domain row needing a
+-- patch (R10 addition).
 CREATE TABLE import_errors (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     import_batch_id BIGINT      NOT NULL REFERENCES import_batches (id),
@@ -31,12 +40,20 @@ CREATE TABLE import_errors (
     raw_value       TEXT,
     rule_violated   TEXT        NOT NULL,
     severity        TEXT        NOT NULL CHECK (severity IN ('error', 'warn')),
+    -- Domain row this error is associated with (set after the row is created).
+    entity          TEXT,
+    entity_id       BIGINT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- Mutated on triage — which is why this table is not append-only.
     resolved_at     TIMESTAMPTZ,
     resolved_by     BIGINT REFERENCES users (id),
     deleted_at      TIMESTAMPTZ
 );
+
+CREATE TRIGGER import_errors_set_updated_at
+    BEFORE UPDATE ON import_errors
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE INDEX import_errors_batch_idx
     ON import_errors (import_batch_id, severity)
@@ -56,8 +73,13 @@ CREATE TABLE color_maps (
     target_value  TEXT        NOT NULL,
     note          TEXT,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at    TIMESTAMPTZ
 );
+
+CREATE TRIGGER color_maps_set_updated_at
+    BEFORE UPDATE ON color_maps
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE UNIQUE INDEX color_maps_lookup_idx
     ON color_maps (scope, coalesce(argb, ''), coalesce(theme_index, -1), coalesce(tint, 0))

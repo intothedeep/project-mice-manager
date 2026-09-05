@@ -1,4 +1,4 @@
--- The five P0 enums (P0.2).
+-- The six P0 enums (P0.2, amended R10).
 --
 -- Under R7 the `mice` table carries no life-state, so three of these are not
 -- used as column types anywhere in P0.2. They are NOT dead schema: they are the
@@ -33,3 +33,16 @@ CREATE TYPE attention AS ENUM ('none', 'flag');
 -- Deliberately NO 'unknown' member — an unmapped colour must route to
 -- flag_for_review as an import_errors row, never silently become a default enum.
 CREATE TYPE cell_signal AS ENUM ('done', 'instruction', 'plan');
+
+-- R10: tissue_collection and genotyping dates occupy cols M/N at 97/98% fill.
+-- ONE ROW PER DATE in mouse_events (a cell can hold '260629 260817').
+CREATE TYPE mouse_event_kind AS ENUM ('tissue_collection', 'genotyping');
+
+-- Shared trigger function: keeps updated_at current on every UPDATE.
+-- Attached to EVERY table via BEFORE UPDATE FOR EACH ROW triggers in each file.
+CREATE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
