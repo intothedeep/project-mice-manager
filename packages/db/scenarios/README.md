@@ -51,6 +51,22 @@ Legend: OK = carried by the schema · **FAIL** = rejected or wrong result.
 | S10 cage grid via DISTINCT ON | OK |
 | S11 mark dead | OK but written to the WRONG place (P3) |
 
+## Status: all 7 RESOLVED (2026-09-05, R16)
+
+Re-run after the fixes: every flow above passes, including the two that failed
+outright. The problem write-ups below are kept because they record WHY each
+change exists — deleting them invites the same design back.
+
+| Problem | Fix | Re-verified |
+|---|---|---|
+| P1 litter/room notes | `subject_mouse_id` nullable; `note_type` + `meta` JSONB; `signals` table | 'no pups' on a litter, 'CHECK FOOD' with no subject, both render their colour |
+| P2 no assignee | `groups` + `group_members` + `tasks.assigned_user_id/group_id` + `assignables` view | assigned to a group; user+group together REJECTED |
+| P3 two state sources | `mice.is_alive` + `death_reason`; `mouse_attr_logs` DROPPED | alive+death_reason REJECTED by CHECK |
+| P4 no key without litter | outside mice get a litter (`litters.is_from_outside`); `litter_id`/`pup_number` NOT NULL | re-insert REJECTED by `mouse_meta_litter_pup_key` |
+| P5 invisible mice | state row created at birth with cage/slot NULL | unplaced mouse visible with `cage_id` NULL |
+| P6 cache drift | `mouse_moves` DROPPED — a move IS a `mice` version row | one insert per move; head query cannot disagree with history |
+| P7 sex overwritten | `sex` moved to `mice` | F→M kept as two rows with actor and reason |
+
 ## Problems found
 
 Ordered by how much damage they do, not by how hard they are to fix.

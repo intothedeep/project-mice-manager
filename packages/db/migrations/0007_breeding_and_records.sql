@@ -73,9 +73,19 @@ CREATE UNIQUE INDEX mouse_events_kind_date_key
 -- ---------------------------------------------------------------------------
 -- Versioned-but-mutable, same shape as tasks: each row IS a version.
 -- The first row points origin_note_id at itself (via the CTE idiom).
--- litter_id is set for col-K "Is it pregnant?" style questions.
--- signal reuses cell_signal enum ('done'|'instruction'|'plan') — the enum
--- already encodes exactly the workbook's colour semantics.
+--
+-- REDESIGNED 2026-09-05 (user):
+--   * subject_mouse_id is NULLABLE. It was NOT NULL, which made a note about a
+--     LITTER impossible — and 'no pups' is the single most common note in the
+--     workbook, 1023 occurrences (scenario P1). Room-level notes ('check food')
+--     have neither a mouse nor a litter.
+--   * note_type + meta JSONB: the type says what KIND of note it is, and meta
+--     carries that type's own fields without a column per type.
+--     GUARDRAIL: meta is for VALUES ONLY. A reference to another entity must be
+--     a real FK column — a mouse id buried in JSONB has no integrity and would
+--     survive the mouse being deleted, which contradicts the standing
+--     "foreign keys are always enforced" decision.
+--   * signal_id FKs the `signals` table (was the cell_signal enum).
 
 CREATE SEQUENCE notes_id_seq;
 
@@ -83,11 +93,14 @@ CREATE TABLE notes (
     id               BIGINT PRIMARY KEY DEFAULT nextval('notes_id_seq'),
     -- Logical identity. First row: origin_note_id = id (self-referential).
     origin_note_id   BIGINT      NOT NULL REFERENCES notes (id),
-    subject_mouse_id BIGINT      NOT NULL REFERENCES mouse_meta (id),
-    -- Set for notes that pertain to a specific breeding cycle.
+    -- All three subjects are optional: a note may name a mouse, a litter,
+    -- both, or neither (a room-level note).
+    subject_mouse_id BIGINT REFERENCES mouse_meta (id),
     litter_id        BIGINT REFERENCES litters (id),
-    -- Reuses cell_signal: done=black, instruction=red, plan=blue.
-    signal           cell_signal NOT NULL,
+    note_type        TEXT        NOT NULL,
+    -- Per-type payload. VALUES ONLY — never entity references (see above).
+    meta             JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    signal_id        BIGINT      NOT NULL REFERENCES signals (id),
     body             TEXT        NOT NULL,
     actor_id         BIGINT      NOT NULL REFERENCES users (id),
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),

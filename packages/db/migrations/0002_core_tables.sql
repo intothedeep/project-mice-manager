@@ -31,6 +31,74 @@ CREATE TRIGGER users_set_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+-- Groups let a task be assigned to a TEAM rather than one person
+-- (2026-09-05, user).
+CREATE TABLE groups (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name       TEXT        NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX groups_name_key ON groups (name) WHERE deleted_at IS NULL;
+
+CREATE TRIGGER groups_set_updated_at
+    BEFORE UPDATE ON groups
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE group_members (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    group_id   BIGINT      NOT NULL REFERENCES groups (id),
+    user_id    BIGINT      NOT NULL REFERENCES users (id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX group_members_key
+    ON group_members (group_id, user_id)
+    WHERE deleted_at IS NULL;
+
+CREATE TRIGGER group_members_set_updated_at
+    BEFORE UPDATE ON group_members
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ONE picker list for the UI: people and teams side by side. This is a VIEW on
+-- purpose — a view cannot be the target of a foreign key, so `tasks` keeps two
+-- real FK columns and this only feeds the chooser.
+CREATE VIEW assignables AS
+SELECT 'user:' || id AS key, id AS user_id, NULL::BIGINT AS group_id,
+       display_name AS label, role
+FROM users WHERE deleted_at IS NULL
+UNION ALL
+SELECT 'group:' || id, NULL, id, name, NULL
+FROM groups WHERE deleted_at IS NULL;
+
+-- Cell signals were an ENUM ('done'|'instruction'|'plan'); promoted to a TABLE
+-- 2026-09-05 (user) so the professor can add a signal without a migration, and
+-- so the colour it renders as is DATA rather than hardcoded in the client.
+CREATE TABLE signals (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    type       TEXT        NOT NULL,
+    color      TEXT        NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX signals_type_key ON signals (type) WHERE deleted_at IS NULL;
+
+CREATE TRIGGER signals_set_updated_at
+    BEFORE UPDATE ON signals
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- The workbook's font-colour semantics, seeded from meeting_02.
+INSERT INTO signals (type, color) VALUES
+    ('done',        'black'),
+    ('instruction', 'red'),
+    ('plan',        'blue');
+
 -- Import provenance batch. Created before the domain tables because mutable
 -- domain rows carry import_batch_id provenance FKs.
 -- imported_at is kept as a domain timestamp; created_at/updated_at are the
@@ -228,6 +296,12 @@ CREATE TABLE litters (
     expected_delivery_on  DATE,
     is_expected_delivery_on_approx BOOLEAN NOT NULL DEFAULT false,
     expected_delivery_on_raw TEXT,
+    -- A mouse brought in from OUTSIDE still gets a litter row (2026-09-05,
+    -- user), so litter_id/pup_number can be NOT NULL on mouse_meta and the
+    -- natural re-import key applies to EVERY mouse. Such a litter has mate_id
+    -- NULL (parents unknown) and is flagged here so it is not mistaken for a
+    -- birth this colony produced.
+    is_from_outside       BOOLEAN     NOT NULL DEFAULT false,
     -- Delivered <=> birth_date IS NOT NULL. No outcome enum needed.
     birth_date            DATE,
     pup_count             INTEGER,
@@ -275,25 +349,25 @@ CREATE TRIGGER litters_set_updated_at
 -- pup_number), which are mouse attributes.
 CREATE TABLE mouse_meta (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    -- Birth cohort — also where this mouse's letter code comes from. NULLABLE:
-    -- a mouse brought in from OUTSIDE has no litter, and must still be admitted
-    -- (it then has no professor label either, only our id).
-    litter_id       BIGINT REFERENCES litters (id),
+    -- Birth cohort — also where this mouse's letter code comes from. NOT NULL:
+    -- outside mice get their own litter row (litters.is_from_outside), so every
+    -- mouse is covered by the natural re-import key instead of a NULL slipping
+    -- past it (scenario P4: F1BAL imported twice produced two rows).
+    litter_id       BIGINT      NOT NULL REFERENCES litters (id),
     -- DENORMALIZED copy of litters.litter_code (R15, user), so composing the
     -- professor's label needs no join. It CANNOT drift: the composite FK at the
     -- bottom of this file ties (litter_id, litter_code) to a real litters row,
     -- with ON UPDATE CASCADE so correcting a litter's code rewrites the copies.
     -- MATCH SIMPLE skips the check when litter_id IS NULL, so outside mice
     -- (no litter, no code) still insert.
-    litter_code     TEXT COLLATE "C",
+    litter_code     TEXT COLLATE "C" NOT NULL,
     -- Distinguishing number within its litter (Q11): no birth-order or tag
-    -- semantics, so NO CHECK on its values. NULL for outside mice.
-    pup_number      INTEGER,
-    -- A pup_number without a litter names nothing — "number 4 of what?".
-    -- The reverse IS allowed: the litter may be known and the number not.
-    CONSTRAINT mouse_meta_pup_needs_litter
-        CHECK (pup_number IS NULL OR litter_id IS NOT NULL),
-    sex             TEXT CHECK (sex IN ('M', 'F', 'U')),
+    -- semantics, so NO CHECK on its values.
+    pup_number      INTEGER     NOT NULL,
+    -- NO sex column (2026-09-05, user): newborns are 'U' and are sexed later, so
+    -- sex is MUTABLE state and lives on `mice`. Keeping it here would have made
+    -- a routine correction overwrite birth-given data with no history
+    -- (scenario P7).
     dob             DATE,
     line_id         BIGINT REFERENCES mouse_lines (id),
     -- Byte-preserved source label, e.g. 'M4+10BCW'. The one stable handle for
@@ -312,7 +386,7 @@ CREATE TABLE mouse_meta (
 -- One mouse per pup slot in a litter.
 CREATE UNIQUE INDEX mouse_meta_litter_pup_key
     ON mouse_meta (litter_id, pup_number)
-    WHERE pup_number IS NOT NULL AND deleted_at IS NULL;
+    WHERE deleted_at IS NULL;
 
 CREATE TRIGGER mouse_meta_set_updated_at
     BEFORE UPDATE ON mouse_meta
@@ -335,10 +409,34 @@ CREATE TRIGGER mouse_meta_set_updated_at
 CREATE TABLE mice (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     mouse_meta_id   BIGINT      NOT NULL REFERENCES mouse_meta (id),
+    -- NULLABLE ON PURPOSE: a newly created mouse gets its state row
+    -- immediately with cage/slot NULL ("unplaced") rather than having no row at
+    -- all, which made it invisible to every location view (scenario P5).
     cage_id         BIGINT REFERENCES cages (id),
     slot_id         BIGINT REFERENCES slots (id),
-    status          TEXT,
+    -- Sex moved here from mouse_meta: newborns are 'U' and are sexed later, so
+    -- each correction becomes a new version row with its own actor and time.
+    -- NOTE: this makes the professor's label (sex||pup_number||litter_code) a
+    -- function of CURRENT state, so composing it needs the head row.
+    sex             TEXT CHECK (sex IN ('M', 'F', 'U')),
+    -- The plain yes/no the cage grid and every filter actually ask.
+    is_alive        BOOLEAN     NOT NULL DEFAULT true,
+    -- Only meaningful when is_alive = false: 'sac', 'found dead', ...
+    death_reason    TEXT,
+    CONSTRAINT mice_death_reason_needs_dead
+        CHECK (death_reason IS NULL OR is_alive = false),
     attention       TEXT,
+    -- Transfer progress for the drag-drop move flow, replacing mouse_moves:
+    --   init    — move requested, mouse has not physically moved
+    --   moved   — physically moved
+    --   checked — confirmed at the destination
+    in_transit      TEXT        NOT NULL DEFAULT 'checked'
+        CHECK (in_transit IN ('init', 'moved', 'checked')),
+    -- Why this version exists ('wean', 'import', 'sac'). Was mouse_moves.reason.
+    reason          TEXT,
+    -- Was mouse_moves.idempotency_key: lets a retried write be recognised
+    -- instead of appending a duplicate version row.
+    idempotency_key UUID,
     -- Who wrote this version, and why it superseded the previous one.
     actor_id        BIGINT      NOT NULL REFERENCES users (id),
     change_note     TEXT,
@@ -356,6 +454,13 @@ CREATE INDEX mice_meta_idx
 
 -- Serves the cage-grid view (mice per cage).
 CREATE INDEX mice_cage_idx ON mice (cage_id) WHERE deleted_at IS NULL;
+
+-- Retry guard inherited from mouse_moves. NOT partial on deleted_at:
+-- idempotency must survive tombstoning, or a retry after a soft delete would
+-- insert a second copy.
+CREATE UNIQUE INDEX mice_idempotency_key
+    ON mice (idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
 
 CREATE TRIGGER mice_set_updated_at
     BEFORE UPDATE ON mice

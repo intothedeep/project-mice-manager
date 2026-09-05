@@ -32,7 +32,8 @@ CREATE TYPE attention AS ENUM ('none', 'flag');
 -- Font colour semantics: black = done, red = instruction, blue = plan/note.
 -- Deliberately NO 'unknown' member — an unmapped colour must route to
 -- flag_for_review as an import_errors row, never silently become a default enum.
-CREATE TYPE cell_signal AS ENUM ('done', 'instruction', 'plan');
+-- cell_signal ENUM RETIRED 2026-09-05 (user): promoted to the `signals` TABLE
+-- in 0002 (id, type, color) so signals are data, not schema.
 
 -- R10: tissue_collection and genotyping dates occupy cols M/N at 97/98% fill.
 -- ONE ROW PER DATE in mouse_events (a cell can hold '260629 260817').
