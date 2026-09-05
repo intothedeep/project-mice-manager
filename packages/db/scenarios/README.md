@@ -103,9 +103,12 @@ Ordered by how much damage they do, not by how hard they are to fix.
 
 ### P1 — Litter-level notes are impossible (BLOCKER)
 `notes.subject_mouse_id` is `NOT NULL`, so a note about a LITTER with no
-specific mouse is rejected. This is not an edge case: **`no pups` appears 1023
-times** in the workbook — the single most common note in the entire file. Also
-affects room-level notes ("check food", Experimental rows 25-27).
+specific mouse is rejected. Real cases: room-level notes such as
+`260818 CHECK FOOD` (Experimental rows 25-27) have neither a mouse nor a litter.
+CORRECTION 2026-09-05: an earlier draft claimed `no pups` appeared 1023 times
+and was the commonest note. That counted CELLS — it is ONE note in row 489
+replicated across ~1023 columns. Counted by unique (row, value) the workbook has
+`preg?` 16, `pups?` 8, `sac if not` 6, `check ps` 6, and `no pups` once.
 Fix: make `subject_mouse_id` nullable; a note carries a mouse, a litter, or
 neither.
 

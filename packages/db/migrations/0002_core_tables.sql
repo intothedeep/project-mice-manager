@@ -349,8 +349,20 @@ CREATE TRIGGER mates_set_updated_at
 --   SELECT DISTINCT ON (mate_id) status FROM mate_status_logs
 --   WHERE deleted_at IS NULL ORDER BY mate_id, occurred_at DESC, id DESC;
 --
--- Stages: pending 합전 · cohoused 합사 · awaiting 임신 준비 ·
---         pregnant 임신확인 · delivered 출산확인.
+-- Stages, checked against the real workbook rather than invented:
+--   pending    합사전    ordered, not yet in one cage (app-side only)
+--   cohoused   합사      col J 'Last mating date', filled for 19% of mice
+--   awaiting   임신 준비  the professor's own annotation is a QUESTION —
+--                        'preg?' on 16 rows, 'check Ps daily' on 6. Pregnancy
+--                        tracking in this lab is mostly asking, not asserting.
+--   pregnant   임신확인   confirmed
+--   delivered  출산확인   'new pups' / 'more pups'; occurred_at IS the birth date
+--   no_pups    무출산     THE CYCLE ENDED WITHOUT PUPS. Added because without it
+--                        a failed cycle sits at 'awaiting' forever with nothing
+--                        to close it. The workbook says 'no pups' and
+--                        'miscarriage' once each — thin evidence, but the state
+--                        is structurally required: every cycle must be able to
+--                        end. Miscarriage is recorded as no_pups + a note.
 --
 -- occurred_at is WHEN THE STAGE HAPPENED, not when the row was written — the
 -- same distinction as mice.effective_at, and for the same reason: created_at
@@ -360,7 +372,8 @@ CREATE TABLE mate_status_logs (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     mate_id         BIGINT      NOT NULL REFERENCES mates (id),
     status          TEXT        NOT NULL
-        CHECK (status IN ('pending', 'cohoused', 'awaiting', 'pregnant', 'delivered')),
+        CHECK (status IN ('pending', 'cohoused', 'awaiting', 'pregnant',
+                          'delivered', 'no_pups')),
     occurred_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- '~' in the workbook: no copulatory plug seen, so the date is ESTIMATED.
     is_occurred_at_approx BOOLEAN NOT NULL DEFAULT false,

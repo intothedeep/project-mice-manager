@@ -237,7 +237,7 @@ CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
 | `mouse_meta_id` | bigint | NOT NULL |  | → `mouse_meta` |
-| `cage_id` | bigint |  |  | → `cages` |
+| `cage_id` | bigint |  |  | → `slots` |
 | `slot_id` | bigint |  |  | → `slots` |
 | `sex` | text |  |  |  |
 | `is_alive` | boolean | NOT NULL | `true` |  |
