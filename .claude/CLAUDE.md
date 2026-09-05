@@ -66,14 +66,27 @@ Never delete directly. Rename file/folder with `x_` prefix so the user can verif
 
 ## Jest & Docs (§19)
 
-- Run tests once at the end. Update documentation surgically.
+- **TESTS ARE SUSPENDED (user directive, 2026-09-04) — this OVERRIDES the rest
+  of §19 and §21.1.** Do NOT write test files. Do NOT create `*.test.ts` /
+  `*.spec.ts`, do NOT scaffold Jest configs into workspaces, do NOT run
+  `pnpm test` / `turbo test`. Jest + ts-jest stays the CHOSEN runner and
+  `@repo/jest-config` stays in the repo — it is deliberately unused for now and
+  is NOT dead code to be cleaned up. Testing resumes once development is done;
+  the suite is written THEN, in one pass, against finished behaviour.
+- Rationale: the schema and parsers are still moving. Tests written now would be
+  rewritten before they ever caught anything, and would slow each iteration.
+- **What replaces tests meanwhile:** verify by DELIBERATE BREAKAGE against the
+  real system — trigger the failure, observe the error, then clean up. Never
+  report an invariant as holding because the code looks right. This is the
+  standard the DB guards were held to.
+- Update documentation surgically.
 
 ## End-of-task finalization (§21)
 
 Do these ONCE, at the very end of a task (not iteratively mid-work):
 
-1. **Jest + docs update, once.** Run the relevant jest suite a single time and
-   update documentation surgically to match what shipped.
+1. **Docs update, once.** Update documentation surgically to match what shipped.
+   (The jest step is SUSPENDED — see §19.)
 2. **Run the project once, in the background.** Launch the app one time to
    confirm it boots, running it in the background (non-blocking) so it does not
    hold the session; report the result.
