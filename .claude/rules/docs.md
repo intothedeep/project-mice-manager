@@ -74,6 +74,28 @@ Enforcement (three layers):
 - No prose blocks, no multi-line entries.
 - Terse-first: it stays whole and terse. Existing verbose lines are rewritten
   to this style in place (no information lost).
+- **Soft-delete a superseded line (added 2026-09-05) — the log's `deleted_at`.**
+  A line whose decision was later reversed is NOT deleted and NOT left bare.
+  Mark it IN PLACE with strikethrough plus a dated marker, and ALSO append the
+  new decision at the bottom:
+
+  ```markdown
+  ~~2026-09-04 db: old decision text~~ <!-- SUPERSEDED 2026-09-05 -->
+  ```
+
+  Why both: the marker is for the READER (this log is scanned top-down, so a
+  stale line contradicted only 5 lines later will be believed and acted on
+  before the reader ever reaches the correction); the appended line is the
+  CHRONOLOGY (it records what replaced it, and when). Neither alone suffices.
+  The text is never removed — same soft-delete safety as §7 and the repo's `x_`
+  rule. This is the ONLY sanctioned in-place edit besides terseness rewrites,
+  and the superseded line's wording must NOT be changed while marking it.
+  **Only strike a line whose WHOLE content is dead.** A status line usually
+  packs several decisions; if just one clause went stale, append a correction
+  and leave the line unstruck. Striking a mostly-still-true line hides live
+  information and is worse than leaving it bare. (Learned the hard way
+  2026-09-05: the R8/R9 fold line was struck whole over one stale trailing
+  clause about the test runner, and had to be reverted.)
 - **Periodic roll-off (added 2026-06-30):** when the log outgrows the active
   cycle, the OLD settled lines (a completed era whose phases are already
   archived) may be moved — not deleted — into
