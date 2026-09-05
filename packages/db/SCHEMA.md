@@ -125,14 +125,14 @@ CREATE INDEX import_errors_batch_idx ON public.import_errors USING btree (import
 CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 ```
 
-## `matings`
+## `litters`
 
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `mother_mouse_id` | bigint | NOT NULL |  | → `mice` |
-| `father_mouse_id` | bigint |  |  | → `mice` |
-| `mate_raw_label` | text |  |  |  |
+| `mate_id` | bigint |  |  | → `mates` |
+| `litter_no` | text | NOT NULL |  |  |
+| `seq` | bigint | NOT NULL | `nextval('litter_no_seq'::regclass)` |  |
 | `line_id` | bigint |  |  | → `mouse_lines` |
 | `mated_on` | date |  |  |  |
 | `is_mated_on_approx` | boolean | NOT NULL | `false` |  |
@@ -142,7 +142,6 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 | `expected_delivery_on_raw` | text |  |  |  |
 | `birth_date` | date |  |  |  |
 | `pup_count` | integer |  |  |  |
-| `code_id` | bigint |  |  | → `mouse_ids` |
 | `created_by` | bigint | NOT NULL |  | → `users` |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |
@@ -152,11 +151,31 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 | `deleted_at` | timestamp with time zone |  |  |  |
 
 ```sql
-CREATE UNIQUE INDEX matings_code_key ON public.matings USING btree (code_id) WHERE ((code_id IS NOT NULL) AND (deleted_at IS NULL))
-CREATE INDEX matings_mother_mated_idx ON public.matings USING btree (mother_mouse_id, mated_on DESC)
-CREATE UNIQUE INDEX matings_pkey ON public.matings USING btree (id)
-CREATE UNIQUE INDEX matings_resolved_pair_key ON public.matings USING btree (LEAST(mother_mouse_id, father_mouse_id), GREATEST(mother_mouse_id, father_mouse_id), COALESCE(mated_on, '-infinity'::date)) WHERE ((father_mouse_id IS NOT NULL) AND (deleted_at IS NULL))
-CREATE UNIQUE INDEX matings_unresolved_key ON public.matings USING btree (mother_mouse_id, COALESCE(mate_raw_label, ''::text), COALESCE(mated_on, '-infinity'::date)) WHERE ((father_mouse_id IS NULL) AND (deleted_at IS NULL))
+CREATE UNIQUE INDEX litters_litter_no_key ON public.litters USING btree (litter_no) WHERE (deleted_at IS NULL)
+CREATE INDEX litters_mate_idx ON public.litters USING btree (mate_id, birth_date DESC) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX litters_pkey ON public.litters USING btree (id)
+CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (deleted_at IS NULL)
+```
+
+## `mates`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `mother_mouse_id` | bigint |  |  | → `mouse_meta` |
+| `father_mouse_id` | bigint |  |  | → `mouse_meta` |
+| `mate_raw_label` | text |  |  |  |
+| `created_by` | bigint | NOT NULL |  | → `users` |
+| `import_batch_id` | bigint |  |  | → `import_batches` |
+| `source_sheet` | text |  |  |  |
+| `source_row` | integer |  |  |  |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE UNIQUE INDEX mates_couple_key ON public.mates USING btree (mother_mouse_id, COALESCE(father_mouse_id, ('-1'::integer)::bigint), COALESCE(mate_raw_label, ''::text)) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
 ```
 
 ## `mice`
@@ -164,17 +183,13 @@ CREATE UNIQUE INDEX matings_unresolved_key ON public.matings USING btree (mother
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `line_id` | bigint |  |  | → `mouse_lines` |
-| `birth_mating_id` | bigint |  |  | → `matings` |
-| `pup_number` | integer |  |  |  |
-| `raw_mouse_id` | text |  |  |  |
-| `dob` | date |  |  |  |
-| `is_pooled` | boolean | NOT NULL | `false` |  |
-| `reclip_tag` | text |  |  |  |
-| `raw_genotype` | text |  |  |  |
-| `raw_parents` | text |  |  |  |
+| `mouse_meta_id` | bigint | NOT NULL |  | → `mouse_meta` |
 | `cage_id` | bigint |  |  | → `cages` |
 | `slot_id` | bigint |  |  | → `slots` |
+| `status` | text |  |  |  |
+| `attention` | text |  |  |  |
+| `actor_id` | bigint | NOT NULL |  | → `users` |
+| `change_note` | text |  |  |  |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |
 | `source_row` | integer |  |  |  |
@@ -184,9 +199,8 @@ CREATE UNIQUE INDEX matings_unresolved_key ON public.matings USING btree (mother
 
 ```sql
 CREATE INDEX mice_cage_idx ON public.mice USING btree (cage_id) WHERE (deleted_at IS NULL)
-CREATE UNIQUE INDEX mice_cohort_pup_natural_key ON public.mice USING btree (birth_mating_id, pup_number) WHERE ((is_pooled = false) AND (deleted_at IS NULL))
+CREATE INDEX mice_meta_idx ON public.mice USING btree (mouse_meta_id, id DESC)
 CREATE UNIQUE INDEX mice_pkey ON public.mice USING btree (id)
-CREATE UNIQUE INDEX mice_pooled_raw_key ON public.mice USING btree (raw_mouse_id) WHERE ((is_pooled = true) AND (deleted_at IS NULL))
 ```
 
 ## `mouse_attr_logs`
@@ -194,7 +208,7 @@ CREATE UNIQUE INDEX mice_pooled_raw_key ON public.mice USING btree (raw_mouse_id
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `mouse_id` | bigint | NOT NULL |  | → `mice` |
+| `mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
 | `field` | text | NOT NULL |  |  |
 | `value` | text | NOT NULL |  |  |
 | `actor_id` | bigint | NOT NULL |  | → `users` |
@@ -213,7 +227,7 @@ CREATE UNIQUE INDEX mouse_attr_logs_pkey ON public.mouse_attr_logs USING btree (
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `mouse_id` | bigint | NOT NULL |  | → `mice` |
+| `mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
 | `kind` | mouse_event_kind | NOT NULL |  |  |
 | `occurred_on` | date | NOT NULL |  |  |
 | `is_occurred_on_approx` | boolean | NOT NULL | `false` |  |
@@ -235,7 +249,7 @@ CREATE UNIQUE INDEX mouse_events_pkey ON public.mouse_events USING btree (id)
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `mouse_id` | bigint | NOT NULL |  | → `mice` |
+| `mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
 | `order_index` | smallint | NOT NULL |  |  |
 | `marker_text` | text | NOT NULL |  |  |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
@@ -248,23 +262,6 @@ CREATE UNIQUE INDEX mouse_events_pkey ON public.mouse_events USING btree (id)
 ```sql
 CREATE UNIQUE INDEX mouse_genotypes_order_key ON public.mouse_genotypes USING btree (mouse_id, order_index) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX mouse_genotypes_pkey ON public.mouse_genotypes USING btree (id)
-```
-
-## `mouse_ids`
-
-| column | type | null | default | references |
-|---|---|---|---|---|
-| `id` | bigint | NOT NULL |  |  |
-| `code` | text | NOT NULL |  |  |
-| `seq` | bigint | NOT NULL | `nextval('mouse_id_seq'::regclass)` |  |
-| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `deleted_at` | timestamp with time zone |  |  |  |
-
-```sql
-CREATE UNIQUE INDEX mouse_ids_code_key ON public.mouse_ids USING btree (code) WHERE (deleted_at IS NULL)
-CREATE UNIQUE INDEX mouse_ids_pkey ON public.mouse_ids USING btree (id)
-CREATE UNIQUE INDEX mouse_ids_seq_key ON public.mouse_ids USING btree (seq) WHERE (deleted_at IS NULL)
 ```
 
 ## `mouse_lines`
@@ -285,12 +282,40 @@ CREATE UNIQUE INDEX mouse_lines_name_key ON public.mouse_lines USING btree (name
 CREATE UNIQUE INDEX mouse_lines_pkey ON public.mouse_lines USING btree (id)
 ```
 
+## `mouse_meta`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `mouse_id` | text | NOT NULL |  |  |
+| `seq` | bigint | NOT NULL | `nextval('mouse_id_seq'::regclass)` |  |
+| `pup_id` | bigint |  |  | → `pups` |
+| `sex` | text |  |  |  |
+| `dob` | date |  |  |  |
+| `line_id` | bigint |  |  | → `mouse_lines` |
+| `raw_mouse_id` | text |  |  |  |
+| `raw_genotype` | text |  |  |  |
+| `raw_parents` | text |  |  |  |
+| `import_batch_id` | bigint |  |  | → `import_batches` |
+| `source_sheet` | text |  |  |  |
+| `source_row` | integer |  |  |  |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE UNIQUE INDEX mouse_meta_mouse_id_key ON public.mouse_meta USING btree (mouse_id) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX mouse_meta_pkey ON public.mouse_meta USING btree (id)
+CREATE UNIQUE INDEX mouse_meta_pup_key ON public.mouse_meta USING btree (pup_id) WHERE ((pup_id IS NOT NULL) AND (deleted_at IS NULL))
+CREATE UNIQUE INDEX mouse_meta_seq_key ON public.mouse_meta USING btree (seq) WHERE (deleted_at IS NULL)
+```
+
 ## `mouse_moves`
 
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `mouse_id` | bigint | NOT NULL |  | → `mice` |
+| `mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
 | `from_cage_id` | bigint |  |  | → `cages` |
 | `to_cage_id` | bigint | NOT NULL |  | → `cages` |
 | `from_slot_id` | bigint |  |  | → `slots` |
@@ -315,8 +340,8 @@ CREATE UNIQUE INDEX mouse_moves_pkey ON public.mouse_moves USING btree (id)
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL | `nextval('notes_id_seq'::regclass)` |  |
 | `origin_note_id` | bigint | NOT NULL |  | → `notes` |
-| `subject_mouse_id` | bigint | NOT NULL |  | → `mice` |
-| `mating_id` | bigint |  |  | → `matings` |
+| `subject_mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
+| `litter_id` | bigint |  |  | → `litters` |
 | `signal` | cell_signal | NOT NULL |  |  |
 | `body` | text | NOT NULL |  |  |
 | `actor_id` | bigint | NOT NULL |  | → `users` |
@@ -328,6 +353,25 @@ CREATE UNIQUE INDEX mouse_moves_pkey ON public.mouse_moves USING btree (id)
 CREATE INDEX notes_origin_idx ON public.notes USING btree (origin_note_id, id DESC)
 CREATE UNIQUE INDEX notes_pkey ON public.notes USING btree (id)
 CREATE INDEX notes_subject_mouse_idx ON public.notes USING btree (subject_mouse_id, created_at DESC)
+```
+
+## `pups`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `litter_id` | bigint | NOT NULL |  | → `litters` |
+| `pup_number` | integer | NOT NULL |  |  |
+| `import_batch_id` | bigint |  |  | → `import_batches` |
+| `source_sheet` | text |  |  |  |
+| `source_row` | integer |  |  |  |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE UNIQUE INDEX pups_litter_number_key ON public.pups USING btree (litter_id, pup_number) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX pups_pkey ON public.pups USING btree (id)
 ```
 
 ## `raw_sheet_rows`
@@ -389,7 +433,7 @@ CREATE UNIQUE INDEX subcolonies_pkey ON public.subcolonies USING btree (id)
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL | `nextval('tasks_id_seq'::regclass)` |  |
 | `origin_task_id` | bigint | NOT NULL |  | → `tasks` |
-| `subject_mouse_id` | bigint |  |  | → `mice` |
+| `subject_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `subject_cage_id` | bigint |  |  | → `cages` |
 | `task_type` | text | NOT NULL |  |  |
 | `due_date` | date |  |  |  |
@@ -404,9 +448,10 @@ CREATE UNIQUE INDEX subcolonies_pkey ON public.subcolonies USING btree (id)
 | `done_at` | timestamp with time zone |  |  |  |
 | `verified_at` | timestamp with time zone |  |  |  |
 | `deleted_at` | timestamp with time zone |  |  |  |
-| `mating_id` | bigint |  |  | → `matings` |
+| `litter_id` | bigint |  |  | → `litters` |
 
 ```sql
+CREATE INDEX tasks_litter_idx ON public.tasks USING btree (litter_id) WHERE ((litter_id IS NOT NULL) AND (deleted_at IS NULL))
 CREATE INDEX tasks_origin_idx ON public.tasks USING btree (origin_task_id, id DESC)
 CREATE UNIQUE INDEX tasks_pkey ON public.tasks USING btree (id)
 CREATE INDEX tasks_subject_mouse_idx ON public.tasks USING btree (subject_mouse_id) WHERE (deleted_at IS NULL)

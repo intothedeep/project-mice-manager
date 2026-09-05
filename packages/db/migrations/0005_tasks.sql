@@ -36,14 +36,13 @@ CREATE TABLE tasks (
     --     would abort their import;
     --   * 'move M4BCW to cage 2413' names a mouse AND a cage, so an
     --     exclusive-arc rule between those two is wrong as well;
-    --   * litter_id/mating_id may be CONTEXT QUALIFIERS rather than alternative
-    --     subjects — notes already sets subject_mouse_id and mating_id together.
+    --   * litter_id may be a CONTEXT QUALIFIER rather than an alternative
+    --     subject — notes already sets subject_mouse_id and litter_id together.
     -- The real rule needs Dr. Lopez-Juarez (Q31). Until then, ETL warns into
     -- import_errors rather than the schema rejecting rows.
-    subject_mouse_id BIGINT REFERENCES mice (id),
+    subject_mouse_id BIGINT REFERENCES mouse_meta (id),
     subject_cage_id  BIGINT REFERENCES cages (id),
-    -- No litter_id: litters merged into matings (R11). A task about a birth
-    -- cohort points at the mating via mating_id, added in 0008.
+    -- litter_id is added in 0008, where `litters` already exists.
     task_type        TEXT        NOT NULL,
     due_date         DATE,
     -- Transition fields: each row records the state it moves TO and the state

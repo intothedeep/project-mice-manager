@@ -13,7 +13,7 @@
 -- 'notes' is DROPPED from the field CHECK: notes move to the notes table (R10).
 CREATE TABLE mouse_attr_logs (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    mouse_id   BIGINT      NOT NULL REFERENCES mice (id),
+    mouse_id   BIGINT      NOT NULL REFERENCES mouse_meta (id),
     field      TEXT        NOT NULL CHECK (field IN (
                    'sex', 'mouse_label', 'status', 'attention',
                    'genotype_label', 'raw_genotype_correction')),
@@ -74,7 +74,7 @@ ORDER BY mouse_id, field, created_at DESC, id DESC;
 -- standard infrastructure timestamps per D2.
 CREATE TABLE mouse_moves (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    mouse_id        BIGINT      NOT NULL REFERENCES mice (id),
+    mouse_id        BIGINT      NOT NULL REFERENCES mouse_meta (id),
     from_cage_id    BIGINT REFERENCES cages (id),
     -- Initial placement legitimately has a NULL origin; the DESTINATION never is.
     to_cage_id      BIGINT      NOT NULL REFERENCES cages (id),
