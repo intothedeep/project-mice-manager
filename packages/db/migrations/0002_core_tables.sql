@@ -152,16 +152,14 @@ CREATE TRIGGER mouse_lines_set_updated_at
 -- ===========================================================================
 -- R12 (2026-09-05, user) — breeding chain and the meta/state split.
 -- ===========================================================================
--- One code allocator, for the PROFESSOR'S mouse code (mouse_meta.code).
+-- One code allocator, for the PROFESSOR'S LITTER code (litters.litter_code).
 -- A real Postgres SEQUENCE, not a single-row counter: nextval is race-free
 -- without SELECT ... FOR UPDATE, and the standing warning against deriving the
 -- next code from max() still holds. START 1612 so the first newly issued code
 -- is BIZ — bijective base-26 (B=2, I=9, Z=26) = 2*676 + 9*26 + 26 — matching
 -- the workbook header. IMPORTED codes are supplied explicitly by the ETL, which
 -- then setval()s this sequence above the highest imported ordinal.
--- litters have NO code of their own (R13): litters are identified by their
--- integer id, and the letter code lives on the mouse.
-CREATE SEQUENCE mouse_code_seq START 1612;
+CREATE SEQUENCE litter_code_seq START 1612;
 -- Creation order is load-bearing because the chain is CIRCULAR:
 --   mates -> mouse_meta -> litters -> mates
 -- Broken with CREATE-then-ALTER, per the standing "FKs are always enforced"
@@ -205,14 +203,23 @@ CREATE TRIGGER mates_set_updated_at
 -- litters — one birth cycle of one couple.
 -- ---------------------------------------------------------------------------
 -- A mouse can have MANY litters; a litter has exactly ONE couple (mate_id).
--- A litter carries NO letter code (R13, user): it is identified by its integer
--- id alone. The professor's code ('BCW') is a MOUSE attribute — mouse_meta.code.
+-- The litter carries the professor's letter code (litter_code).
 --
 -- The cycle dates live HERE, not on mates, precisely because they repeat.
 CREATE TABLE litters (
     id                    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     -- FK added at the bottom (circular chain).
     mate_id               BIGINT,
+    -- The professor's letter code ('BCW'). It belongs HERE, on the litter, not
+    -- on the mouse: measured on Breeders, 37 of 54 codes are shared by 2-8 mice
+    -- and every mouse sharing a code has an IDENTICAL date of birth (37/37, no
+    -- exceptions). Storing it once per litter is also what makes littermate
+    -- codes incapable of diverging.
+    -- COLLATE "C" at DDL time so ordering cannot silently follow the DB default
+    -- collation; the CHECK keeps the bijective base-26 codec round-trippable.
+    litter_code           TEXT COLLATE "C" NOT NULL CHECK (litter_code ~ '^[A-Z]{1,5}$'),
+    -- Base-26 ordinal of litter_code, stored so issue order is ORDER BY seq.
+    seq                   BIGINT      NOT NULL DEFAULT nextval('litter_code_seq'),
     line_id               BIGINT REFERENCES mouse_lines (id),
     mated_on              DATE,
     -- true when the source carried '~' (no copulatory plug seen: date estimated).
@@ -233,6 +240,14 @@ CREATE TABLE litters (
     deleted_at            TIMESTAMPTZ
 );
 
+CREATE UNIQUE INDEX litters_litter_code_key
+    ON litters (litter_code)
+    WHERE deleted_at IS NULL;
+
+CREATE UNIQUE INDEX litters_seq_key
+    ON litters (seq)
+    WHERE deleted_at IS NULL;
+
 CREATE INDEX litters_mate_idx
     ON litters (mate_id, birth_date DESC)
     WHERE deleted_at IS NULL;
@@ -247,34 +262,21 @@ CREATE TRIGGER litters_set_updated_at
 -- One row = one mouse, forever. This is the stable identity every other table
 -- FKs to (`mice` cannot be referenced: it holds version rows).
 --
--- A mouse carries TWO identifiers, deliberately (R13, user), so the old and new
--- systems can be reconciled during and after the migration:
---   id   — ours. A surrogate integer, always present, always unique.
---   code — the PROFESSOR'S convention ('BCW'). NOT unique on its own: it is
---          shared by littermates, which the workbook confirms (37 of 54
---          Breeders codes are shared by 2-8 mice, all with identical DOB).
---
--- The professor's human label is COMPOSED, never stored:
---     sex || pup_number || code        ->  'M' || 4 || 'BCW' = 'M4BCW'
--- and it is that TRIPLE which is unique — enforced by mouse_meta_label_key.
--- Measured: 173 of 173 Breeders labels are distinct.
---
--- NOTE (accepted denormalization): because `code` sits on the mouse rather than
--- on the litter, two littermates could be given different codes and nothing in
--- the schema would object. That is a consequence of the user's decision to keep
--- the code as a MOUSE attribute; the ETL assigns one code per litter and should
--- warn if a litter's members disagree.
+-- IDENTIFICATION (R14, user): `mouse_meta.id` identifies the mouse to US. The
+-- professor identifies the same mouse by a COMPOSED label, never stored:
+--     sex || pup_number || litters.litter_code   ->  'M' || 4 || 'BCW' = 'M4BCW'
+-- The letter code is NOT on this table — it belongs to the LITTER, which is why
+-- littermate codes cannot diverge. Label uniqueness follows for free from
+-- mouse_meta_litter_pup_key plus litters_litter_code_key: one code per litter,
+-- one pup_number per mouse in it. Measured: 173 of 173 Breeders labels distinct.
 --
 -- The `pups` table was folded in here (R13): it held only (litter_id,
--- pup_number), which are mouse attributes, and keeping it separate would have
--- put the label's uniqueness across two tables where no UNIQUE could reach it.
+-- pup_number), which are mouse attributes.
 CREATE TABLE mouse_meta (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    code            TEXT COLLATE "C" CHECK (code ~ '^[A-Z]{1,5}$'),
-    -- Base-26 ordinal of `code`, stored so issue order is ORDER BY seq.
-    seq             BIGINT      NOT NULL DEFAULT nextval('mouse_code_seq'),
-    -- Birth cohort. NULLABLE: a mouse brought in from OUTSIDE has no litter
-    -- here, and must still be admitted.
+    -- Birth cohort — also where this mouse's letter code comes from. NULLABLE:
+    -- a mouse brought in from OUTSIDE has no litter, and must still be admitted
+    -- (it then has no professor label either, only our id).
     litter_id       BIGINT REFERENCES litters (id),
     -- Distinguishing number within its litter (Q11): no birth-order or tag
     -- semantics, so NO CHECK on its values. NULL for outside mice.
@@ -299,19 +301,10 @@ CREATE TABLE mouse_meta (
     deleted_at      TIMESTAMPTZ
 );
 
--- The professor's label is unique: sex + pup_number + code.
-CREATE UNIQUE INDEX mouse_meta_label_key
-    ON mouse_meta (code, sex, pup_number)
-    WHERE code IS NOT NULL AND deleted_at IS NULL;
-
 -- One mouse per pup slot in a litter.
 CREATE UNIQUE INDEX mouse_meta_litter_pup_key
     ON mouse_meta (litter_id, pup_number)
     WHERE pup_number IS NOT NULL AND deleted_at IS NULL;
-
-CREATE UNIQUE INDEX mouse_meta_seq_key
-    ON mouse_meta (seq)
-    WHERE deleted_at IS NULL;
 
 CREATE TRIGGER mouse_meta_set_updated_at
     BEFORE UPDATE ON mouse_meta

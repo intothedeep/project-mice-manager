@@ -173,7 +173,7 @@
 <title>mouse_meta</title>
 <path fill="#ffffff" stroke="black" d="M504.88,-1152.5C504.88,-1152.5 450.62,-1152.5 450.62,-1152.5 444.62,-1152.5 438.62,-1146.5 438.62,-1140.5 438.62,-1140.5 438.62,-1128.5 438.62,-1128.5 438.62,-1122.5 444.62,-1116.5 450.62,-1116.5 450.62,-1116.5 504.88,-1116.5 504.88,-1116.5 510.88,-1116.5 516.88,-1122.5 516.88,-1128.5 516.88,-1128.5 516.88,-1140.5 516.88,-1140.5 516.88,-1146.5 510.88,-1152.5 504.88,-1152.5"/>
 <text xml:space="preserve" text-anchor="middle" x="477.75" y="-1136.05" font-family="Helvetica,sans-Serif" font-size="11.00">mouse_meta</text>
-<text xml:space="preserve" text-anchor="middle" x="477.75" y="-1124.05" font-family="Helvetica,sans-Serif" font-size="11.00">(17 cols)</text>
+<text xml:space="preserve" text-anchor="middle" x="477.75" y="-1124.05" font-family="Helvetica,sans-Serif" font-size="11.00">(15 cols)</text>
 </g>
 <!-- mice&#45;&gt;mouse_meta -->
 <g id="edge18" class="edge">
@@ -201,7 +201,7 @@
 <title>litters</title>
 <path fill="#dcfce7" stroke="black" d="M250.25,-882.5C250.25,-882.5 217,-882.5 217,-882.5 211,-882.5 205,-876.5 205,-870.5 205,-870.5 205,-858.5 205,-858.5 205,-852.5 211,-846.5 217,-846.5 217,-846.5 250.25,-846.5 250.25,-846.5 256.25,-846.5 262.25,-852.5 262.25,-858.5 262.25,-858.5 262.25,-870.5 262.25,-870.5 262.25,-876.5 256.25,-882.5 250.25,-882.5"/>
 <text xml:space="preserve" text-anchor="middle" x="233.62" y="-866.05" font-family="Helvetica,sans-Serif" font-size="11.00">litters</text>
-<text xml:space="preserve" text-anchor="middle" x="233.62" y="-854.05" font-family="Helvetica,sans-Serif" font-size="11.00">(18 cols)</text>
+<text xml:space="preserve" text-anchor="middle" x="233.62" y="-854.05" font-family="Helvetica,sans-Serif" font-size="11.00">(20 cols)</text>
 </g>
 <!-- litters&#45;&gt;mouse_lines -->
 <g id="edge9" class="edge">
