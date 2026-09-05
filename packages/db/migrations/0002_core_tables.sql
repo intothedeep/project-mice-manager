@@ -271,7 +271,7 @@ CREATE SEQUENCE litter_code_seq START 1612;
 --   cohoused   합사       moved together into one cage
 --   awaiting   임신 준비  co-housed, watching for a plug / signs
 --   pregnant   임신확인   pregnancy confirmed
---   delivered  출산       pups born (the litters row gets its birth_date)
+--   delivered  출산확인   pups born; occurred_at IS the birth date
 --
 -- `status` is the CURRENT state of this couple's ongoing cycle. Past cycles are
 -- not overwritten — each one is its own `litters` row with its own dates — so
@@ -414,17 +414,25 @@ CREATE TABLE litters (
     -- ACCEPTED LOSS: a litter with mate_id NULL (parents unknown in historical
     -- data, or an is_from_outside shell) then has no programme of its own. The
     -- information is not gone — every mouse in it carries mouse_meta.subcolony_id.
-    -- NO mating or expected-delivery dates here: they belong to the CYCLE and
-    -- live on `mates` (cohoused_at, expected_delivery_on). This table holds the
-    -- OUTCOME only.
+    -- NO cycle progress of ANY kind here (2026-09-05, user). The mating date,
+    -- the expected-delivery date and the pregnancy stages all belong to the
+    -- CYCLE: `mates.expected_delivery_on` and the append-only
+    -- `mate_status_logs`. This table holds only what the cycle PRODUCED.
+    --
+    -- birth_date is gone too: the 'delivered' row in mate_status_logs already
+    -- carries that date in occurred_at, with the actor and the '~' approximate
+    -- flag a bare DATE could not hold. Read it as:
+    --   SELECT occurred_at::date FROM mate_status_logs
+    --   WHERE mate_id = $1 AND status = 'delivered' AND deleted_at IS NULL
+    --   ORDER BY occurred_at DESC, id DESC LIMIT 1;
     -- A mouse brought in from OUTSIDE still gets a litter row (2026-09-05,
     -- user), so litter_id/pup_number can be NOT NULL on mouse_meta and the
     -- natural re-import key applies to EVERY mouse. Such a litter has mate_id
     -- NULL (parents unknown) and is flagged here so it is not mistaken for a
     -- birth this colony produced.
     is_from_outside       BOOLEAN     NOT NULL DEFAULT false,
-    -- Delivered <=> birth_date IS NOT NULL. No outcome enum needed.
-    birth_date            DATE,
+    -- How many pups the cycle produced. A genuine outcome, not progress: it is
+    -- not recoverable from the status log.
     pup_count             INTEGER,
     created_by            BIGINT      NOT NULL REFERENCES users (id),
     import_batch_id       BIGINT REFERENCES import_batches (id),

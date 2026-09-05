@@ -167,7 +167,6 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 | `litter_code` | text | NOT NULL |  |  |
 | `seq` | bigint | NOT NULL | `nextval('litter_code_seq'::regclass)` |  |
 | `is_from_outside` | boolean | NOT NULL | `false` |  |
-| `birth_date` | date |  |  |  |
 | `pup_count` | integer |  |  |  |
 | `created_by` | bigint | NOT NULL |  | → `users` |
 | `import_batch_id` | bigint |  |  | → `import_batches` |

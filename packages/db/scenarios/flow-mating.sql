@@ -59,8 +59,8 @@ INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
 SELECT id,'awaiting','2026-08-20',(SELECT prof FROM w),'not pregnant after all' FROM mt;
 INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
 SELECT id,'pregnant','2026-08-24',(SELECT prof FROM w),'confirmed on recheck' FROM mt;
-INSERT INTO litters (mate_id,litter_code,birth_date,pup_count,created_by)
-SELECT (SELECT id FROM mt),'BCW','2026-08-31',5,(SELECT prof FROM w);
+INSERT INTO litters (mate_id,litter_code,pup_count,created_by)
+SELECT (SELECT id FROM mt),'BCW',5,(SELECT prof FROM w);
 INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
 SELECT id,'delivered','2026-08-31',(SELECT prof FROM w),'5 pups' FROM mt;
 
@@ -91,9 +91,15 @@ INSERT INTO mates (mother_mouse_id,father_mouse_id,created_by)
 SELECT mom,dad,(SELECT prof FROM w) FROM p;
 INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id)
 SELECT max(id),'cohoused','2026-10-01',(SELECT prof FROM w) FROM mates;
-INSERT INTO litters (mate_id,litter_code,birth_date,pup_count,created_by)
-SELECT max(id),'BGX','2026-10-22',4,(SELECT prof FROM w) FROM mates;
-SELECT m.id AS mate, l.litter_code, l.birth_date,
+INSERT INTO litters (mate_id,litter_code,pup_count,created_by)
+SELECT max(id),'BGX',4,(SELECT prof FROM w) FROM mates;
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id)
+SELECT max(id),'delivered','2026-10-22',(SELECT prof FROM w) FROM mates;
+\echo '   출생일은 litters 가 아니라 delivered 로그에서 읽는다:'
+SELECT m.id AS mate, l.litter_code, l.pup_count,
+       (SELECT occurred_at::date FROM mate_status_logs s
+        WHERE s.mate_id=m.id AND s.status='delivered' AND s.deleted_at IS NULL
+        ORDER BY occurred_at DESC, id DESC LIMIT 1) AS birth_date,
        (SELECT status FROM mate_status_logs s WHERE s.mate_id=m.id
         ORDER BY occurred_at DESC, id DESC LIMIT 1) AS status
 FROM mates m LEFT JOIN litters l ON l.mate_id=m.id ORDER BY m.id;

@@ -121,7 +121,7 @@
 <title>litters</title>
 <path fill="#fce7f3" stroke="black" d="M330.12,-134C330.12,-134 296.88,-134 296.88,-134 290.88,-134 284.88,-128 284.88,-122 284.88,-122 284.88,-110 284.88,-110 284.88,-104 290.88,-98 296.88,-98 296.88,-98 330.12,-98 330.12,-98 336.12,-98 342.12,-104 342.12,-110 342.12,-110 342.12,-122 342.12,-122 342.12,-128 336.12,-134 330.12,-134"/>
 <text xml:space="preserve" text-anchor="middle" x="313.5" y="-117.55" font-family="Helvetica,sans-Serif" font-size="11.00">litters</text>
-<text xml:space="preserve" text-anchor="middle" x="313.5" y="-105.55" font-family="Helvetica,sans-Serif" font-size="11.00">(14 cols)</text>
+<text xml:space="preserve" text-anchor="middle" x="313.5" y="-105.55" font-family="Helvetica,sans-Serif" font-size="11.00">(13 cols)</text>
 </g>
 <!-- litters&#45;&gt;mates -->
 <g id="edge3" class="edge">
