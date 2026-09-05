@@ -65,3 +65,8 @@ apps/stock_collector/**/__pycache__/
 apps/stock_collector/**/*.pyc
 scripts/migration/00_env.sh
 scripts/migration/_dumps/
+
+# ERD raster/intermediate output — regenerate with packages/db/scripts/erd.sh.
+# The .svg is committed (text, diffable); .png/.dot are not.
+packages/db/ERD*.png
+packages/db/ERD*.dot
