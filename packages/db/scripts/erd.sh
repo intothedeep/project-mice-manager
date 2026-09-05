@@ -42,7 +42,7 @@ NOISE_DSTS = {'users', 'import_batches'}
 core = len(sys.argv) > 2 and sys.argv[2] == 'core'
 if core:
     fks = [f for f in fks if f[1] not in NOISE_COLS and f[2] not in NOISE_DSTS]
-    drop = {'users', 'import_batches', 'raw_sheet_rows', 'import_errors',
+    drop = {'import_batches', 'raw_sheet_rows', 'import_errors',
             'color_maps', 'audit_logs'}
     tables = {k: v for k, v in tables.items() if k not in drop}
     fks = [f for f in fks if f[0] in tables and f[2] in tables]
@@ -50,15 +50,15 @@ if core:
 # Group by concern so the diagram reads as a story, not a hairball.
 groups = {
   'location':  ['colonies','subcolonies','cages','slots'],
-  'mouse':     ['mice','mouse_lines','litters','litter_code_counter','mouse_genotypes'],
-  'breeding':  ['matings','mouse_events'],
-  'work':      ['tasks','notes'],
-  'history':   ['mouse_moves','mouse_attr_logs','audit_logs'],
+  'breeding':  ['mates','litters'],
+  'mouse':     ['mouse_meta','mice','mouse_lines','mouse_genotypes','mouse_events'],
+  'work':      ['tasks','notes','signals'],
+  'people':    ['users','groups','group_members'],
+  'history':   ['audit_logs'],
   'import':    ['import_batches','raw_sheet_rows','import_errors','color_maps'],
-  'people':    ['users'],
 }
-color = {'location':'#dbeafe','mouse':'#dcfce7','breeding':'#fce7f3',
-         'work':'#fef3c7','history':'#e5e7eb','import':'#ede9fe','people':'#fee2e2'}
+color = {'location':'#dbeafe','breeding':'#fce7f3','mouse':'#dcfce7',
+         'work':'#fef3c7','people':'#fee2e2','history':'#e5e7eb','import':'#ede9fe'}
 placed = {t for g in groups.values() for t in g}
 groups['other'] = [t for t in tables if t not in placed]
 color['other'] = '#ffffff'
