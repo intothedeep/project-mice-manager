@@ -250,81 +250,70 @@ CREATE SEQUENCE litter_code_seq START 1612;
 -- rule: litters.mate_id and mates' parent FKs are attached at the bottom.
 
 -- ---------------------------------------------------------------------------
--- mates — the breeding COUPLE. Creating a mate_id IS the act of pairing.
+-- mates — the breeding CYCLE, VERSIONED-APPEND (2026-09-05, user)
 -- ---------------------------------------------------------------------------
--- ONE ROW PER MATING CYCLE (2026-09-05, user), not one per couple. When a pair
--- mates again, a NEW mates row and a NEW litters row are created; the previous
--- cycle keeps its own row with its own dates. That is what preserves the
--- repeat-cycle history the flat sheet destroys (the negative mating->delivery
--- gap in the R10 analysis).
+-- ONE ROW PER STATE OF ONE CYCLE. Advancing a pairing INSERTs a new row sharing
+-- the same origin_mate_id; nothing is updated, so the whole progression stays.
+-- This retires the separate mate_status_logs table: the version rows ARE the
+-- log, exactly as tasks/notes already work with origin_task_id/origin_note_id.
 --
--- CONSEQUENCE: there is NO unique constraint on the couple. An earlier
--- `mates_couple_key` UNIQUE (mother, father, raw_label) enforced one row per
--- pair and made a second pairing of the same two mice IMPOSSIBLE — verified by
--- deliberate breakage before removing it. Do not re-add it.
+--   id             this physical row (one state)
+--   origin_mate_id the LOGICAL cycle. The first row points at ITSELF.
 --
--- THE PAIRING WORKFLOW (2026-09-05, user). When the professor orders a mating,
--- one parent is MOVED into the other's cage to co-house them, and the pairing
--- then walks these states:
+-- Current state of a cycle:
+--   SELECT DISTINCT ON (origin_mate_id) * FROM mates
+--   WHERE deleted_at IS NULL ORDER BY origin_mate_id, occurred_at DESC, id DESC;
 --
---   pending    합사전     ordered; the two are not yet in one cage
---   cohoused   합사       moved together into one cage
---   awaiting   임신 준비  co-housed, watching for a plug / signs
---   pregnant   임신확인   pregnancy confirmed
---   delivered  출산확인   pups born; occurred_at IS the birth date
+-- Creation idiom for the first row (the self-FK needs the id before commit):
+--   WITH new_id AS (SELECT nextval('mates_id_seq') AS id)
+--   INSERT INTO mates (id, origin_mate_id, ...) SELECT id, id, ... FROM new_id;
 --
--- `status` is the CURRENT state of this couple's ongoing cycle. Past cycles are
--- not overwritten — each one is its own `litters` row with its own dates — so
--- this column answers "what is happening now", not "what has ever happened".
+-- ONE CYCLE PER PAIRING, MANY CYCLES PER COUPLE. A pair that mates again gets a
+-- NEW origin, a new litter, and its own history. There is deliberately NO
+-- unique constraint on (mother, father): an earlier `mates_couple_key` made a
+-- second pairing of the same two mice impossible. Do not re-add it.
 --
--- EVERY TRANSITION IS LOGGED to `audit_logs` (entity='mates', before_json /
--- after_json), which is the standing rule for who-changed-what and is why no
--- status-history table is added here.
---
--- CO-HOUSING IS VERIFIABLE, NOT CONSTRAINED: once cohoused, and still at
--- delivery, both parents' current `mice` rows should share subcolony, cage and
--- slot. That is a cross-row, cross-table condition over version rows, so the
--- SERVICE checks it and explains a mismatch; a trigger could only reject
--- silently. The query lives in packages/db/scenarios/.
+-- STAGES, checked against the real workbook rather than invented:
+--   pending    합사전    ordered, not yet in one cage (app-side only)
+--   cohoused   합사      col J 'Last mating date', filled for 19% of mice
+--   awaiting   임신 준비  the professor's own annotation is a QUESTION —
+--                        'preg?' on 16 rows, 'check Ps daily' on 6
+--   pregnant   임신확인   confirmed
+--   delivered  출산확인   occurred_at IS the birth date
+--   no_pups    무출산     the cycle ended without pups. Structurally required:
+--                        without it a failed cycle sits at 'awaiting' forever.
+--                        Miscarriage is no_pups plus a note.
+CREATE SEQUENCE mates_id_seq;
+
 CREATE TABLE mates (
-    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    -- FKs added at the bottom: mouse_meta does not exist yet.
+    id              BIGINT PRIMARY KEY DEFAULT nextval('mates_id_seq'),
+    origin_mate_id  BIGINT      NOT NULL REFERENCES mates (id),
+    -- FKs added at the bottom: mouse_meta does not exist yet (circular chain
+    -- mates -> mouse_meta -> litters -> mates).
     mother_mouse_id BIGINT,
     father_mouse_id BIGINT,
     -- Byte-preserved mate cell, e.g. 'M4BCW Nf1 f/+;ccEGFP', kept when the
     -- father cannot be resolved to a row.
     mate_raw_label  TEXT,
-    -- NO status column and NO per-stage timestamps here (2026-09-05, user):
-    -- the cycle's progress is APPEND-ONLY in `mate_status_logs`, one row per
-    -- transition. Four timestamps could not record WHO advanced the pairing,
-    -- could not survive a stage being entered twice (pregnancy suspected,
-    -- ruled out, confirmed again — the second write overwrote the first), and
-    -- could not hold a reason. Keeping BOTH would have recreated the
-    -- two-sources-of-truth bug that removed mouse_attr_logs (scenario P3):
-    -- current status is DERIVED from the log, never stored beside it.
-    --
-    -- Predicted from the mating date; a plan rather than an observation, so it
-    -- is a property of the cycle, not a transition.
+    status          TEXT        NOT NULL
+        CHECK (status IN ('pending', 'cohoused', 'awaiting', 'pregnant',
+                          'delivered', 'no_pups')),
+    -- WHEN THE STAGE HAPPENED, not when the row was written. created_at
+    -- defaults to now(), which is TRANSACTION START time, so every row an
+    -- import transaction writes shares it and cannot be ordered — the same trap
+    -- that made mice.effective_at necessary.
+    occurred_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- '~' in the workbook: no copulatory plug seen, so the date is ESTIMATED.
+    is_occurred_at_approx BOOLEAN NOT NULL DEFAULT false,
+    occurred_at_raw TEXT,
+    -- Predicted from the mating date; a plan rather than an observation.
     expected_delivery_on  DATE,
     is_expected_delivery_on_approx BOOLEAN NOT NULL DEFAULT false,
     expected_delivery_on_raw TEXT,
-    -- NO subcolony_id and NO cage_id (2026-09-05, user): both are derivable
-    -- from the parents, so storing them would be a third copy of a fact that
-    -- already lives on mouse_meta and mice.
-    --
-    --   PROGRAMME  = mouse_meta.subcolony_id of either parent. Unambiguous:
-    --     measured on Breeders, all 39 resolvable pairs mate WITHIN one line,
-    --     0 cross the lines, so mother and father never disagree.
-    --
-    --   CAGE AT PAIRING TIME = the parent's `mice` row that was current when
-    --     this mates row was created. Recoverable precisely because `mice` is
-    --     append-style and keeps every version:
-    --       SELECT DISTINCT ON (mouse_meta_id) cage_id FROM mice
-    --       WHERE mouse_meta_id = <parent> AND created_at <= <mates.created_at>
-    --       ORDER BY mouse_meta_id, id DESC;
-    --     A plain cage_id column here would have frozen the cage at pairing and
-    --     then quietly gone stale as the mice moved.
-    created_by      BIGINT      NOT NULL REFERENCES users (id),
+    -- Who advanced the pairing to THIS state, and why it moved — including why
+    -- it moved BACKWARDS (pregnancy suspected, ruled out, confirmed again).
+    actor_id        BIGINT      NOT NULL REFERENCES users (id),
+    note            TEXT,
     import_batch_id BIGINT REFERENCES import_batches (id),
     source_sheet    TEXT,
     source_row      INTEGER,
@@ -333,6 +322,22 @@ CREATE TABLE mates (
     deleted_at      TIMESTAMPTZ
 );
 
+ALTER SEQUENCE mates_id_seq OWNED BY mates.id;
+
+-- Lets `litters` reference ONLY an origin row (composite FK below): a row is
+-- its own origin exactly when id = origin_mate_id.
+ALTER TABLE mates ADD CONSTRAINT mates_id_origin_key UNIQUE (id, origin_mate_id);
+
+-- Head-of-history and full history of one cycle.
+CREATE INDEX mates_origin_idx
+    ON mates (origin_mate_id, occurred_at DESC, id DESC)
+    WHERE deleted_at IS NULL;
+
+-- "What pairings need attention" — the professor's weekend list.
+CREATE INDEX mates_status_idx
+    ON mates (status, occurred_at DESC)
+    WHERE deleted_at IS NULL;
+
 -- A couple's breeding history, newest first.
 CREATE INDEX mates_couple_idx
     ON mates (mother_mouse_id, id DESC)
@@ -340,65 +345,6 @@ CREATE INDEX mates_couple_idx
 
 CREATE TRIGGER mates_set_updated_at
     BEFORE UPDATE ON mates
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
--- ---------------------------------------------------------------------------
--- mate_status_logs — the pairing's progress, APPEND-ONLY.
--- ---------------------------------------------------------------------------
--- One row per transition, never an update. Current status is the newest row:
---   SELECT DISTINCT ON (mate_id) status FROM mate_status_logs
---   WHERE deleted_at IS NULL ORDER BY mate_id, occurred_at DESC, id DESC;
---
--- Stages, checked against the real workbook rather than invented:
---   pending    합사전    ordered, not yet in one cage (app-side only)
---   cohoused   합사      col J 'Last mating date', filled for 19% of mice
---   awaiting   임신 준비  the professor's own annotation is a QUESTION —
---                        'preg?' on 16 rows, 'check Ps daily' on 6. Pregnancy
---                        tracking in this lab is mostly asking, not asserting.
---   pregnant   임신확인   confirmed
---   delivered  출산확인   'new pups' / 'more pups'; occurred_at IS the birth date
---   no_pups    무출산     THE CYCLE ENDED WITHOUT PUPS. Added because without it
---                        a failed cycle sits at 'awaiting' forever with nothing
---                        to close it. The workbook says 'no pups' and
---                        'miscarriage' once each — thin evidence, but the state
---                        is structurally required: every cycle must be able to
---                        end. Miscarriage is recorded as no_pups + a note.
---
--- occurred_at is WHEN THE STAGE HAPPENED, not when the row was written — the
--- same distinction as mice.effective_at, and for the same reason: created_at
--- defaults to now(), which is TRANSACTION START time, so rows written by one
--- import transaction all share it and cannot be ordered.
-CREATE TABLE mate_status_logs (
-    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    mate_id         BIGINT      NOT NULL REFERENCES mates (id),
-    status          TEXT        NOT NULL
-        CHECK (status IN ('pending', 'cohoused', 'awaiting', 'pregnant',
-                          'delivered', 'no_pups')),
-    occurred_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    -- '~' in the workbook: no copulatory plug seen, so the date is ESTIMATED.
-    is_occurred_at_approx BOOLEAN NOT NULL DEFAULT false,
-    occurred_at_raw TEXT,
-    actor_id        BIGINT      NOT NULL REFERENCES users (id),
-    -- Why the pairing moved, including why it moved BACKWARDS.
-    note            TEXT,
-    import_batch_id BIGINT REFERENCES import_batches (id),
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at      TIMESTAMPTZ
-);
-
--- Serves the head query above, and the full history of one pairing.
-CREATE INDEX mate_status_head_idx
-    ON mate_status_logs (mate_id, occurred_at DESC, id DESC)
-    WHERE deleted_at IS NULL;
-
--- "What pairings need attention" — the professor's weekend list.
-CREATE INDEX mate_status_status_idx
-    ON mate_status_logs (status, occurred_at DESC)
-    WHERE deleted_at IS NULL;
-
-CREATE TRIGGER mate_status_logs_set_updated_at
-    BEFORE UPDATE ON mate_status_logs
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ---------------------------------------------------------------------------
@@ -639,9 +585,14 @@ ALTER TABLE mates
     ADD CONSTRAINT mates_father_mouse_id_fkey
         FOREIGN KEY (father_mouse_id) REFERENCES mouse_meta (id);
 
+-- litters points at the CYCLE, which means the ORIGIN row — never one of its
+-- later state rows. Referencing (mate_id, mate_id) against
+-- (id, origin_mate_id) admits only rows where id = origin_mate_id, i.e. the
+-- first row of the cycle. A plain FK to mates(id) would have accepted any
+-- version row and quietly tied the litter to a single transient state.
 ALTER TABLE litters
-    ADD CONSTRAINT litters_mate_id_fkey
-        FOREIGN KEY (mate_id) REFERENCES mates (id);
+    ADD CONSTRAINT litters_mate_is_origin_fkey
+        FOREIGN KEY (mate_id, mate_id) REFERENCES mates (id, origin_mate_id);
 
 -- Denormalization guard for mouse_meta.litter_code (R15). Same shape as the
 -- cage/slot guard below: the copy is pinned to its source row, so it cannot be

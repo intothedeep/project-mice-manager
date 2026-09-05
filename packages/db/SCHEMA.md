@@ -184,41 +184,24 @@ CREATE UNIQUE INDEX litters_pkey ON public.litters USING btree (id)
 CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (deleted_at IS NULL)
 ```
 
-## `mate_status_logs`
-
-| column | type | null | default | references |
-|---|---|---|---|---|
-| `id` | bigint | NOT NULL |  |  |
-| `mate_id` | bigint | NOT NULL |  | → `mates` |
-| `status` | text | NOT NULL |  |  |
-| `occurred_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `is_occurred_at_approx` | boolean | NOT NULL | `false` |  |
-| `occurred_at_raw` | text |  |  |  |
-| `actor_id` | bigint | NOT NULL |  | → `users` |
-| `note` | text |  |  |  |
-| `import_batch_id` | bigint |  |  | → `import_batches` |
-| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `deleted_at` | timestamp with time zone |  |  |  |
-
-```sql
-CREATE INDEX mate_status_head_idx ON public.mate_status_logs USING btree (mate_id, occurred_at DESC, id DESC) WHERE (deleted_at IS NULL)
-CREATE UNIQUE INDEX mate_status_logs_pkey ON public.mate_status_logs USING btree (id)
-CREATE INDEX mate_status_status_idx ON public.mate_status_logs USING btree (status, occurred_at DESC) WHERE (deleted_at IS NULL)
-```
-
 ## `mates`
 
 | column | type | null | default | references |
 |---|---|---|---|---|
-| `id` | bigint | NOT NULL |  |  |
+| `id` | bigint | NOT NULL | `nextval('mates_id_seq'::regclass)` |  |
+| `origin_mate_id` | bigint | NOT NULL |  | → `mates` |
 | `mother_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `father_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `mate_raw_label` | text |  |  |  |
+| `status` | text | NOT NULL |  |  |
+| `occurred_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `is_occurred_at_approx` | boolean | NOT NULL | `false` |  |
+| `occurred_at_raw` | text |  |  |  |
 | `expected_delivery_on` | date |  |  |  |
 | `is_expected_delivery_on_approx` | boolean | NOT NULL | `false` |  |
 | `expected_delivery_on_raw` | text |  |  |  |
-| `created_by` | bigint | NOT NULL |  | → `users` |
+| `actor_id` | bigint | NOT NULL |  | → `users` |
+| `note` | text |  |  |  |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |
 | `source_row` | integer |  |  |  |
@@ -228,7 +211,10 @@ CREATE INDEX mate_status_status_idx ON public.mate_status_logs USING btree (stat
 
 ```sql
 CREATE INDEX mates_couple_idx ON public.mates USING btree (mother_mouse_id, id DESC) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX mates_id_origin_key ON public.mates USING btree (id, origin_mate_id)
+CREATE INDEX mates_origin_idx ON public.mates USING btree (origin_mate_id, occurred_at DESC, id DESC) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
+CREATE INDEX mates_status_idx ON public.mates USING btree (status, occurred_at DESC) WHERE (deleted_at IS NULL)
 ```
 
 ## `mice`
@@ -237,7 +223,7 @@ CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
 | `mouse_meta_id` | bigint | NOT NULL |  | → `mouse_meta` |
-| `cage_id` | bigint |  |  | → `slots` |
+| `cage_id` | bigint |  |  | → `cages` |
 | `slot_id` | bigint |  |  | → `slots` |
 | `sex` | text |  |  |  |
 | `is_alive` | boolean | NOT NULL | `true` |  |
