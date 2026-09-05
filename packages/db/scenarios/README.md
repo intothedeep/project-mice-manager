@@ -89,9 +89,13 @@ JOIN LATERAL (SELECT DISTINCT ON (mouse_meta_id) cage_id, slot_id FROM mice
 WHERE m.id = $1;
 ```
 
+Each stage has its own timestamp (`cohoused_at`, `awaiting_at`, `pregnant_at`,
+`delivered_at`) and `status` is GENERATED from them, so the two cannot diverge.
+
 Verified: both parents share one cage/slot/subcolony after co-housing AND still
 at delivery; all five transitions present in `audit_logs` with the right actor;
-an invalid status rejected.
+writing `status` directly REJECTED (generated column); clearing `delivered_at`
+walking the status back to `pregnant`.
 
 ## Problems found
 

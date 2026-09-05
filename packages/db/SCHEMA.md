@@ -199,7 +199,13 @@ CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (d
 | `mother_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `father_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `mate_raw_label` | text |  |  |  |
-| `status` | text | NOT NULL | `'pending'::text` |  |
+| `cohoused_at` | timestamp with time zone |  |  |  |
+| `awaiting_at` | timestamp with time zone |  |  |  |
+| `pregnant_at` | timestamp with time zone |  |  |  |
+| `delivered_at` | timestamp with time zone |  |  |  |
+| `status` | text |  |  |  |
+| `CASE` |  |  |  |  |
+| `    WHEN (delivered_at IS NOT NULL` |  |  |  |  |
 | `created_by` | bigint | NOT NULL |  | → `users` |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |

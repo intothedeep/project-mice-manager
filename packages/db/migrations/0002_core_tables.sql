@@ -288,8 +288,22 @@ CREATE TABLE mates (
     -- Byte-preserved mate cell, e.g. 'M4BCW Nf1 f/+;ccEGFP', kept when the
     -- father cannot be resolved to a row.
     mate_raw_label  TEXT,
-    status          TEXT        NOT NULL DEFAULT 'pending'
-        CHECK (status IN ('pending', 'cohoused', 'awaiting', 'pregnant', 'delivered')),
+    -- One timestamp per stage. NULL = not reached yet.
+    cohoused_at     TIMESTAMPTZ,   -- 합사     moved into one cage
+    awaiting_at     TIMESTAMPTZ,   -- 임신 준비 watching for a plug / signs
+    pregnant_at     TIMESTAMPTZ,   -- 임신확인  pregnancy confirmed
+    delivered_at    TIMESTAMPTZ,   -- 출산확인  delivery confirmed
+    -- GENERATED, not stored independently: with `status` writable alongside the
+    -- four timestamps, a row could claim 'pregnant' while delivered_at was set.
+    -- Deriving it means the two CANNOT disagree — the same reasoning as the
+    -- composite FKs elsewhere in this schema, applied within one row.
+    -- To advance a pairing you set a TIMESTAMP; `status` follows.
+    status          TEXT GENERATED ALWAYS AS (
+        CASE WHEN delivered_at IS NOT NULL THEN 'delivered'
+             WHEN pregnant_at  IS NOT NULL THEN 'pregnant'
+             WHEN awaiting_at  IS NOT NULL THEN 'awaiting'
+             WHEN cohoused_at  IS NOT NULL THEN 'cohoused'
+             ELSE 'pending' END) STORED,
     -- NO subcolony_id and NO cage_id (2026-09-05, user): both are derivable
     -- from the parents, so storing them would be a third copy of a fact that
     -- already lives on mouse_meta and mice.
