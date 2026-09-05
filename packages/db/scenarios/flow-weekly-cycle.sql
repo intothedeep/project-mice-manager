@@ -1,98 +1,103 @@
+-- Professor/staff weekly cycle against the CURRENT schema.
+-- Every step that once failed (scenarios P1-P7) is re-checked here.
+-- Ends in ROLLBACK.
 \set ON_ERROR_STOP off
 BEGIN;
--- ── 사전: 사용자/공간 ──────────────────────────────────────────
-INSERT INTO users (display_name, role) VALUES ('Dr.Lopez','professor'),('staff1','staff'),('etl','admin');
+INSERT INTO users (display_name,role,type) VALUES ('Dr.Lopez','professor','user'),('staff1','staff','user');
+INSERT INTO users (display_name,type) VALUES ('Weekday staff','group');
+INSERT INTO groups (user_id) SELECT id FROM users WHERE type='group';
+INSERT INTO group_members (group_id,user_id)
+SELECT (SELECT id FROM groups),(SELECT id FROM users WHERE display_name='staff1');
 CREATE TEMP TABLE w AS SELECT
   (SELECT id FROM users WHERE role='professor') prof,
-  (SELECT id FROM users WHERE role='staff') staff,
-  (SELECT id FROM users WHERE role='admin') etl;
-INSERT INTO colonies (name) VALUES ('MouseRoom');
-INSERT INTO subcolonies (colony_id, name) SELECT id,'Breeders' FROM colonies;
-INSERT INTO cages (subcolony_id, cage_number) SELECT id,v FROM subcolonies,(VALUES ('2475'),('2477'),('2482')) t(v);
+  (SELECT id FROM users WHERE display_name='staff1') staff,
+  (SELECT id FROM users WHERE type='group') grp;
+INSERT INTO colonies (name) VALUES ('MouseRoomSheet');
+INSERT INTO subcolonies (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
+INSERT INTO cages (subcolony_id,cage_number) SELECT id,v FROM subcolonies,(VALUES ('2475'),('2482')) t(v);
 INSERT INTO slots (cage_id,label) SELECT id,'A8' FROM cages;
 
-\echo '#### S1 부모 2마리 import (genotype 포함) ####'
-INSERT INTO mouse_meta (sex,dob,raw_mouse_id,raw_genotype) VALUES
- ('F','2025-11-24','F1BAL','Nf1 f/+;ccEGFP'),('M','2025-11-24','M5BAL','NG2Cre(hmo);Nf1 +/+');
-INSERT INTO mice (mouse_meta_id,cage_id,slot_id,status,actor_id,change_note)
-SELECT mm.id,(SELECT min(id) FROM cages),(SELECT min(id) FROM slots),'alive',(SELECT etl FROM w),'import'
-FROM mouse_meta mm;
-INSERT INTO mouse_genotypes (mouse_id,order_index,marker_text)
-SELECT id,1,'Nf1 f/+' FROM mouse_meta WHERE sex='F';
+\echo '#### S1 import: 부모 2마리 (litter 포함 — 외부 쥐도 litter 를 받는다) ####'
+INSERT INTO litters (litter_code,is_from_outside,created_by)
+SELECT v,true,(SELECT prof FROM w) FROM (VALUES ('BJA'),('BJB')) t(v);
+INSERT INTO mouse_meta (litter_id,litter_code,subcolony_id,pup_number,dob,raw_mouse_id)
+SELECT id,litter_code,(SELECT id FROM subcolonies),1,'2025-11-24',litter_code FROM litters;
+INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,actor_id,reason,effective_at)
+SELECT id,(SELECT min(id) FROM cages),(SELECT min(id) FROM slots),'F',(SELECT prof FROM w),'import','2026-08-01'
+FROM mouse_meta;
+INSERT INTO mouse_genotypes (mouse_id,order_index,marker_text) SELECT id,1,'Nf1 f/+' FROM mouse_meta LIMIT 1;
 \echo '   -> ok'
 
-\echo '#### S2 교수: 교배 지시 (mate 생성 + task) ####'
-INSERT INTO mates (mother_mouse_id,father_mouse_id,created_by)
-SELECT (SELECT id FROM mouse_meta WHERE sex='F'),(SELECT id FROM mouse_meta WHERE sex='M'),(SELECT prof FROM w);
-INSERT INTO litters (mate_id,litter_code,mated_on,expected_delivery_on,created_by)
-SELECT (SELECT max(id) FROM mates),'BIZ','2026-08-10','2026-08-31',(SELECT prof FROM w);
+\echo '#### P4 같은 (litter, pup) 재삽입 -> 거부 ####'
+SAVEPOINT p4;
+INSERT INTO mouse_meta (litter_id,litter_code,pup_number)
+SELECT id,litter_code,1 FROM litters LIMIT 1;
+ROLLBACK TO p4;
+
+\echo '#### P5 배치 전 쥐도 상태행을 갖는다 (cage/slot NULL) ####'
+INSERT INTO litters (litter_code,is_from_outside,created_by) VALUES ('BJC',true,(SELECT prof FROM w));
+INSERT INTO mouse_meta (litter_id,litter_code,pup_number) SELECT id,'BJC',1 FROM litters WHERE litter_code='BJC';
+INSERT INTO mice (mouse_meta_id,sex,actor_id,reason)
+SELECT id,'U',(SELECT prof FROM w),'created' FROM mouse_meta WHERE litter_code='BJC';
+SELECT mm.litter_code, m.cage_id, m.is_alive, m.transit_status
+FROM mice m JOIN mouse_meta mm ON mm.id=m.mouse_meta_id WHERE mm.litter_code='BJC';
+
+\echo '#### P1 litter 메모 / 방 메모 (쥐 없이) ####'
+WITH n AS (SELECT nextval('notes_id_seq') id)
+INSERT INTO notes (id,origin_note_id,litter_id,note_type,meta,signal_id,body,actor_id)
+SELECT id,id,(SELECT min(id) FROM litters),'no_pups','{"checked_on":"2026-08-24"}',
+       (SELECT id FROM signals WHERE type='done'),'no pups',(SELECT prof FROM w) FROM n;
+WITH n AS (SELECT nextval('notes_id_seq') id)
+INSERT INTO notes (id,origin_note_id,note_type,signal_id,body,actor_id)
+SELECT id,id,'room_task',(SELECT id FROM signals WHERE type='instruction'),
+       '260818 CHECK FOOD',(SELECT prof FROM w) FROM n;
+SELECT n.note_type,n.body,s.color,n.subject_mouse_id,n.litter_id
+FROM notes n JOIN signals s ON s.id=n.signal_id ORDER BY n.id;
+
+\echo '#### P2 배정: 사람과 그룹이 같은 컬럼으로 ####'
 WITH n AS (SELECT nextval('tasks_id_seq') id)
-INSERT INTO tasks (id,origin_task_id,subject_mouse_id,task_type,due_date,status,actor_role,created_by)
-SELECT id,id,(SELECT id FROM mouse_meta WHERE sex='F'),'check_plug','2026-08-11','open','professor',(SELECT prof FROM w) FROM n;
-\echo '   -> ok'
-
-\echo '#### S3 staff: 임신 확인 메모 (빨강=지시) ####'
-WITH n AS (SELECT nextval('notes_id_seq') id)
-INSERT INTO notes (id,origin_note_id,subject_mouse_id,litter_id,signal,body,actor_id)
-SELECT id,id,(SELECT id FROM mouse_meta WHERE sex='F'),(SELECT max(id) FROM litters),'instruction','260824 preg?',(SELECT prof FROM w) FROM n;
-\echo '   -> ok'
-
-\echo '#### S3b [문제탐지] 쥐 없이 litter 에만 달리는 메모 "no pups" ####'
-SAVEPOINT s3b;
-WITH n AS (SELECT nextval('notes_id_seq') id)
-INSERT INTO notes (id,origin_note_id,litter_id,signal,body,actor_id)
-SELECT id,id,(SELECT max(id) FROM litters),'done','no pups',(SELECT prof FROM w) FROM n;
-ROLLBACK TO s3b;
-
-\echo '#### S4 출산: litter 확정 + 새끼 5마리 ####'
-UPDATE litters SET birth_date='2026-08-31', pup_count=5 WHERE litter_code='BIZ';
-INSERT INTO mouse_meta (litter_id,litter_code,pup_number,sex,dob)
-SELECT (SELECT id FROM litters WHERE litter_code='BIZ'),'BIZ',n,'U','2026-08-31'
-FROM generate_series(1,5) n;
-\echo '   -> ok (신생아 sex=U)'
-
-\echo '#### S5 [문제탐지] 이유 후 성별 판별: U -> M 으로 정정 ####'
-SAVEPOINT s5;
-UPDATE mouse_meta SET sex='M' WHERE litter_code='BIZ' AND pup_number=1;
-SELECT sex||pup_number||litter_code AS label FROM mouse_meta WHERE litter_code='BIZ' AND pup_number=1;
-RELEASE SAVEPOINT s5;
-
-\echo '#### S6 이유: 새 케이지로 이동 (move + mice append) ####'
-INSERT INTO mouse_moves (mouse_id,from_cage_id,to_cage_id,actor_id,reason,idempotency_key)
-SELECT id,(SELECT min(id) FROM cages),(SELECT max(id) FROM cages),(SELECT staff FROM w),'wean',gen_random_uuid()
-FROM mouse_meta WHERE litter_code='BIZ' AND pup_number<=3;
-INSERT INTO mice (mouse_meta_id,cage_id,status,actor_id,change_note)
-SELECT id,(SELECT max(id) FROM cages),'alive',(SELECT staff FROM w),'weaned'
-FROM mouse_meta WHERE litter_code='BIZ' AND pup_number<=3;
-\echo '   -> ok'
-
-\echo '#### S7 조직채취/유전자형 날짜 ####'
-INSERT INTO mouse_events (mouse_id,kind,occurred_on,raw_value)
-SELECT id,'tissue_collection','2026-09-10','260910' FROM mouse_meta WHERE litter_code='BIZ' AND pup_number=1;
-\echo '   -> ok'
+INSERT INTO tasks (id,origin_task_id,task_type,status,actor_role,created_by,assigned_to,direction)
+SELECT id,id,'wean','open','professor',(SELECT prof FROM w),(SELECT grp FROM w),
+       '{"target_cage":"2482","count":3}' FROM n;
+WITH n AS (SELECT nextval('tasks_id_seq') id)
+INSERT INTO tasks (id,origin_task_id,task_type,status,actor_role,created_by,assigned_to)
+SELECT id,id,'genotype','open','professor',(SELECT prof FROM w),(SELECT staff FROM w) FROM n;
+SELECT t.task_type,u.display_name AS assigned_to,u.type FROM tasks t JOIN users u ON u.id=t.assigned_to;
+\echo '   내 태스크 = 직접 배정 + 소속 그룹'
+SELECT task_type FROM tasks t WHERE t.assigned_to=(SELECT staff FROM w)
+   OR t.assigned_to IN (SELECT g.user_id FROM groups g JOIN group_members gm ON gm.group_id=g.id
+                        WHERE gm.user_id=(SELECT staff FROM w));
 
 \echo '#### S8 task 수명주기 open -> done -> verified ####'
-INSERT INTO tasks (origin_task_id,subject_mouse_id,task_type,status,from_status,actor_role,created_by,done_by,done_at)
-SELECT origin_task_id,subject_mouse_id,task_type,'done','open','staff',created_by,(SELECT staff FROM w),now()
-FROM tasks WHERE from_status IS NULL;
-INSERT INTO tasks (origin_task_id,subject_mouse_id,task_type,status,from_status,actor_role,created_by,verified_by,verified_at)
-SELECT origin_task_id,subject_mouse_id,task_type,'verified','done','professor',created_by,(SELECT prof FROM w),now()
+INSERT INTO tasks (origin_task_id,task_type,status,from_status,actor_role,created_by,done_by,done_at)
+SELECT origin_task_id,task_type,'done','open','staff',created_by,(SELECT staff FROM w),now()
+FROM tasks WHERE from_status IS NULL AND task_type='wean';
+INSERT INTO tasks (origin_task_id,task_type,status,from_status,actor_role,created_by,verified_by,verified_at)
+SELECT origin_task_id,task_type,'verified','done','professor',created_by,(SELECT prof FROM w),now()
 FROM tasks WHERE status='done';
 SELECT DISTINCT ON (origin_task_id) origin_task_id,status FROM tasks ORDER BY origin_task_id,id DESC;
 
-\echo '#### S9 [문제탐지] task 를 누구에게 배정하는가 ####'
-SAVEPOINT s9;
-UPDATE tasks SET assigned_to = 1 WHERE status='open';
-ROLLBACK TO s9;
+\echo '#### P6/P7 이동 + 성별 정정 = mice 행 추가 (mouse_moves 없음) ####'
+INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,actor_id,reason,transit_status,effective_at,idempotency_key)
+SELECT mouse_meta_id,(SELECT max(id) FROM cages),(SELECT max(id) FROM slots),'M',
+       (SELECT staff FROM w),'weaned + sexed','verified','2026-09-01',gen_random_uuid()
+FROM (SELECT DISTINCT ON (mouse_meta_id) mouse_meta_id FROM mice ORDER BY mouse_meta_id,id DESC) x LIMIT 1;
+SELECT m.id,m.cage_id,m.sex,m.reason,m.effective_at::date
+FROM mice m WHERE m.mouse_meta_id=(SELECT min(id) FROM mouse_meta) ORDER BY m.id;
 
-\echo '#### S10 케이지 격자 뷰: 케이지별 현재 마우스 ####'
-SELECT c.cage_number, count(*) AS mice
-FROM (SELECT DISTINCT ON (mouse_meta_id) * FROM mice WHERE deleted_at IS NULL ORDER BY mouse_meta_id,id DESC) cur
-JOIN cages c ON c.id=cur.cage_id GROUP BY 1 ORDER BY 1;
+\echo '#### P3 죽음: is_alive (살아있는데 사인 기록 -> 거부) ####'
+SAVEPOINT p3;
+INSERT INTO mice (mouse_meta_id,actor_id,is_alive,death_reason)
+SELECT min(id),(SELECT staff FROM w),true,'sac' FROM mouse_meta;
+ROLLBACK TO p3;
+INSERT INTO mice (mouse_meta_id,actor_id,is_alive,death_reason,reason)
+SELECT min(id),(SELECT staff FROM w),false,'sac','sacrificed' FROM mouse_meta;
+SELECT DISTINCT ON (mouse_meta_id) is_alive,death_reason FROM mice
+WHERE mouse_meta_id=(SELECT min(id) FROM mouse_meta) ORDER BY mouse_meta_id,id DESC;
 
-\echo '#### S11 [문제탐지] 상태가 두 곳에: mice.status vs mouse_attr_logs ####'
-INSERT INTO mouse_attr_logs (mouse_id,field,value,actor_id)
-SELECT id,'status','dead',(SELECT staff FROM w) FROM mouse_meta WHERE litter_code='BIZ' AND pup_number=5;
-SELECT 'mice.status' src, count(*) FROM (SELECT DISTINCT ON (mouse_meta_id) * FROM mice ORDER BY mouse_meta_id,id DESC) x WHERE status='dead'
-UNION ALL SELECT 'attr_logs', count(*) FROM mouse_attr_logs WHERE field='status' AND value='dead';
+\echo '#### S10 케이지 격자 (빈 케이지 포함) ####'
+SELECT c.cage_number,count(cur.mouse_meta_id) AS mice
+FROM cages c LEFT JOIN (SELECT DISTINCT ON (mouse_meta_id) * FROM mice
+  WHERE deleted_at IS NULL ORDER BY mouse_meta_id,id DESC) cur ON cur.cage_id=c.id
+GROUP BY 1 ORDER BY 1;
 ROLLBACK;
