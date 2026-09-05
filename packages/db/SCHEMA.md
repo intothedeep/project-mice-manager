@@ -102,14 +102,16 @@ CREATE UNIQUE INDEX group_members_pkey ON public.group_members USING btree (id)
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `name` | text | NOT NULL |  |  |
+| `user_id` | bigint | NOT NULL |  | → `users` |
+| `user_type` | text | NOT NULL | `'group'::text` | → `users` |
+| `description` | text |  |  |  |
 | `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
 | `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
 | `deleted_at` | timestamp with time zone |  |  |  |
 
 ```sql
-CREATE UNIQUE INDEX groups_name_key ON public.groups USING btree (name) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id)
+CREATE UNIQUE INDEX groups_user_key ON public.groups USING btree (user_id) WHERE (deleted_at IS NULL)
 ```
 
 ## `import_batches`
@@ -223,7 +225,7 @@ CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
 | `is_alive` | boolean | NOT NULL | `true` |  |
 | `death_reason` | text |  |  |  |
 | `attention` | text |  |  |  |
-| `in_transit` | text | NOT NULL | `'checked'::text` |  |
+| `transit_status` | text | NOT NULL | `'verified'::text` |  |
 | `reason` | text |  |  |  |
 | `idempotency_key` | uuid |  |  |  |
 | `actor_id` | bigint | NOT NULL |  | → `users` |
@@ -441,13 +443,11 @@ CREATE UNIQUE INDEX subcolonies_pkey ON public.subcolonies USING btree (id)
 | `verified_at` | timestamp with time zone |  |  |  |
 | `deleted_at` | timestamp with time zone |  |  |  |
 | `litter_id` | bigint |  |  | → `litters` |
-| `assigned_user_id` | bigint |  |  | → `users` |
-| `assigned_group_id` | bigint |  |  | → `groups` |
+| `assigned_to` | bigint |  |  | → `users` |
 | `direction` | jsonb | NOT NULL | `'{}'::jsonb` |  |
 
 ```sql
-CREATE INDEX tasks_assigned_group_idx ON public.tasks USING btree (assigned_group_id, status) WHERE ((assigned_group_id IS NOT NULL) AND (deleted_at IS NULL))
-CREATE INDEX tasks_assigned_user_idx ON public.tasks USING btree (assigned_user_id, status) WHERE ((assigned_user_id IS NOT NULL) AND (deleted_at IS NULL))
+CREATE INDEX tasks_assigned_to_idx ON public.tasks USING btree (assigned_to, status) WHERE ((assigned_to IS NOT NULL) AND (deleted_at IS NULL))
 CREATE INDEX tasks_litter_idx ON public.tasks USING btree (litter_id) WHERE ((litter_id IS NOT NULL) AND (deleted_at IS NULL))
 CREATE INDEX tasks_origin_idx ON public.tasks USING btree (origin_task_id, id DESC)
 CREATE UNIQUE INDEX tasks_pkey ON public.tasks USING btree (id)
@@ -463,12 +463,14 @@ CREATE INDEX tasks_upcoming_idx ON public.tasks USING btree (status, due_date) W
 | `clerk_user_id` | text |  |  |  |
 | `display_name` | text | NOT NULL |  |  |
 | `role` | text | NOT NULL | `'staff'::text` |  |
+| `type` | text | NOT NULL | `'user'::text` |  |
 | `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
 | `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
 | `deleted_at` | timestamp with time zone |  |  |  |
 
 ```sql
 CREATE UNIQUE INDEX users_clerk_user_id_key ON public.users USING btree (clerk_user_id)
+CREATE UNIQUE INDEX users_id_type_key ON public.users USING btree (id, type)
 CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)
 ```
 

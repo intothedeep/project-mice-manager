@@ -20,25 +20,20 @@ CREATE INDEX tasks_litter_idx
 -- (scenario P2) — in a product whose core is a ticket bin the professor fills
 -- for staff to pick up.
 --
--- TWO columns, not one, because the `assignables` view cannot be an FK target.
--- The view is only the UI picker; integrity lives on these FKs.
+-- ONE column: a group IS a users row (type='group'), so a person and a team are
+-- the same kind of target. This replaced an assigned_user_id/assigned_group_id
+-- pair plus a CHECK plus a union view — all of which existed only because the
+-- two were modelled as different things.
+-- NULL is allowed: the professor drops work into the bin before deciding who
+-- takes it.
 ALTER TABLE tasks
-    ADD COLUMN assigned_user_id  BIGINT REFERENCES users (id),
-    ADD COLUMN assigned_group_id BIGINT REFERENCES groups (id),
-    -- A task goes to one person OR one team, never both. Unassigned is allowed:
-    -- the professor drops work into the bin before deciding who takes it.
-    ADD CONSTRAINT tasks_one_assignee
-        CHECK (assigned_user_id IS NULL OR assigned_group_id IS NULL),
+    ADD COLUMN assigned_to BIGINT REFERENCES users (id),
     -- Per-task-type instructions, e.g. {"target_cage":"2482","count":3}.
     -- VALUES ONLY — entity references belong in FK columns above, never here,
     -- or they lose referential integrity.
     ADD COLUMN direction JSONB NOT NULL DEFAULT '{}'::jsonb;
 
--- "My open tasks" and "my team's open tasks".
-CREATE INDEX tasks_assigned_user_idx
-    ON tasks (assigned_user_id, status)
-    WHERE assigned_user_id IS NOT NULL AND deleted_at IS NULL;
-
-CREATE INDEX tasks_assigned_group_idx
-    ON tasks (assigned_group_id, status)
-    WHERE assigned_group_id IS NOT NULL AND deleted_at IS NULL;
+-- "My open tasks" — and, via group_members, "my team's open tasks".
+CREATE INDEX tasks_assigned_to_idx
+    ON tasks (assigned_to, status)
+    WHERE assigned_to IS NOT NULL AND deleted_at IS NULL;

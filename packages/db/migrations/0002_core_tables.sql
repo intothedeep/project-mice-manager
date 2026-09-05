@@ -22,26 +22,44 @@ CREATE TABLE users (
     -- said 'director' for the same person.
     role          TEXT        NOT NULL DEFAULT 'staff'
         CHECK (role IN ('admin', 'professor', 'staff')),
+    -- A GROUP IS A USER (2026-09-05, user). Teams live in this table too, so
+    -- anything assignable is one row here and `tasks` needs exactly ONE
+    -- assignment FK instead of a user column, a group column and a CHECK.
+    -- Group-only metadata hangs off `groups`, keyed by this row.
+    type          TEXT        NOT NULL DEFAULT 'user'
+        CHECK (type IN ('user', 'group')),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at    TIMESTAMPTZ
 );
 
+-- Lets `groups` pin itself to a users row that is actually of type 'group'
+-- (composite FK below) — the same device used for cage/slot and litter_code.
+ALTER TABLE users ADD CONSTRAINT users_id_type_key UNIQUE (id, type);
+
 CREATE TRIGGER users_set_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- Groups let a task be assigned to a TEAM rather than one person
--- (2026-09-05, user).
+-- GROUP METADATA ONLY. The group's identity, name and assignability live on
+-- its `users` row (type = 'group'); this table carries what is true of groups
+-- and not of people.
 CREATE TABLE groups (
-    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name       TEXT        NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMPTZ
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id     BIGINT      NOT NULL,
+    -- Constant, existing only to complete the composite FK: it pins user_id to
+    -- a users row whose type really is 'group', so a person cannot be given
+    -- group metadata.
+    user_type   TEXT        NOT NULL DEFAULT 'group'
+        CHECK (user_type = 'group'),
+    description TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at  TIMESTAMPTZ,
+    FOREIGN KEY (user_id, user_type) REFERENCES users (id, type)
 );
 
-CREATE UNIQUE INDEX groups_name_key ON groups (name) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX groups_user_key ON groups (user_id) WHERE deleted_at IS NULL;
 
 CREATE TRIGGER groups_set_updated_at
     BEFORE UPDATE ON groups
@@ -64,16 +82,9 @@ CREATE TRIGGER group_members_set_updated_at
     BEFORE UPDATE ON group_members
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- ONE picker list for the UI: people and teams side by side. This is a VIEW on
--- purpose — a view cannot be the target of a foreign key, so `tasks` keeps two
--- real FK columns and this only feeds the chooser.
-CREATE VIEW assignables AS
-SELECT 'user:' || id AS key, id AS user_id, NULL::BIGINT AS group_id,
-       display_name AS label, role
-FROM users WHERE deleted_at IS NULL
-UNION ALL
-SELECT 'group:' || id, NULL, id, name, NULL
-FROM groups WHERE deleted_at IS NULL;
+-- No `assignables` view any more: with groups living in `users`, the picker is
+-- simply `SELECT id, display_name, type, role FROM users WHERE deleted_at IS
+-- NULL`, and assignment is one real FK instead of a union of two.
 
 -- Cell signals were an ENUM ('done'|'instruction'|'plan'); promoted to a TABLE
 -- 2026-09-05 (user) so the professor can add a signal without a migration, and
@@ -427,11 +438,14 @@ CREATE TABLE mice (
         CHECK (death_reason IS NULL OR is_alive = false),
     attention       TEXT,
     -- Transfer progress for the drag-drop move flow, replacing mouse_moves:
-    --   init    — move requested, mouse has not physically moved
-    --   moved   — physically moved
-    --   checked — confirmed at the destination
-    in_transit      TEXT        NOT NULL DEFAULT 'checked'
-        CHECK (in_transit IN ('init', 'moved', 'checked')),
+    --   waiting  — a transfer is needed, no destination chosen yet
+    --   issued   — requested to a specific cage
+    --   moved    — physically moved
+    --   verified — confirmed by a professor or manager
+    -- DEFAULT 'verified' is the RESTING state: a mouse sitting where it belongs
+    -- is not mid-transfer. Import lands rows here directly.
+    transit_status  TEXT        NOT NULL DEFAULT 'verified'
+        CHECK (transit_status IN ('waiting', 'issued', 'moved', 'verified')),
     -- Why this version exists ('wean', 'import', 'sac'). Was mouse_moves.reason.
     reason          TEXT,
     -- Was mouse_moves.idempotency_key: lets a retried write be recognised

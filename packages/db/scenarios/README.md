@@ -60,11 +60,11 @@ change exists — deleting them invites the same design back.
 | Problem | Fix | Re-verified |
 |---|---|---|
 | P1 litter/room notes | `subject_mouse_id` nullable; `note_type` + `meta` JSONB; `signals` table | 'no pups' on a litter, 'CHECK FOOD' with no subject, both render their colour |
-| P2 no assignee | `groups` + `group_members` + `tasks.assigned_user_id/group_id` + `assignables` view | assigned to a group; user+group together REJECTED |
+| P2 no assignee | A GROUP IS A USER (`users.type`); `groups` holds group meta; ONE `tasks.assigned_to` FK | task assigned to a group and to a person through the same column; group meta on a person REJECTED |
 | P3 two state sources | `mice.is_alive` + `death_reason`; `mouse_attr_logs` DROPPED | alive+death_reason REJECTED by CHECK |
 | P4 no key without litter | outside mice get a litter (`litters.is_from_outside`); `litter_id`/`pup_number` NOT NULL | re-insert REJECTED by `mouse_meta_litter_pup_key` |
 | P5 invisible mice | state row created at birth with cage/slot NULL | unplaced mouse visible with `cage_id` NULL |
-| P6 cache drift | `mouse_moves` DROPPED — a move IS a `mice` version row | one insert per move; head query cannot disagree with history |
+| P6 cache drift | `mouse_moves` DROPPED — a move IS a `mice` version row; `transit_status` waiting→issued→moved→verified | one insert per move; full 4-step transfer walked; unknown status REJECTED |
 | P7 sex overwritten | `sex` moved to `mice` | F→M kept as two rows with actor and reason |
 
 ## Problems found
