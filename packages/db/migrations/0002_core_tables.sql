@@ -20,7 +20,10 @@ CREATE TABLE users (
     -- boundary: an unconstrained typo would fail open or closed silently.
     -- Vocabulary unified on 'professor' (2026-09-04) — the P1 genotyping docs
     -- said 'director' for the same person.
-    role          TEXT        NOT NULL DEFAULT 'staff'
+    -- NULL exactly for groups (see the CHECK below). A group does not act, so
+    -- it has no authority — leaving it defaulted to 'staff' would put a value
+    -- there that reads like permission and is never the one that applies.
+    role          TEXT
         CHECK (role IN ('admin', 'professor', 'staff')),
     -- A GROUP IS A USER (2026-09-05, user). Teams live in this table too, so
     -- anything assignable is one row here and `tasks` needs exactly ONE
@@ -28,6 +31,13 @@ CREATE TABLE users (
     -- Group-only metadata hangs off `groups`, keyed by this row.
     type          TEXT        NOT NULL DEFAULT 'user'
         CHECK (type IN ('user', 'group')),
+    -- A person always has a role; a group never does. AUTHORIZATION ALWAYS
+    -- READS THE ACTING PERSON'S ROLE — a task assigned to a group is carried
+    -- out by a member, and canTransition judges that member, never the group.
+    CONSTRAINT users_role_matches_type CHECK (
+        (type = 'user'  AND role IS NOT NULL) OR
+        (type = 'group' AND role IS NULL)
+    ),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at    TIMESTAMPTZ

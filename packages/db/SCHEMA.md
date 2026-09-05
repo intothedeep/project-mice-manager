@@ -462,7 +462,7 @@ CREATE INDEX tasks_upcoming_idx ON public.tasks USING btree (status, due_date) W
 | `id` | bigint | NOT NULL |  |  |
 | `clerk_user_id` | text |  |  |  |
 | `display_name` | text | NOT NULL |  |  |
-| `role` | text | NOT NULL | `'staff'::text` |  |
+| `role` | text |  |  |  |
 | `type` | text | NOT NULL | `'user'::text` |  |
 | `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
 | `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
