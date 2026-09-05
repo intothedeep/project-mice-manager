@@ -10,13 +10,26 @@
             "default": "./dist/index.js"
         }
     },
-    "files": ["dist"],
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "build": "tsc -p tsconfig.json",
-        "check-types": "tsc --noEmit"
+        "check-types": "tsc --noEmit",
+        "db:setup": "tsx src/migrate.ts",
+        "db:migrate": "tsx src/migrate.ts",
+        "db:reset": "tsx src/reset.ts && tsx src/migrate.ts",
+        "db:new": "tsx src/new-migration.ts"
     },
     "devDependencies": {
         "@repo/typescript-config": "workspace:*",
+        "@types/node": "^26.0.1",
+        "@types/pg": "^8.23.1",
+        "tsx": "^4.22.4",
         "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "dotenv": "^17.4.2",
+        "pg": "^8.23.0"
     }
 }

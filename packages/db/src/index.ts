@@ -1,4 +1,5 @@
-// packages/db shell — P0.1b will fill this in.
-// Pool singleton and migration runner are NOT written here yet.
-// A separate task (P0.1b) owns the Postgres provisioning decision.
-export {};
+// Public interface for @repo/db.
+// Consumers: apps/colony_server (services layer only for withTransaction).
+// packages/domain must NOT import from here — it is pure, no I/O.
+
+export { pool, query, withTransaction, closePool } from "./pool";
