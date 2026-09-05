@@ -27,17 +27,17 @@ SELECT dad,c_dad,s_dad,'M',(SELECT prof FROM w),'import','2026-08-01' FROM p;
 \echo '=== 1. 교수가 교배 지시 -> pending (합사전) ==='
 INSERT INTO mates (mother_mouse_id,father_mouse_id,created_by)
 SELECT mom,dad,(SELECT prof FROM w) FROM p;
-INSERT INTO audit_logs (actor_id,action,entity,entity_id,after_json)
-SELECT (SELECT prof FROM w),'create','mates',(SELECT max(id) FROM mates),'{"status":"pending"}';
-SELECT id,status FROM mates;
+CREATE TEMP TABLE mt AS SELECT max(id) id FROM mates;
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
+SELECT id,'pending','2026-08-09',(SELECT prof FROM w),'ordered' FROM mt;
+SELECT DISTINCT ON (mate_id) mate_id,status FROM mate_status_logs
+WHERE deleted_at IS NULL ORDER BY mate_id,occurred_at DESC,id DESC;
 
 \echo '=== 2. 합사: 아빠를 엄마 케이지로 이동 -> cohoused ==='
 INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,actor_id,reason,transit_status,effective_at)
 SELECT dad,c_mom,s_mom,'M',(SELECT staff FROM w),'cohouse for mating','verified','2026-08-10' FROM p;
-UPDATE mates SET cohoused_at='2026-08-10';
-INSERT INTO audit_logs (actor_id,action,entity,entity_id,before_json,after_json)
-SELECT (SELECT staff FROM w),'update','mates',(SELECT max(id) FROM mates),
-       '{"status":"pending"}','{"status":"cohoused"}';
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
+SELECT id,'cohoused','2026-08-10',(SELECT staff FROM w),'father moved in' FROM mt;
 
 \echo '   -- 동거 검증: 두 부모가 같은 subcolony/cage/slot 인가'
 SELECT count(DISTINCT cur.cage_id) AS cages, count(DISTINCT cur.slot_id) AS slots,
@@ -50,17 +50,19 @@ JOIN LATERAL (SELECT DISTINCT ON (mouse_meta_id) cage_id,slot_id FROM mice
               WHERE mouse_meta_id=mm.id ORDER BY mouse_meta_id,effective_at DESC) cur ON true;
 
 \echo '=== 3. awaiting -> 4. pregnant -> 5. delivered ==='
-UPDATE mates SET awaiting_at='2026-08-11';
-INSERT INTO audit_logs (actor_id,action,entity,entity_id,before_json,after_json)
-SELECT (SELECT staff FROM w),'update','mates',(SELECT max(id) FROM mates),'{"status":"cohoused"}','{"status":"awaiting"}';
-UPDATE mates SET pregnant_at='2026-08-17';
-INSERT INTO audit_logs (actor_id,action,entity,entity_id,before_json,after_json)
-SELECT (SELECT prof FROM w),'update','mates',(SELECT max(id) FROM mates),'{"status":"awaiting"}','{"status":"pregnant"}';
-INSERT INTO litters (mate_id,litter_code,mated_on,birth_date,pup_count,created_by)
-SELECT (SELECT max(id) FROM mates),'BCW','2026-08-10','2026-08-31',5,(SELECT prof FROM w);
-UPDATE mates SET delivered_at='2026-08-31';
-INSERT INTO audit_logs (actor_id,action,entity,entity_id,before_json,after_json)
-SELECT (SELECT prof FROM w),'update','mates',(SELECT max(id) FROM mates),'{"status":"pregnant"}','{"status":"delivered"}';
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
+SELECT id,'awaiting','2026-08-11',(SELECT staff FROM w),'no plug seen' FROM mt;
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,is_occurred_at_approx,actor_id,note)
+SELECT id,'pregnant','2026-08-17',true,(SELECT prof FROM w),'~ estimated, no plug' FROM mt;
+\echo '   -- 되돌리기: 임신 아님으로 판명 -> awaiting 으로 복귀 (이력 보존)'
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
+SELECT id,'awaiting','2026-08-20',(SELECT prof FROM w),'not pregnant after all' FROM mt;
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
+SELECT id,'pregnant','2026-08-24',(SELECT prof FROM w),'confirmed on recheck' FROM mt;
+INSERT INTO litters (mate_id,litter_code,birth_date,pup_count,created_by)
+SELECT (SELECT id FROM mt),'BCW','2026-08-31',5,(SELECT prof FROM w);
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id,note)
+SELECT id,'delivered','2026-08-31',(SELECT prof FROM w),'5 pups' FROM mt;
 
 \echo '   -- 출산 시점에도 부모는 같은 케이지/슬롯인가'
 SELECT CASE WHEN count(DISTINCT cur.cage_id)=1 AND count(DISTINCT cur.slot_id)=1
@@ -70,18 +72,29 @@ JOIN mouse_meta mm ON mm.id IN (m.mother_mouse_id, m.father_mouse_id)
 JOIN LATERAL (SELECT DISTINCT ON (mouse_meta_id) cage_id,slot_id FROM mice
               WHERE mouse_meta_id=mm.id ORDER BY mouse_meta_id,effective_at DESC) cur ON true;
 
-\echo '=== 6. 전체 이력이 로그에 남았는가 ==='
-SELECT a.action, a.before_json->>'status' AS "from", a.after_json->>'status' AS "to",
-       u.display_name AS actor
-FROM audit_logs a JOIN users u ON u.id=a.actor_id ORDER BY a.id;
+\echo '=== 6. 전체 상태 이력 (되돌림 포함) ==='
+SELECT l.occurred_at::date AS "when", l.status, l.is_occurred_at_approx AS "approx",
+       u.display_name AS actor, l.note
+FROM mate_status_logs l JOIN users u ON u.id=l.actor_id ORDER BY l.id;
 
-\echo '=== 7. 각 단계 시각 + 유도된 status ==='
-SELECT cohoused_at::date, awaiting_at::date, pregnant_at::date, delivered_at::date, status FROM mates;
+\echo '=== 7. 현재 상태 = 최신 행 ==='
+SELECT DISTINCT ON (mate_id) status, occurred_at::date, note FROM mate_status_logs
+WHERE deleted_at IS NULL ORDER BY mate_id, occurred_at DESC, id DESC;
 
-\echo '=== 8. status 를 직접 쓰려 하면 -> 거부 (생성 컬럼) ==='
-SAVEPOINT s; UPDATE mates SET status='married'; ROLLBACK TO s;
+\echo '=== 8. 잘못된 상태값 -> 거부 ==='
+SAVEPOINT s;
+INSERT INTO mate_status_logs (mate_id,status,actor_id) SELECT id,'married',(SELECT prof FROM w) FROM mt;
+ROLLBACK TO s;
 
-\echo '=== 9. 되돌리기: delivered_at 을 지우면 status 가 따라 내려감 ==='
-UPDATE mates SET delivered_at=NULL;
-SELECT status AS "delivered_at 제거 후" FROM mates;
+\echo '=== 9. 같은 커플이 재교배 -> 새 mates + 새 litter ==='
+INSERT INTO mates (mother_mouse_id,father_mouse_id,created_by)
+SELECT mom,dad,(SELECT prof FROM w) FROM p;
+INSERT INTO mate_status_logs (mate_id,status,occurred_at,actor_id)
+SELECT max(id),'cohoused','2026-10-01',(SELECT prof FROM w) FROM mates;
+INSERT INTO litters (mate_id,litter_code,birth_date,pup_count,created_by)
+SELECT max(id),'BGX','2026-10-22',4,(SELECT prof FROM w) FROM mates;
+SELECT m.id AS mate, l.litter_code, l.birth_date,
+       (SELECT status FROM mate_status_logs s WHERE s.mate_id=m.id
+        ORDER BY occurred_at DESC, id DESC LIMIT 1) AS status
+FROM mates m LEFT JOIN litters l ON l.mate_id=m.id ORDER BY m.id;
 ROLLBACK;

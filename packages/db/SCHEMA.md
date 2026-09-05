@@ -166,12 +166,6 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 | `mate_id` | bigint |  |  | → `mates` |
 | `litter_code` | text | NOT NULL |  |  |
 | `seq` | bigint | NOT NULL | `nextval('litter_code_seq'::regclass)` |  |
-| `mated_on` | date |  |  |  |
-| `is_mated_on_approx` | boolean | NOT NULL | `false` |  |
-| `mated_on_raw` | text |  |  |  |
-| `expected_delivery_on` | date |  |  |  |
-| `is_expected_delivery_on_approx` | boolean | NOT NULL | `false` |  |
-| `expected_delivery_on_raw` | text |  |  |  |
 | `is_from_outside` | boolean | NOT NULL | `false` |  |
 | `birth_date` | date |  |  |  |
 | `pup_count` | integer |  |  |  |
@@ -186,9 +180,32 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 ```sql
 CREATE UNIQUE INDEX litters_id_code_key ON public.litters USING btree (id, litter_code)
 CREATE UNIQUE INDEX litters_litter_code_key ON public.litters USING btree (litter_code) WHERE (deleted_at IS NULL)
-CREATE INDEX litters_mate_idx ON public.litters USING btree (mate_id, birth_date DESC) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX litters_mate_key ON public.litters USING btree (mate_id) WHERE ((mate_id IS NOT NULL) AND (deleted_at IS NULL))
 CREATE UNIQUE INDEX litters_pkey ON public.litters USING btree (id)
 CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (deleted_at IS NULL)
+```
+
+## `mate_status_logs`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `mate_id` | bigint | NOT NULL |  | → `mates` |
+| `status` | text | NOT NULL |  |  |
+| `occurred_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `is_occurred_at_approx` | boolean | NOT NULL | `false` |  |
+| `occurred_at_raw` | text |  |  |  |
+| `actor_id` | bigint | NOT NULL |  | → `users` |
+| `note` | text |  |  |  |
+| `import_batch_id` | bigint |  |  | → `import_batches` |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE INDEX mate_status_head_idx ON public.mate_status_logs USING btree (mate_id, occurred_at DESC, id DESC) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX mate_status_logs_pkey ON public.mate_status_logs USING btree (id)
+CREATE INDEX mate_status_status_idx ON public.mate_status_logs USING btree (status, occurred_at DESC) WHERE (deleted_at IS NULL)
 ```
 
 ## `mates`
@@ -199,13 +216,9 @@ CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (d
 | `mother_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `father_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `mate_raw_label` | text |  |  |  |
-| `cohoused_at` | timestamp with time zone |  |  |  |
-| `awaiting_at` | timestamp with time zone |  |  |  |
-| `pregnant_at` | timestamp with time zone |  |  |  |
-| `delivered_at` | timestamp with time zone |  |  |  |
-| `status` | text |  |  |  |
-| `CASE` |  |  |  |  |
-| `    WHEN (delivered_at IS NOT NULL` |  |  |  |  |
+| `expected_delivery_on` | date |  |  |  |
+| `is_expected_delivery_on_approx` | boolean | NOT NULL | `false` |  |
+| `expected_delivery_on_raw` | text |  |  |  |
 | `created_by` | bigint | NOT NULL |  | → `users` |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |
@@ -215,9 +228,8 @@ CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (d
 | `deleted_at` | timestamp with time zone |  |  |  |
 
 ```sql
-CREATE UNIQUE INDEX mates_couple_key ON public.mates USING btree (mother_mouse_id, COALESCE(father_mouse_id, ('-1'::integer)::bigint), COALESCE(mate_raw_label, ''::text)) WHERE (deleted_at IS NULL)
+CREATE INDEX mates_couple_idx ON public.mates USING btree (mother_mouse_id, id DESC) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
-CREATE INDEX mates_status_idx ON public.mates USING btree (status) WHERE (deleted_at IS NULL)
 ```
 
 ## `mice`

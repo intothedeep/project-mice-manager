@@ -252,10 +252,16 @@ CREATE SEQUENCE litter_code_seq START 1612;
 -- ---------------------------------------------------------------------------
 -- mates — the breeding COUPLE. Creating a mate_id IS the act of pairing.
 -- ---------------------------------------------------------------------------
--- One row per couple, NOT per cycle: the same pair can produce many litters,
--- and each of those litters carries its own dates. That is what preserves the
+-- ONE ROW PER MATING CYCLE (2026-09-05, user), not one per couple. When a pair
+-- mates again, a NEW mates row and a NEW litters row are created; the previous
+-- cycle keeps its own row with its own dates. That is what preserves the
 -- repeat-cycle history the flat sheet destroys (the negative mating->delivery
 -- gap in the R10 analysis).
+--
+-- CONSEQUENCE: there is NO unique constraint on the couple. An earlier
+-- `mates_couple_key` UNIQUE (mother, father, raw_label) enforced one row per
+-- pair and made a second pairing of the same two mice IMPOSSIBLE — verified by
+-- deliberate breakage before removing it. Do not re-add it.
 --
 -- THE PAIRING WORKFLOW (2026-09-05, user). When the professor orders a mating,
 -- one parent is MOVED into the other's cage to co-house them, and the pairing
@@ -288,22 +294,20 @@ CREATE TABLE mates (
     -- Byte-preserved mate cell, e.g. 'M4BCW Nf1 f/+;ccEGFP', kept when the
     -- father cannot be resolved to a row.
     mate_raw_label  TEXT,
-    -- One timestamp per stage. NULL = not reached yet.
-    cohoused_at     TIMESTAMPTZ,   -- 합사     moved into one cage
-    awaiting_at     TIMESTAMPTZ,   -- 임신 준비 watching for a plug / signs
-    pregnant_at     TIMESTAMPTZ,   -- 임신확인  pregnancy confirmed
-    delivered_at    TIMESTAMPTZ,   -- 출산확인  delivery confirmed
-    -- GENERATED, not stored independently: with `status` writable alongside the
-    -- four timestamps, a row could claim 'pregnant' while delivered_at was set.
-    -- Deriving it means the two CANNOT disagree — the same reasoning as the
-    -- composite FKs elsewhere in this schema, applied within one row.
-    -- To advance a pairing you set a TIMESTAMP; `status` follows.
-    status          TEXT GENERATED ALWAYS AS (
-        CASE WHEN delivered_at IS NOT NULL THEN 'delivered'
-             WHEN pregnant_at  IS NOT NULL THEN 'pregnant'
-             WHEN awaiting_at  IS NOT NULL THEN 'awaiting'
-             WHEN cohoused_at  IS NOT NULL THEN 'cohoused'
-             ELSE 'pending' END) STORED,
+    -- NO status column and NO per-stage timestamps here (2026-09-05, user):
+    -- the cycle's progress is APPEND-ONLY in `mate_status_logs`, one row per
+    -- transition. Four timestamps could not record WHO advanced the pairing,
+    -- could not survive a stage being entered twice (pregnancy suspected,
+    -- ruled out, confirmed again — the second write overwrote the first), and
+    -- could not hold a reason. Keeping BOTH would have recreated the
+    -- two-sources-of-truth bug that removed mouse_attr_logs (scenario P3):
+    -- current status is DERIVED from the log, never stored beside it.
+    --
+    -- Predicted from the mating date; a plan rather than an observation, so it
+    -- is a property of the cycle, not a transition.
+    expected_delivery_on  DATE,
+    is_expected_delivery_on_approx BOOLEAN NOT NULL DEFAULT false,
+    expected_delivery_on_raw TEXT,
     -- NO subcolony_id and NO cage_id (2026-09-05, user): both are derivable
     -- from the parents, so storing them would be a third copy of a fact that
     -- already lives on mouse_meta and mice.
@@ -329,19 +333,59 @@ CREATE TABLE mates (
     deleted_at      TIMESTAMPTZ
 );
 
--- One couple recorded once. coalesce avoids NULL != NULL letting duplicates in
--- when the father is unresolved.
-CREATE UNIQUE INDEX mates_couple_key
-    ON mates (mother_mouse_id, coalesce(father_mouse_id, -1), coalesce(mate_raw_label, ''))
-    WHERE deleted_at IS NULL;
-
--- "What pairings need attention" — the professor's weekend list.
-CREATE INDEX mates_status_idx
-    ON mates (status)
+-- A couple's breeding history, newest first.
+CREATE INDEX mates_couple_idx
+    ON mates (mother_mouse_id, id DESC)
     WHERE deleted_at IS NULL;
 
 CREATE TRIGGER mates_set_updated_at
     BEFORE UPDATE ON mates
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- mate_status_logs — the pairing's progress, APPEND-ONLY.
+-- ---------------------------------------------------------------------------
+-- One row per transition, never an update. Current status is the newest row:
+--   SELECT DISTINCT ON (mate_id) status FROM mate_status_logs
+--   WHERE deleted_at IS NULL ORDER BY mate_id, occurred_at DESC, id DESC;
+--
+-- Stages: pending 합전 · cohoused 합사 · awaiting 임신 준비 ·
+--         pregnant 임신확인 · delivered 출산확인.
+--
+-- occurred_at is WHEN THE STAGE HAPPENED, not when the row was written — the
+-- same distinction as mice.effective_at, and for the same reason: created_at
+-- defaults to now(), which is TRANSACTION START time, so rows written by one
+-- import transaction all share it and cannot be ordered.
+CREATE TABLE mate_status_logs (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    mate_id         BIGINT      NOT NULL REFERENCES mates (id),
+    status          TEXT        NOT NULL
+        CHECK (status IN ('pending', 'cohoused', 'awaiting', 'pregnant', 'delivered')),
+    occurred_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- '~' in the workbook: no copulatory plug seen, so the date is ESTIMATED.
+    is_occurred_at_approx BOOLEAN NOT NULL DEFAULT false,
+    occurred_at_raw TEXT,
+    actor_id        BIGINT      NOT NULL REFERENCES users (id),
+    -- Why the pairing moved, including why it moved BACKWARDS.
+    note            TEXT,
+    import_batch_id BIGINT REFERENCES import_batches (id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at      TIMESTAMPTZ
+);
+
+-- Serves the head query above, and the full history of one pairing.
+CREATE INDEX mate_status_head_idx
+    ON mate_status_logs (mate_id, occurred_at DESC, id DESC)
+    WHERE deleted_at IS NULL;
+
+-- "What pairings need attention" — the professor's weekend list.
+CREATE INDEX mate_status_status_idx
+    ON mate_status_logs (status, occurred_at DESC)
+    WHERE deleted_at IS NULL;
+
+CREATE TRIGGER mate_status_logs_set_updated_at
+    BEFORE UPDATE ON mate_status_logs
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ---------------------------------------------------------------------------
@@ -370,13 +414,9 @@ CREATE TABLE litters (
     -- ACCEPTED LOSS: a litter with mate_id NULL (parents unknown in historical
     -- data, or an is_from_outside shell) then has no programme of its own. The
     -- information is not gone — every mouse in it carries mouse_meta.subcolony_id.
-    mated_on              DATE,
-    -- true when the source carried '~' (no copulatory plug seen: date estimated).
-    is_mated_on_approx    BOOLEAN     NOT NULL DEFAULT false,
-    mated_on_raw          TEXT,
-    expected_delivery_on  DATE,
-    is_expected_delivery_on_approx BOOLEAN NOT NULL DEFAULT false,
-    expected_delivery_on_raw TEXT,
+    -- NO mating or expected-delivery dates here: they belong to the CYCLE and
+    -- live on `mates` (cohoused_at, expected_delivery_on). This table holds the
+    -- OUTCOME only.
     -- A mouse brought in from OUTSIDE still gets a litter row (2026-09-05,
     -- user), so litter_id/pup_number can be NOT NULL on mouse_meta and the
     -- natural re-import key applies to EVERY mouse. Such a litter has mate_id
@@ -403,9 +443,10 @@ CREATE UNIQUE INDEX litters_seq_key
     ON litters (seq)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX litters_mate_idx
-    ON litters (mate_id, birth_date DESC)
-    WHERE deleted_at IS NULL;
+-- ONE litter per cycle: mates and litters are 1:1 now that mates is per-cycle.
+CREATE UNIQUE INDEX litters_mate_key
+    ON litters (mate_id)
+    WHERE mate_id IS NOT NULL AND deleted_at IS NULL;
 
 CREATE TRIGGER litters_set_updated_at
     BEFORE UPDATE ON litters
