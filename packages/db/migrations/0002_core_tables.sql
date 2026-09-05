@@ -265,10 +265,11 @@ CREATE TRIGGER litters_set_updated_at
 -- IDENTIFICATION (R14, user): `mouse_meta.id` identifies the mouse to US. The
 -- professor identifies the same mouse by a COMPOSED label, never stored:
 --     sex || pup_number || litters.litter_code   ->  'M' || 4 || 'BCW' = 'M4BCW'
--- The letter code is NOT on this table — it belongs to the LITTER, which is why
--- littermate codes cannot diverge. Label uniqueness follows for free from
--- mouse_meta_litter_pup_key plus litters_litter_code_key: one code per litter,
--- one pup_number per mouse in it. Measured: 173 of 173 Breeders labels distinct.
+-- litter_code is carried here as a DENORMALIZED copy so the label costs no
+-- join; the litter remains its source of truth and a composite FK keeps the two
+-- identical. Label uniqueness follows for free from mouse_meta_litter_pup_key
+-- plus litters_litter_code_key: one code per litter, one pup_number per mouse
+-- in it. Measured: 173 of 173 Breeders labels distinct.
 --
 -- The `pups` table was folded in here (R13): it held only (litter_id,
 -- pup_number), which are mouse attributes.
@@ -278,6 +279,13 @@ CREATE TABLE mouse_meta (
     -- a mouse brought in from OUTSIDE has no litter, and must still be admitted
     -- (it then has no professor label either, only our id).
     litter_id       BIGINT REFERENCES litters (id),
+    -- DENORMALIZED copy of litters.litter_code (R15, user), so composing the
+    -- professor's label needs no join. It CANNOT drift: the composite FK at the
+    -- bottom of this file ties (litter_id, litter_code) to a real litters row,
+    -- with ON UPDATE CASCADE so correcting a litter's code rewrites the copies.
+    -- MATCH SIMPLE skips the check when litter_id IS NULL, so outside mice
+    -- (no litter, no code) still insert.
+    litter_code     TEXT COLLATE "C",
     -- Distinguishing number within its litter (Q11): no birth-order or tag
     -- semantics, so NO CHECK on its values. NULL for outside mice.
     pup_number      INTEGER,
@@ -365,6 +373,18 @@ ALTER TABLE mates
 ALTER TABLE litters
     ADD CONSTRAINT litters_mate_id_fkey
         FOREIGN KEY (mate_id) REFERENCES mates (id);
+
+-- Denormalization guard for mouse_meta.litter_code (R15). Same shape as the
+-- cage/slot guard below: the copy is pinned to its source row, so it cannot be
+-- set to a code the litter does not have. ON UPDATE CASCADE means a corrected
+-- litter code propagates to every mouse in that litter automatically.
+ALTER TABLE litters
+    ADD CONSTRAINT litters_id_code_key UNIQUE (id, litter_code);
+
+ALTER TABLE mouse_meta
+    ADD CONSTRAINT mouse_meta_litter_code_agree_fkey
+        FOREIGN KEY (litter_id, litter_code) REFERENCES litters (id, litter_code)
+        ON UPDATE CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- Cage/slot divergence guard
