@@ -1,0 +1,4 @@
+# services/
+# Business logic and TRANSACTION BOUNDARIES.
+# Rule: transaction boundaries live in services ONLY (withTransaction calls go here).
+# Services call repositories, passing a Pool or PoolClient executor — never open their own connection.

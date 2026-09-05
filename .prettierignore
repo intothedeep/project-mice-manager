@@ -1,0 +1,9 @@
+# living docs — owned by architect/pm agents; do not reformat
+00.plan.md
+00.tasks.md
+01.status.md
+
+# build artifacts
+.next/
+dist/
+node_modules/

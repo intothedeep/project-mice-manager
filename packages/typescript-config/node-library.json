@@ -1,0 +1,13 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "display": "Node Library",
+    "compilerOptions": {
+        "target": "ES2020",
+        "ignoreDeprecations": "5.0",
+        "composite": false,
+        "module": "CommonJS",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    }
+}

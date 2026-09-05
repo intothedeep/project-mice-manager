@@ -1,0 +1,4 @@
+# repositories/
+# Raw SQL queries via pg (no ORM).
+# Rule: every repository function accepts an executor param (Pool | PoolClient).
+# Repositories NEVER open or commit a transaction — that belongs in services/.

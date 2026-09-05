@@ -1,0 +1,3 @@
+# controllers/
+# Route handlers: parse request, call service, return response.
+# No business logic here — delegate to services/.
