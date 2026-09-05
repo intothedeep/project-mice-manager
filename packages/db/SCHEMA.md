@@ -199,8 +199,6 @@ CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (d
 | `mother_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `father_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `mate_raw_label` | text |  |  |  |
-| `subcolony_id` | bigint |  |  | → `subcolonies` |
-| `cage_id` | bigint |  |  | → `cages` |
 | `created_by` | bigint | NOT NULL |  | → `users` |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |
@@ -227,6 +225,7 @@ CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
 | `death_reason` | text |  |  |  |
 | `attention` | text |  |  |  |
 | `transit_status` | text | NOT NULL | `'verified'::text` |  |
+| `effective_at` | timestamp with time zone | NOT NULL | `now()` |  |
 | `reason` | text |  |  |  |
 | `idempotency_key` | uuid |  |  |  |
 | `actor_id` | bigint | NOT NULL |  | → `users` |
@@ -240,6 +239,7 @@ CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
 
 ```sql
 CREATE INDEX mice_cage_idx ON public.mice USING btree (cage_id) WHERE (deleted_at IS NULL)
+CREATE INDEX mice_effective_idx ON public.mice USING btree (mouse_meta_id, effective_at DESC) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX mice_idempotency_key ON public.mice USING btree (idempotency_key) WHERE (idempotency_key IS NOT NULL)
 CREATE INDEX mice_meta_idx ON public.mice USING btree (mouse_meta_id, id DESC)
 CREATE UNIQUE INDEX mice_pkey ON public.mice USING btree (id)

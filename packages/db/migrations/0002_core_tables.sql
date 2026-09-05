@@ -264,14 +264,22 @@ CREATE TABLE mates (
     -- Byte-preserved mate cell, e.g. 'M4BCW Nf1 f/+;ccEGFP', kept when the
     -- father cannot be resolved to a row.
     mate_raw_label  TEXT,
-    -- WHERE the pairing happens. Recorded HERE, on the couple, because the app
-    -- creates matings going forward and the professor picks a cage at that
-    -- moment. (An earlier revision dropped cage_id from the breeding table on
-    -- the grounds that the WORKBOOK has no "mating cage" column. True for
-    -- IMPORT, irrelevant for new data — the value exists the moment a pairing
-    -- is made in the app.)
-    subcolony_id    BIGINT REFERENCES subcolonies (id),
-    cage_id         BIGINT REFERENCES cages (id),
+    -- NO subcolony_id and NO cage_id (2026-09-05, user): both are derivable
+    -- from the parents, so storing them would be a third copy of a fact that
+    -- already lives on mouse_meta and mice.
+    --
+    --   PROGRAMME  = mouse_meta.subcolony_id of either parent. Unambiguous:
+    --     measured on Breeders, all 39 resolvable pairs mate WITHIN one line,
+    --     0 cross the lines, so mother and father never disagree.
+    --
+    --   CAGE AT PAIRING TIME = the parent's `mice` row that was current when
+    --     this mates row was created. Recoverable precisely because `mice` is
+    --     append-style and keeps every version:
+    --       SELECT DISTINCT ON (mouse_meta_id) cage_id FROM mice
+    --       WHERE mouse_meta_id = <parent> AND created_at <= <mates.created_at>
+    --       ORDER BY mouse_meta_id, id DESC;
+    --     A plain cage_id column here would have frozen the cage at pairing and
+    --     then quietly gone stale as the mice moved.
     created_by      BIGINT      NOT NULL REFERENCES users (id),
     import_batch_id BIGINT REFERENCES import_batches (id),
     source_sheet    TEXT,
@@ -465,6 +473,17 @@ CREATE TABLE mice (
     -- is not mid-transfer. Import lands rows here directly.
     transit_status  TEXT        NOT NULL DEFAULT 'verified'
         CHECK (transit_status IN ('waiting', 'issued', 'moved', 'verified')),
+    -- WHEN THIS STATE BECAME TRUE, as opposed to created_at, which is when the
+    -- ROW WAS WRITTEN. The two differ and the distinction is load-bearing:
+    -- `created_at DEFAULT now()` takes TRANSACTION START time, so every row an
+    -- ETL writes in its single import transaction carries the SAME created_at
+    -- and cannot be ordered against the others. Verified: a move recorded in
+    -- the same transaction as a pairing was picked up as if it had happened
+    -- first, returning the wrong cage.
+    -- Time-travel queries ("where was this mouse when it was paired?") MUST
+    -- read effective_at; created_at answers a different question (audit: when
+    -- did we learn this).
+    effective_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- Why this version exists ('wean', 'import', 'sac'). Was mouse_moves.reason.
     reason          TEXT,
     -- Was mouse_moves.idempotency_key: lets a retried write be recognised
@@ -487,6 +506,11 @@ CREATE INDEX mice_meta_idx
 
 -- Serves the cage-grid view (mice per cage).
 CREATE INDEX mice_cage_idx ON mice (cage_id) WHERE deleted_at IS NULL;
+
+-- Serves time-travel: the mouse's state as of a given moment.
+CREATE INDEX mice_effective_idx
+    ON mice (mouse_meta_id, effective_at DESC)
+    WHERE deleted_at IS NULL;
 
 -- Retry guard inherited from mouse_moves. NOT partial on deleted_at:
 -- idempotency must survive tombstoning, or a retry after a soft delete would
