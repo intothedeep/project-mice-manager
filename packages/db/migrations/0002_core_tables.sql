@@ -256,6 +256,30 @@ CREATE SEQUENCE litter_code_seq START 1612;
 -- and each of those litters carries its own dates. That is what preserves the
 -- repeat-cycle history the flat sheet destroys (the negative mating->delivery
 -- gap in the R10 analysis).
+--
+-- THE PAIRING WORKFLOW (2026-09-05, user). When the professor orders a mating,
+-- one parent is MOVED into the other's cage to co-house them, and the pairing
+-- then walks these states:
+--
+--   pending    합사전     ordered; the two are not yet in one cage
+--   cohoused   합사       moved together into one cage
+--   awaiting   임신 준비  co-housed, watching for a plug / signs
+--   pregnant   임신확인   pregnancy confirmed
+--   delivered  출산       pups born (the litters row gets its birth_date)
+--
+-- `status` is the CURRENT state of this couple's ongoing cycle. Past cycles are
+-- not overwritten — each one is its own `litters` row with its own dates — so
+-- this column answers "what is happening now", not "what has ever happened".
+--
+-- EVERY TRANSITION IS LOGGED to `audit_logs` (entity='mates', before_json /
+-- after_json), which is the standing rule for who-changed-what and is why no
+-- status-history table is added here.
+--
+-- CO-HOUSING IS VERIFIABLE, NOT CONSTRAINED: once cohoused, and still at
+-- delivery, both parents' current `mice` rows should share subcolony, cage and
+-- slot. That is a cross-row, cross-table condition over version rows, so the
+-- SERVICE checks it and explains a mismatch; a trigger could only reject
+-- silently. The query lives in packages/db/scenarios/.
 CREATE TABLE mates (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     -- FKs added at the bottom: mouse_meta does not exist yet.
@@ -264,6 +288,8 @@ CREATE TABLE mates (
     -- Byte-preserved mate cell, e.g. 'M4BCW Nf1 f/+;ccEGFP', kept when the
     -- father cannot be resolved to a row.
     mate_raw_label  TEXT,
+    status          TEXT        NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'cohoused', 'awaiting', 'pregnant', 'delivered')),
     -- NO subcolony_id and NO cage_id (2026-09-05, user): both are derivable
     -- from the parents, so storing them would be a third copy of a fact that
     -- already lives on mouse_meta and mice.
@@ -293,6 +319,11 @@ CREATE TABLE mates (
 -- when the father is unresolved.
 CREATE UNIQUE INDEX mates_couple_key
     ON mates (mother_mouse_id, coalesce(father_mouse_id, -1), coalesce(mate_raw_label, ''))
+    WHERE deleted_at IS NULL;
+
+-- "What pairings need attention" — the professor's weekend list.
+CREATE INDEX mates_status_idx
+    ON mates (status)
     WHERE deleted_at IS NULL;
 
 CREATE TRIGGER mates_set_updated_at

@@ -8,6 +8,7 @@ below were produced by running these files, not by reading the DDL.
 createdb colony_dev && pnpm --filter @repo/db db:migrate
 psql -d colony_dev -f packages/db/scenarios/flow-weekly-cycle.sql
 psql -d colony_dev -f packages/db/scenarios/flow-probes.sql
+psql -d colony_dev -f packages/db/scenarios/flow-mating.sql
 ```
 
 Both scripts end in ROLLBACK — they leave no rows behind. Re-run them after any
@@ -66,6 +67,31 @@ change exists — deleting them invites the same design back.
 | P5 invisible mice | state row created at birth with cage/slot NULL | unplaced mouse visible with `cage_id` NULL |
 | P6 cache drift | `mouse_moves` DROPPED — a move IS a `mice` version row; `transit_status` waiting→issued→moved→verified | one insert per move; full 4-step transfer walked; unknown status REJECTED |
 | P7 sex overwritten | `sex` moved to `mice` | F→M kept as two rows with actor and reason |
+
+## Pairing workflow (`flow-mating.sql`, R22)
+
+The professor orders a mating, a parent is MOVED into the other's cage, and the
+pairing walks `pending`(합사전) → `cohoused`(합사) → `awaiting`(임신 준비) →
+`pregnant`(임신확인) → `delivered`(출산). Every transition is written to
+`audit_logs`.
+
+Co-housing is **verified by query, not by constraint** — it is a cross-table
+condition over `mice` version rows, so a trigger could only reject silently
+while the service can say which parent is in the wrong cage:
+
+```sql
+SELECT count(DISTINCT cur.cage_id) = 1 AND count(DISTINCT cur.slot_id) = 1 AS cohoused
+FROM mates m
+JOIN mouse_meta mm ON mm.id IN (m.mother_mouse_id, m.father_mouse_id)
+JOIN LATERAL (SELECT DISTINCT ON (mouse_meta_id) cage_id, slot_id FROM mice
+              WHERE mouse_meta_id = mm.id
+              ORDER BY mouse_meta_id, effective_at DESC) cur ON true
+WHERE m.id = $1;
+```
+
+Verified: both parents share one cage/slot/subcolony after co-housing AND still
+at delivery; all five transitions present in `audit_logs` with the right actor;
+an invalid status rejected.
 
 ## Problems found
 

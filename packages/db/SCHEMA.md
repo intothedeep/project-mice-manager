@@ -199,6 +199,7 @@ CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (d
 | `mother_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `father_mouse_id` | bigint |  |  | → `mouse_meta` |
 | `mate_raw_label` | text |  |  |  |
+| `status` | text | NOT NULL | `'pending'::text` |  |
 | `created_by` | bigint | NOT NULL |  | → `users` |
 | `import_batch_id` | bigint |  |  | → `import_batches` |
 | `source_sheet` | text |  |  |  |
@@ -210,6 +211,7 @@ CREATE UNIQUE INDEX litters_seq_key ON public.litters USING btree (seq) WHERE (d
 ```sql
 CREATE UNIQUE INDEX mates_couple_key ON public.mates USING btree (mother_mouse_id, COALESCE(father_mouse_id, ('-1'::integer)::bigint), COALESCE(mate_raw_label, ''::text)) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX mates_pkey ON public.mates USING btree (id)
+CREATE INDEX mates_status_idx ON public.mates USING btree (status) WHERE (deleted_at IS NULL)
 ```
 
 ## `mice`
