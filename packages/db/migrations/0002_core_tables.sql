@@ -513,15 +513,17 @@ ALTER TABLE mouse_meta
         FOREIGN KEY (litter_id, litter_code) REFERENCES litters (id, litter_code)
         ON UPDATE CASCADE;
 
--- A mouse belongs to the same breeding programme as the litter it came from.
--- Same guard shape as litter_code: without it the two could disagree silently.
-ALTER TABLE litters
-    ADD CONSTRAINT litters_id_subcolony_key UNIQUE (id, subcolony_id);
-
-ALTER TABLE mouse_meta
-    ADD CONSTRAINT mouse_meta_subcolony_agree_fkey
-        FOREIGN KEY (litter_id, subcolony_id) REFERENCES litters (id, subcolony_id)
-        ON UPDATE CASCADE;
+-- NO composite guard tying mouse_meta.subcolony_id to its litter's
+-- (DECIDED 2026-09-05, user). A mouse MAY belong to a different breeding
+-- programme than the litter it was born in — pups are moved into another line's
+-- programme, so litter and mouse legitimately diverge. This is the one place
+-- the litters/mouse_meta overlap is NOT pinned, and it is deliberate:
+-- litter_code IS pinned (a mouse cannot rename its own litter), subcolony is
+-- not (a mouse can be reassigned).
+--   mouse_meta.subcolony_id = the programme this MOUSE is in now.
+--   litters.subcolony_id    = the programme the LITTER was bred under.
+-- Both keep a plain FK to subcolonies, so neither can name a programme that
+-- does not exist.
 
 -- ---------------------------------------------------------------------------
 -- Cage/slot divergence guard

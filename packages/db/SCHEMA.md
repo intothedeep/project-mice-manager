@@ -186,7 +186,6 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 
 ```sql
 CREATE UNIQUE INDEX litters_id_code_key ON public.litters USING btree (id, litter_code)
-CREATE UNIQUE INDEX litters_id_subcolony_key ON public.litters USING btree (id, subcolony_id)
 CREATE UNIQUE INDEX litters_litter_code_key ON public.litters USING btree (litter_code) WHERE (deleted_at IS NULL)
 CREATE INDEX litters_mate_idx ON public.litters USING btree (mate_id, birth_date DESC) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX litters_pkey ON public.litters USING btree (id)
