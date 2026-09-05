@@ -28,6 +28,18 @@ CREATE TABLE tasks (
     -- FK is deferred-safe: the CTE supplies id and origin_task_id in the same
     -- statement; Postgres checks FKs at end of statement.
     origin_task_id   BIGINT      NOT NULL REFERENCES tasks (id),
+    -- SUBJECT COLUMNS ARE DELIBERATELY UNCONSTRAINED (decided 2026-09-05, user;
+    -- open question Q31). Do NOT add an "exactly one subject" CHECK here — it
+    -- was proposed and then FALSIFIED by the real workbook:
+    --   * Experimental rows 25-27 are room-level work ('260818 CHECK FOOD',
+    --     '260825 check food, cleaness') with NO mouse at all, so a >= 1 rule
+    --     would abort their import;
+    --   * 'move M4BCW to cage 2413' names a mouse AND a cage, so an
+    --     exclusive-arc rule between those two is wrong as well;
+    --   * litter_id/mating_id may be CONTEXT QUALIFIERS rather than alternative
+    --     subjects — notes already sets subject_mouse_id and mating_id together.
+    -- The real rule needs Dr. Lopez-Juarez (Q31). Until then, ETL warns into
+    -- import_errors rather than the schema rejecting rows.
     subject_mouse_id BIGINT REFERENCES mice (id),
     subject_cage_id  BIGINT REFERENCES cages (id),
     litter_id        BIGINT REFERENCES litters (id),
