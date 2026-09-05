@@ -51,7 +51,7 @@ if core:
 groups = {
   'location':  ['colonies','subcolonies','cages','slots'],
   'breeding':  ['mates','litters'],
-  'mouse':     ['mouse_meta','mice','mouse_lines','mouse_genotypes','mouse_events'],
+  'mouse':     ['mouse_meta','mice','mouse_genotypes','mouse_events'],
   'work':      ['tasks','notes','signals'],
   'people':    ['users','groups','group_members'],
   'history':   ['audit_logs'],

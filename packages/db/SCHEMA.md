@@ -166,7 +166,7 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 | `mate_id` | bigint |  |  | → `mates` |
 | `litter_code` | text | NOT NULL |  |  |
 | `seq` | bigint | NOT NULL | `nextval('litter_code_seq'::regclass)` |  |
-| `line_id` | bigint |  |  | → `mouse_lines` |
+| `subcolony_id` | bigint |  |  | → `subcolonies` |
 | `mated_on` | date |  |  |  |
 | `is_mated_on_approx` | boolean | NOT NULL | `false` |  |
 | `mated_on_raw` | text |  |  |  |
@@ -186,6 +186,7 @@ CREATE UNIQUE INDEX import_errors_pkey ON public.import_errors USING btree (id)
 
 ```sql
 CREATE UNIQUE INDEX litters_id_code_key ON public.litters USING btree (id, litter_code)
+CREATE UNIQUE INDEX litters_id_subcolony_key ON public.litters USING btree (id, subcolony_id)
 CREATE UNIQUE INDEX litters_litter_code_key ON public.litters USING btree (litter_code) WHERE (deleted_at IS NULL)
 CREATE INDEX litters_mate_idx ON public.litters USING btree (mate_id, birth_date DESC) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX litters_pkey ON public.litters USING btree (id)
@@ -286,24 +287,6 @@ CREATE UNIQUE INDEX mouse_genotypes_order_key ON public.mouse_genotypes USING bt
 CREATE UNIQUE INDEX mouse_genotypes_pkey ON public.mouse_genotypes USING btree (id)
 ```
 
-## `mouse_lines`
-
-| column | type | null | default | references |
-|---|---|---|---|---|
-| `id` | bigint | NOT NULL |  |  |
-| `name` | text | NOT NULL |  |  |
-| `import_batch_id` | bigint |  |  | → `import_batches` |
-| `source_sheet` | text |  |  |  |
-| `source_row` | integer |  |  |  |
-| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `deleted_at` | timestamp with time zone |  |  |  |
-
-```sql
-CREATE UNIQUE INDEX mouse_lines_name_key ON public.mouse_lines USING btree (name) WHERE (deleted_at IS NULL)
-CREATE UNIQUE INDEX mouse_lines_pkey ON public.mouse_lines USING btree (id)
-```
-
 ## `mouse_meta`
 
 | column | type | null | default | references |
@@ -313,7 +296,7 @@ CREATE UNIQUE INDEX mouse_lines_pkey ON public.mouse_lines USING btree (id)
 | `litter_code` | text | NOT NULL |  | → `litters` |
 | `pup_number` | integer | NOT NULL |  |  |
 | `dob` | date |  |  |  |
-| `line_id` | bigint |  |  | → `mouse_lines` |
+| `subcolony_id` | bigint |  |  | → `subcolonies` |
 | `raw_mouse_id` | text |  |  |  |
 | `raw_genotype` | text |  |  |  |
 | `raw_parents` | text |  |  |  |
@@ -418,6 +401,8 @@ CREATE UNIQUE INDEX slots_pkey ON public.slots USING btree (id)
 | `deleted_at` | timestamp with time zone |  |  |  |
 
 ```sql
+CREATE UNIQUE INDEX subcolonies_colony_name_key ON public.subcolonies USING btree (colony_id, name) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX subcolonies_id_colony_key ON public.subcolonies USING btree (id, colony_id)
 CREATE UNIQUE INDEX subcolonies_pkey ON public.subcolonies USING btree (id)
 ```
 

@@ -157,14 +157,29 @@ CREATE TRIGGER colonies_set_updated_at
     BEFORE UPDATE ON colonies
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+-- A SUBCOLONY IS A MOUSE LINE (2026-09-05, user). One workbook = one colony;
+-- its column-B "Mouse line" values ('nNf1 flox;ccEGFP', 'WTs', 'Myrf', ...) are
+-- its subcolonies. The separate `mouse_lines` table was the SAME THING under
+-- another name and is gone.
+--
+-- The hierarchy colonies > subcolonies > cages > slots holds exactly:
+-- measured on Breeders, all 62 cages belong to exactly ONE line (0 span two).
 CREATE TABLE subcolonies (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     colony_id  BIGINT      NOT NULL REFERENCES colonies (id),
+    -- The line name as the professor writes it, e.g. 'nNf1 flox;ccEGFP'.
     name       TEXT        NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX subcolonies_colony_name_key
+    ON subcolonies (colony_id, name)
+    WHERE deleted_at IS NULL;
+
+-- Lets litters pin its mice to the same subcolony (composite FK further down).
+ALTER TABLE subcolonies ADD CONSTRAINT subcolonies_id_colony_key UNIQUE (id, colony_id);
 
 CREATE TRIGGER subcolonies_set_updated_at
     BEFORE UPDATE ON subcolonies
@@ -216,26 +231,6 @@ CREATE UNIQUE INDEX slots_cage_label_key
 
 CREATE TRIGGER slots_set_updated_at
     BEFORE UPDATE ON slots
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
--- Partial unique: tombstone + reimport must not abort (D1 soft-delete bug class).
-CREATE TABLE mouse_lines (
-    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name            TEXT        NOT NULL,
-    import_batch_id BIGINT REFERENCES import_batches (id),
-    source_sheet    TEXT,
-    source_row      INTEGER,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at      TIMESTAMPTZ
-);
-
-CREATE UNIQUE INDEX mouse_lines_name_key
-    ON mouse_lines (name)
-    WHERE deleted_at IS NULL;
-
-CREATE TRIGGER mouse_lines_set_updated_at
-    BEFORE UPDATE ON mouse_lines
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ===========================================================================
@@ -309,7 +304,8 @@ CREATE TABLE litters (
     litter_code           TEXT COLLATE "C" NOT NULL CHECK (litter_code ~ '^[A-Z]{1,5}$'),
     -- Base-26 ordinal of litter_code, stored so issue order is ORDER BY seq.
     seq                   BIGINT      NOT NULL DEFAULT nextval('litter_code_seq'),
-    line_id               BIGINT REFERENCES mouse_lines (id),
+    -- The breeding programme (mouse line) this cycle belongs to.
+    subcolony_id          BIGINT REFERENCES subcolonies (id),
     mated_on              DATE,
     -- true when the source carried '~' (no copulatory plug seen: date estimated).
     is_mated_on_approx    BOOLEAN     NOT NULL DEFAULT false,
@@ -390,7 +386,9 @@ CREATE TABLE mouse_meta (
     -- a routine correction overwrite birth-given data with no history
     -- (scenario P7).
     dob             DATE,
-    line_id         BIGINT REFERENCES mouse_lines (id),
+    -- The breeding programme (mouse line) this mouse belongs to. Birth-given:
+    -- it is the litter's programme, pinned by the composite FK below.
+    subcolony_id    BIGINT REFERENCES subcolonies (id),
     -- Byte-preserved source label, e.g. 'M4+10BCW'. The one stable handle for
     -- re-import when parsing is uncertain.
     raw_mouse_id    TEXT,
@@ -513,6 +511,16 @@ ALTER TABLE litters
 ALTER TABLE mouse_meta
     ADD CONSTRAINT mouse_meta_litter_code_agree_fkey
         FOREIGN KEY (litter_id, litter_code) REFERENCES litters (id, litter_code)
+        ON UPDATE CASCADE;
+
+-- A mouse belongs to the same breeding programme as the litter it came from.
+-- Same guard shape as litter_code: without it the two could disagree silently.
+ALTER TABLE litters
+    ADD CONSTRAINT litters_id_subcolony_key UNIQUE (id, subcolony_id);
+
+ALTER TABLE mouse_meta
+    ADD CONSTRAINT mouse_meta_subcolony_agree_fkey
+        FOREIGN KEY (litter_id, subcolony_id) REFERENCES litters (id, subcolony_id)
         ON UPDATE CASCADE;
 
 -- ---------------------------------------------------------------------------
