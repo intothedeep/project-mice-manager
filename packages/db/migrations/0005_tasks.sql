@@ -42,7 +42,8 @@ CREATE TABLE tasks (
     -- import_errors rather than the schema rejecting rows.
     subject_mouse_id BIGINT REFERENCES mice (id),
     subject_cage_id  BIGINT REFERENCES cages (id),
-    litter_id        BIGINT REFERENCES litters (id),
+    -- No litter_id: litters merged into matings (R11). A task about a birth
+    -- cohort points at the mating via mating_id, added in 0008.
     task_type        TEXT        NOT NULL,
     due_date         DATE,
     -- Transition fields: each row records the state it moves TO and the state

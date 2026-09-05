@@ -20,13 +20,24 @@
 -- was seen — the date is estimated. A DATE alone cannot express this, so each
 -- date column has a sibling is_*_approx BOOLEAN and a *_raw TEXT.
 
+-- R11 (2026-09-05, user): `litters` is MERGED INTO this table. The two were
+-- already 1:1 — matings_baby_litter_key enforced exactly that — and they
+-- duplicated the parent pair (mother/father vs subject/mate). One row is now
+-- one breeding cycle INCLUDING its outcome. A cycle that has not delivered has
+-- NULL birth/code columns; an imported cohort whose mating was never recorded
+-- has NULL mated_on. Both are ordinary states of the same row.
+
 CREATE TABLE matings (
     id                           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    subject_mouse_id             BIGINT      NOT NULL REFERENCES mice (id),
-    -- Nullable: mate may be unresolved, external, or a data error.
-    mate_mouse_id                BIGINT REFERENCES mice (id),
+    -- Renamed from subject/mate to mother/father when litters merged in: these
+    -- are the same two mice under both readings, and the birth sense is the one
+    -- the rest of the schema needs (mice.birth_mating_id resolves parents here).
+    mother_mouse_id              BIGINT      NOT NULL REFERENCES mice (id),
+    -- Nullable: the father may be unresolved, external, or a data error.
+    father_mouse_id              BIGINT REFERENCES mice (id),
     -- Byte-preserved from col I, e.g. 'M4BCW Nf1 f/+;ccEGFP'.
     mate_raw_label               TEXT,
+    line_id                      BIGINT REFERENCES mouse_lines (id),
     -- NO cage_id (decided 2026-09-05, user). The workbook has no "cage where the
     -- mating happened" datum — col D is the mouse's CURRENT cage. Copying it here
     -- would record the wrong thing (mice move after mating) for a column with no
@@ -38,11 +49,14 @@ CREATE TABLE matings (
     expected_delivery_on         DATE,
     is_expected_delivery_on_approx BOOLEAN   NOT NULL DEFAULT false,
     expected_delivery_on_raw     TEXT,
-    -- The litter this cycle PRODUCED — named baby_litter_id, not litter_id, to
-    -- separate it from the birth-litter sense litter_id carries on mice.
-    -- Outcome state: delivered <=> baby_litter_id IS NOT NULL. NULL until the
-    -- litters row is created at delivery, so no outcome enum is needed.
-    baby_litter_id               BIGINT REFERENCES litters (id),
+    -- OUTCOME (absorbed from litters, R11). Delivered <=> birth_date IS NOT
+    -- NULL, so no outcome enum is needed.
+    birth_date                   DATE,
+    pup_count                    INTEGER,
+    -- The letter code issued for the cohort this cycle produced ('BCW').
+    -- Named code_id, NOT mouse_id, because R8 reserves `mouse_id` for FKs to
+    -- `mice` and this points at `mouse_ids` — the code registry.
+    code_id                      BIGINT REFERENCES mouse_ids (id),
     created_by                   BIGINT      NOT NULL REFERENCES users (id),
     import_batch_id              BIGINT REFERENCES import_batches (id),
     source_sheet                 TEXT,
@@ -60,29 +74,35 @@ CREATE TRIGGER matings_set_updated_at
 -- rows and would otherwise insert twice. coalesce avoids NULL != NULL.
 CREATE UNIQUE INDEX matings_resolved_pair_key
     ON matings (
-        least(subject_mouse_id, mate_mouse_id),
-        greatest(subject_mouse_id, mate_mouse_id),
+        least(mother_mouse_id, father_mouse_id),
+        greatest(mother_mouse_id, father_mouse_id),
         coalesce(mated_on, '-infinity'::date)
     )
-    WHERE mate_mouse_id IS NOT NULL AND deleted_at IS NULL;
+    WHERE father_mouse_id IS NOT NULL AND deleted_at IS NULL;
 
 -- Unresolved fallback: when the mate cannot be resolved to a mice row.
 CREATE UNIQUE INDEX matings_unresolved_key
     ON matings (
-        subject_mouse_id,
+        mother_mouse_id,
         coalesce(mate_raw_label, ''),
         coalesce(mated_on, '-infinity'::date)
     )
-    WHERE mate_mouse_id IS NULL AND deleted_at IS NULL;
+    WHERE father_mouse_id IS NULL AND deleted_at IS NULL;
 
--- One mating per litter outcome.
-CREATE UNIQUE INDEX matings_baby_litter_key
-    ON matings (baby_litter_id)
-    WHERE baby_litter_id IS NOT NULL AND deleted_at IS NULL;
+-- One cohort code per breeding cycle (absorbed from the old 1:1 litter link).
+CREATE UNIQUE INDEX matings_code_key
+    ON matings (code_id)
+    WHERE code_id IS NOT NULL AND deleted_at IS NULL;
 
 -- Timeline for a mouse's breeding history.
-CREATE INDEX matings_subject_mated_idx
-    ON matings (subject_mouse_id, mated_on DESC);
+CREATE INDEX matings_mother_mated_idx
+    ON matings (mother_mouse_id, mated_on DESC);
+
+-- Deferred from 0002: mice.birth_mating_id could not be constrained until
+-- matings existed (matings references mice for mother/father).
+ALTER TABLE mice
+    ADD CONSTRAINT mice_birth_mating_id_fkey
+        FOREIGN KEY (birth_mating_id) REFERENCES matings (id);
 
 -- ---------------------------------------------------------------------------
 -- mouse_genotypes

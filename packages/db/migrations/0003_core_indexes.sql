@@ -1,17 +1,20 @@
--- Litter ordering index (P0.2, R9).
+-- Mouse-code ordering (P0.2; rewritten by R11 2026-09-05).
 --
--- UNIQUE(mouse_letter_id) alone does NOT serve this ORDER BY, because
--- length(mouse_letter_id) is an EXPRESSION. Length-first is required, not
--- stylistic: codes are variable-length with a ZZZ->AAAA rollover, and a plain
--- lexicographic sort places 'ZZZ' AFTER 'AAAA'.
+-- R9's length-first expression index is RETIRED. It existed only because issue
+-- order had to be recovered from the code text itself: codes are variable
+-- length with a ZZZ->AAAA rollover, and a plain lexicographic sort puts 'ZZZ'
+-- AFTER 'AAAA', so ordering had to go by (length, text).
 --
--- COLLATE "C" is not repeated here — the column itself is declared COLLATE "C"
--- in 0002, so this index and any ORDER BY inherit it.
+-- mouse_ids.seq now stores the bijective base-26 ordinal directly, so issue
+-- order is a plain ORDER BY seq and mouse_ids_seq_key (0002) already serves it.
+-- No extra index is needed here.
 --
--- Scope note: the mouse-list query sorts mice by litter columns ACROSS A JOIN,
--- so no index removes that sort. Cardinality is low (hundreds of litters,
--- thousands of mice), so an in-memory sort is fine for P0. This index exists for
--- litter-list and next-code queries. Do not over-engineer it.
-CREATE INDEX litters_code_order_idx
-    ON litters (length(mouse_letter_id), mouse_letter_id)
-    WHERE deleted_at IS NULL;
+-- Scope note kept from R9: the mouse-list query sorts mice by code columns
+-- ACROSS A JOIN, so no index removes that sort. Cardinality is low (hundreds of
+-- codes, thousands of mice), so an in-memory sort is fine for P0. Do not
+-- over-engineer it.
+--
+-- This file is intentionally left without DDL rather than deleted: the
+-- migration is already recorded in schema_migrations, and renumbering applied
+-- migrations is what the runner's checksum guard exists to prevent.
+SELECT 1;
