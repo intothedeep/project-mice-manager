@@ -7,13 +7,13 @@ INSERT INTO users (display_name,role) VALUES ('Dr.Lopez','professor'),('staff1',
 CREATE TEMP TABLE w AS SELECT (SELECT id FROM users WHERE role='professor') prof,
                               (SELECT id FROM users WHERE role='staff') staff;
 INSERT INTO colonies (name) VALUES ('MR');
-INSERT INTO subcolonies (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
-INSERT INTO cages (subcolony_id,cage_number) SELECT id,v FROM subcolonies,(VALUES ('2475'),('2477')) t(v);
+INSERT INTO mouse_lines (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
+INSERT INTO cages (line_id,cage_number) SELECT id,v FROM mouse_lines,(VALUES ('2475'),('2477')) t(v);
 INSERT INTO slots (cage_id,label) SELECT id,'A8' FROM cages;
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT v,true,(SELECT prof FROM w) FROM (VALUES ('BJA'),('BJB')) t(v);
-INSERT INTO mouse_meta (litter_id,litter_code,subcolony_id,pup_number)
-SELECT id,litter_code,(SELECT id FROM subcolonies),1 FROM litters;
+INSERT INTO mouse_meta (litter_id,litter_code,line_id,pup_number)
+SELECT id,litter_code,(SELECT id FROM mouse_lines),1 FROM litters;
 CREATE TEMP TABLE p AS SELECT
   (SELECT min(id) FROM mouse_meta) mom, (SELECT max(id) FROM mouse_meta) dad,
   (SELECT min(id) FROM cages) c_mom, (SELECT max(id) FROM cages) c_dad,
@@ -37,9 +37,9 @@ SELECT dad,c_mom,s_mom,'M',(SELECT staff FROM w),'cohouse for mating','verified'
 INSERT INTO mates (origin_mate_id,mother_mouse_id,father_mouse_id,status,occurred_at,is_occurred_at_approx,actor_id,note)
 SELECT (SELECT id FROM mt),(SELECT mom FROM p),(SELECT dad FROM p),'cohoused','2026-08-10',false,(SELECT staff FROM w),'father moved in';
 
-\echo '   -- 동거 검증: 두 부모가 같은 subcolony/cage/slot 인가'
+\echo '   -- 동거 검증: 두 부모가 같은 mouse line/cage/slot 인가'
 SELECT count(DISTINCT cur.cage_id) AS cages, count(DISTINCT cur.slot_id) AS slots,
-       count(DISTINCT mm.subcolony_id) AS subcolonies,
+       count(DISTINCT mm.line_id) AS mouse_lines,
        CASE WHEN count(DISTINCT cur.cage_id)=1 AND count(DISTINCT cur.slot_id)=1
             THEN 'OK 합사됨' ELSE 'MISMATCH' END AS verdict
 FROM mates m

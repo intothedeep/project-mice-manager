@@ -49,7 +49,7 @@ if core:
 
 # Group by concern so the diagram reads as a story, not a hairball.
 groups = {
-  'location':  ['colonies','subcolonies','cages','slots'],
+  'location':  ['colonies','mouse_lines','cages','slots'],
   'breeding':  ['mates','litters'],
   'mouse':     ['mouse_meta','mice','mouse_genotypes','mouse_events'],
   'work':      ['tasks','notes','signals'],

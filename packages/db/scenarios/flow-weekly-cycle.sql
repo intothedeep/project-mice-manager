@@ -13,15 +13,15 @@ CREATE TEMP TABLE w AS SELECT
   (SELECT id FROM users WHERE display_name='staff1') staff,
   (SELECT id FROM users WHERE type='group') grp;
 INSERT INTO colonies (name) VALUES ('MouseRoomSheet');
-INSERT INTO subcolonies (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
-INSERT INTO cages (subcolony_id,cage_number) SELECT id,v FROM subcolonies,(VALUES ('2475'),('2482')) t(v);
+INSERT INTO mouse_lines (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
+INSERT INTO cages (line_id,cage_number) SELECT id,v FROM mouse_lines,(VALUES ('2475'),('2482')) t(v);
 INSERT INTO slots (cage_id,label) SELECT id,'A8' FROM cages;
 
 \echo '#### S1 import: 부모 2마리 (litter 포함 — 외부 쥐도 litter 를 받는다) ####'
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT v,true,(SELECT prof FROM w) FROM (VALUES ('BJA'),('BJB')) t(v);
-INSERT INTO mouse_meta (litter_id,litter_code,subcolony_id,pup_number,dob,raw_mouse_id)
-SELECT id,litter_code,(SELECT id FROM subcolonies),1,'2025-11-24',litter_code FROM litters;
+INSERT INTO mouse_meta (litter_id,litter_code,line_id,pup_number,dob,raw_mouse_id)
+SELECT id,litter_code,(SELECT id FROM mouse_lines),1,'2025-11-24',litter_code FROM litters;
 INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,actor_id,reason,effective_at)
 SELECT id,(SELECT min(id) FROM cages),(SELECT min(id) FROM slots),'F',(SELECT prof FROM w),'import','2026-08-01'
 FROM mouse_meta;

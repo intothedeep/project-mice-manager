@@ -51,18 +51,18 @@
 <text xml:space="preserve" text-anchor="middle" x="960" y="-389.55" font-family="Helvetica,sans-Serif" font-size="11.00">colonies</text>
 <text xml:space="preserve" text-anchor="middle" x="960" y="-377.55" font-family="Helvetica,sans-Serif" font-size="11.00">(5 cols)</text>
 </g>
-<!-- subcolonies -->
+<!-- mouse_lines -->
 <g id="node2" class="node">
-<title>subcolonies</title>
-<path fill="#dbeafe" stroke="black" d="M787.62,-406C787.62,-406 739.38,-406 739.38,-406 733.38,-406 727.38,-400 727.38,-394 727.38,-394 727.38,-382 727.38,-382 727.38,-376 733.38,-370 739.38,-370 739.38,-370 787.62,-370 787.62,-370 793.62,-370 799.62,-376 799.62,-382 799.62,-382 799.62,-394 799.62,-394 799.62,-400 793.62,-406 787.62,-406"/>
-<text xml:space="preserve" text-anchor="middle" x="763.5" y="-389.55" font-family="Helvetica,sans-Serif" font-size="11.00">subcolonies</text>
+<title>mouse_lines</title>
+<path fill="#dbeafe" stroke="black" d="M789.5,-406C789.5,-406 737.5,-406 737.5,-406 731.5,-406 725.5,-400 725.5,-394 725.5,-394 725.5,-382 725.5,-382 725.5,-376 731.5,-370 737.5,-370 737.5,-370 789.5,-370 789.5,-370 795.5,-370 801.5,-376 801.5,-382 801.5,-382 801.5,-394 801.5,-394 801.5,-400 795.5,-406 789.5,-406"/>
+<text xml:space="preserve" text-anchor="middle" x="763.5" y="-389.55" font-family="Helvetica,sans-Serif" font-size="11.00">mouse_lines</text>
 <text xml:space="preserve" text-anchor="middle" x="763.5" y="-377.55" font-family="Helvetica,sans-Serif" font-size="11.00">(6 cols)</text>
 </g>
-<!-- subcolonies&#45;&gt;colonies -->
-<g id="edge40" class="edge">
-<title>subcolonies&#45;&gt;colonies</title>
-<path fill="none" stroke="#6b7280" d="M799.72,-388C834.99,-388 888.94,-388 924.1,-388"/>
-<polygon fill="#6b7280" stroke="#6b7280" points="923.66,-390.45 930.66,-388 923.66,-385.55 923.66,-390.45"/>
+<!-- mouse_lines&#45;&gt;colonies -->
+<g id="edge28" class="edge">
+<title>mouse_lines&#45;&gt;colonies</title>
+<path fill="none" stroke="#6b7280" d="M801.54,-388C836.7,-388 889.16,-388 923.72,-388"/>
+<polygon fill="#6b7280" stroke="#6b7280" points="923.59,-390.45 930.59,-388 923.59,-385.55 923.59,-390.45"/>
 <text xml:space="preserve" text-anchor="middle" x="870.38" y="-389.4" font-family="Helvetica,sans-Serif" font-size="8.00">colony_id</text>
 </g>
 <!-- cages -->
@@ -72,12 +72,12 @@
 <text xml:space="preserve" text-anchor="middle" x="534" y="-389.55" font-family="Helvetica,sans-Serif" font-size="11.00">cages</text>
 <text xml:space="preserve" text-anchor="middle" x="534" y="-377.55" font-family="Helvetica,sans-Serif" font-size="11.00">(11 cols)</text>
 </g>
-<!-- cages&#45;&gt;subcolonies -->
+<!-- cages&#45;&gt;mouse_lines -->
 <g id="edge3" class="edge">
-<title>cages&#45;&gt;subcolonies</title>
-<path fill="none" stroke="#6b7280" d="M562.9,-388C601.77,-388 672.62,-388 718.61,-388"/>
-<polygon fill="#6b7280" stroke="#6b7280" points="718.38,-390.45 725.38,-388 718.38,-385.55 718.38,-390.45"/>
-<text xml:space="preserve" text-anchor="middle" x="650.25" y="-389.4" font-family="Helvetica,sans-Serif" font-size="8.00">subcolony_id</text>
+<title>cages&#45;&gt;mouse_lines</title>
+<path fill="none" stroke="#6b7280" d="M562.9,-388C601.32,-388 670.99,-388 717.01,-388"/>
+<polygon fill="#6b7280" stroke="#6b7280" points="716.8,-390.45 723.8,-388 716.8,-385.55 716.8,-390.45"/>
+<text xml:space="preserve" text-anchor="middle" x="650.25" y="-389.4" font-family="Helvetica,sans-Serif" font-size="8.00">line_id</text>
 </g>
 <!-- import_batches -->
 <g id="node18" class="node">
@@ -101,14 +101,14 @@
 <text xml:space="preserve" text-anchor="middle" x="302.62" y="-377.55" font-family="Helvetica,sans-Serif" font-size="11.00">(9 cols)</text>
 </g>
 <!-- slots&#45;&gt;cages -->
-<g id="edge38" class="edge">
+<g id="edge39" class="edge">
 <title>slots&#45;&gt;cages</title>
 <path fill="none" stroke="#6b7280" d="M329.94,-388C371.04,-388 450.56,-388 496.95,-388"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="496.7,-390.45 503.7,-388 496.7,-385.55 496.7,-390.45"/>
 <text xml:space="preserve" text-anchor="middle" x="414" y="-389.4" font-family="Helvetica,sans-Serif" font-size="8.00">cage_id</text>
 </g>
 <!-- slots&#45;&gt;import_batches -->
-<g id="edge39" class="edge">
+<g id="edge40" class="edge">
 <title>slots&#45;&gt;import_batches</title>
 <path fill="none" stroke="#6b7280" d="M329.98,-392.79C392.45,-404.66 546.94,-437.25 581.75,-475 636.43,-534.29 584.02,-580.72 621.75,-652 639.11,-684.79 657.9,-682.31 678.75,-713 712.58,-762.8 739.69,-828.41 753.18,-864.12"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="750.73,-864.57 755.48,-870.27 755.32,-862.86 750.73,-864.57"/>
@@ -198,29 +198,29 @@
 <polygon fill="#6b7280" stroke="#6b7280" points="725.69,-868.87 732.86,-870.77 728.43,-864.81 725.69,-868.87"/>
 <text xml:space="preserve" text-anchor="middle" x="534" y="-733.4" font-family="Helvetica,sans-Serif" font-size="8.00">import_batch_id</text>
 </g>
-<!-- mouse_meta&#45;&gt;subcolonies -->
-<g id="edge31" class="edge">
-<title>mouse_meta&#45;&gt;subcolonies</title>
+<!-- mouse_meta&#45;&gt;mouse_lines -->
+<g id="edge30" class="edge">
+<title>mouse_meta&#45;&gt;mouse_lines</title>
 <path fill="none" stroke="#6b7280" d="M341.97,-745.29C416.87,-778.03 583.6,-835.8 678.75,-752 731.54,-705.51 689.89,-502.15 718.75,-438 722.89,-428.8 729.31,-420.04 735.97,-412.51"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="737.57,-414.38 740.55,-407.59 733.98,-411.05 737.57,-414.38"/>
-<text xml:space="preserve" text-anchor="middle" x="534" y="-796.74" font-family="Helvetica,sans-Serif" font-size="8.00">subcolony_id</text>
+<text xml:space="preserve" text-anchor="middle" x="534" y="-796.74" font-family="Helvetica,sans-Serif" font-size="8.00">line_id</text>
 </g>
 <!-- mouse_meta&#45;&gt;litters -->
-<g id="edge29" class="edge">
+<g id="edge31" class="edge">
 <title>mouse_meta&#45;&gt;litters</title>
 <path fill="none" stroke="#6b7280" d="M302.62,-708.58C302.62,-692.66 302.62,-669.47 302.62,-651.55"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="305.08,-651.75 302.63,-644.75 300.18,-651.75 305.08,-651.75"/>
 <text xml:space="preserve" text-anchor="middle" x="295.12" y="-672.9" font-family="Helvetica,sans-Serif" font-size="8.00">litter_id</text>
 </g>
 <!-- mouse_meta&#45;&gt;litters -->
-<g id="edge30" class="edge">
+<g id="edge32" class="edge">
 <title>mouse_meta&#45;&gt;litters</title>
 <path fill="none" stroke="#6b7280" d="M309.64,-708.59C311.67,-702.38 313.61,-695.35 314.62,-688.75 316.34,-677.55 316.34,-674.45 314.62,-663.25 314.02,-659.33 313.1,-655.26 312.02,-651.3"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="314.44,-650.85 310.08,-644.86 309.75,-652.27 314.44,-650.85"/>
 <text xml:space="preserve" text-anchor="middle" x="310.12" y="-672.9" font-family="Helvetica,sans-Serif" font-size="8.00">litter_id</text>
 </g>
 <!-- mouse_meta&#45;&gt;import_batches -->
-<g id="edge28" class="edge">
+<g id="edge29" class="edge">
 <title>mouse_meta&#45;&gt;import_batches</title>
 <path fill="none" stroke="#6b7280" d="M321.26,-745.28C336.12,-759.69 358.62,-779.24 381.75,-791 389.2,-794.79 607.76,-850.64 710.32,-876.74"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="709.53,-879.07 716.92,-878.42 710.74,-874.32 709.53,-879.07"/>
@@ -388,21 +388,21 @@
 <text xml:space="preserve" text-anchor="middle" x="67.88" y="-184.55" font-family="Helvetica,sans-Serif" font-size="11.00">(12 cols)</text>
 </g>
 <!-- notes&#45;&gt;litters -->
-<g id="edge33" class="edge">
+<g id="edge34" class="edge">
 <title>notes&#45;&gt;litters</title>
 <path fill="none" stroke="#6b7280" d="M79.71,-213.35C94.95,-237.85 124.8,-281.38 159.75,-309 184.32,-328.42 203.47,-314.93 223.5,-339 268.19,-392.69 245.05,-423.62 263.5,-491 273.76,-528.47 286.15,-571.67 293.96,-598.66"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="291.61,-599.33 295.91,-605.37 296.31,-597.97 291.61,-599.33"/>
 <text xml:space="preserve" text-anchor="middle" x="191.62" y="-340.4" font-family="Helvetica,sans-Serif" font-size="8.00">litter_id</text>
 </g>
 <!-- notes&#45;&gt;mouse_meta -->
-<g id="edge36" class="edge">
+<g id="edge37" class="edge">
 <title>notes&#45;&gt;mouse_meta</title>
 <path fill="none" stroke="#6b7280" d="M70.59,-213.36C77.91,-288.55 108.53,-572.34 159.75,-644 183.08,-676.64 223.57,-698.46 255.34,-711.5"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="254.4,-713.76 261.81,-714.07 256.21,-709.21 254.4,-713.76"/>
 <text xml:space="preserve" text-anchor="middle" x="191.62" y="-696.22" font-family="Helvetica,sans-Serif" font-size="8.00">subject_mouse_id</text>
 </g>
 <!-- notes&#45;&gt;notes -->
-<g id="edge34" class="edge">
+<g id="edge35" class="edge">
 <title>notes&#45;&gt;notes</title>
 <path fill="none" stroke="#6b7280" d="M46.94,-213.12C40.59,-225.65 47.57,-238 67.88,-238 83.74,-238 91.47,-230.46 91.06,-221.19"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="93.46,-220.66 89.22,-214.57 88.74,-221.97 93.46,-220.66"/>
@@ -416,14 +416,14 @@
 <text xml:space="preserve" text-anchor="middle" x="302.62" y="-96.55" font-family="Helvetica,sans-Serif" font-size="11.00">(6 cols)</text>
 </g>
 <!-- notes&#45;&gt;signals -->
-<g id="edge35" class="edge">
+<g id="edge36" class="edge">
 <title>notes&#45;&gt;signals</title>
 <path fill="none" stroke="#6b7280" d="M96.95,-184.39C139.72,-168.21 221.1,-137.45 267.31,-119.97"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="268.15,-122.28 273.83,-117.51 266.41,-117.69 268.15,-122.28"/>
 <text xml:space="preserve" text-anchor="middle" x="191.62" y="-160.28" font-family="Helvetica,sans-Serif" font-size="8.00">signal_id</text>
 </g>
 <!-- notes&#45;&gt;users -->
-<g id="edge32" class="edge">
+<g id="edge33" class="edge">
 <title>notes&#45;&gt;users</title>
 <path fill="none" stroke="#6b7280" d="M82.22,-213.2C98.13,-233.24 126.75,-264.43 159.75,-278 431.49,-389.77 606.73,-149.99 816.25,-356 854.08,-393.2 818.58,-427.02 848.25,-471 862.12,-491.56 880.5,-483.29 892.5,-505 958.71,-624.81 960.05,-1069.68 959.28,-1183.4"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="956.83,-1183.07 959.23,-1190.08 961.73,-1183.1 956.83,-1183.07"/>
@@ -493,7 +493,7 @@
 <text xml:space="preserve" text-anchor="middle" x="534" y="-872.55" font-family="Helvetica,sans-Serif" font-size="11.00">(8 cols)</text>
 </g>
 <!-- raw_sheet_rows&#45;&gt;import_batches -->
-<g id="edge37" class="edge">
+<g id="edge38" class="edge">
 <title>raw_sheet_rows&#45;&gt;import_batches</title>
 <path fill="none" stroke="#6b7280" d="M582.14,-884.45C619.56,-885.6 671.84,-887.21 710.48,-888.4"/>
 <polygon fill="#6b7280" stroke="#6b7280" points="709.92,-890.83 717,-888.6 710.08,-885.94 709.92,-890.83"/>

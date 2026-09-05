@@ -30,7 +30,7 @@ CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 | column | type | null | default | references |
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
-| `subcolony_id` | bigint | NOT NULL |  | → `subcolonies` |
+| `line_id` | bigint | NOT NULL |  | → `mouse_lines` |
 | `cage_number` | text | NOT NULL |  |  |
 | `location` | text |  |  |  |
 | `status` | text |  |  |  |
@@ -292,6 +292,22 @@ CREATE UNIQUE INDEX mouse_genotypes_order_key ON public.mouse_genotypes USING bt
 CREATE UNIQUE INDEX mouse_genotypes_pkey ON public.mouse_genotypes USING btree (id)
 ```
 
+## `mouse_lines`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `colony_id` | bigint | NOT NULL |  | → `colonies` |
+| `name` | text | NOT NULL |  |  |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE UNIQUE INDEX mouse_lines_colony_name_key ON public.mouse_lines USING btree (colony_id, name) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX mouse_lines_pkey ON public.mouse_lines USING btree (id)
+```
+
 ## `mouse_meta`
 
 | column | type | null | default | references |
@@ -301,7 +317,7 @@ CREATE UNIQUE INDEX mouse_genotypes_pkey ON public.mouse_genotypes USING btree (
 | `litter_code` | text | NOT NULL |  | → `litters` |
 | `pup_number` | integer | NOT NULL |  |  |
 | `dob` | date |  |  |  |
-| `subcolony_id` | bigint |  |  | → `subcolonies` |
+| `line_id` | bigint |  |  | → `mouse_lines` |
 | `raw_mouse_id` | text |  |  |  |
 | `raw_genotype` | text |  |  |  |
 | `raw_parents` | text |  |  |  |
@@ -392,23 +408,6 @@ CREATE UNIQUE INDEX signals_type_key ON public.signals USING btree (type) WHERE 
 CREATE UNIQUE INDEX slots_cage_label_key ON public.slots USING btree (cage_id, label) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX slots_id_cage_key ON public.slots USING btree (id, cage_id)
 CREATE UNIQUE INDEX slots_pkey ON public.slots USING btree (id)
-```
-
-## `subcolonies`
-
-| column | type | null | default | references |
-|---|---|---|---|---|
-| `id` | bigint | NOT NULL |  |  |
-| `colony_id` | bigint | NOT NULL |  | → `colonies` |
-| `name` | text | NOT NULL |  |  |
-| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `deleted_at` | timestamp with time zone |  |  |  |
-
-```sql
-CREATE UNIQUE INDEX subcolonies_colony_name_key ON public.subcolonies USING btree (colony_id, name) WHERE (deleted_at IS NULL)
-CREATE UNIQUE INDEX subcolonies_id_colony_key ON public.subcolonies USING btree (id, colony_id)
-CREATE UNIQUE INDEX subcolonies_pkey ON public.subcolonies USING btree (id)
 ```
 
 ## `tasks`

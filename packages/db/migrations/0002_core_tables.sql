@@ -159,12 +159,12 @@ CREATE TRIGGER colonies_set_updated_at
 
 -- A SUBCOLONY IS A MOUSE LINE (2026-09-05, user). One workbook = one colony;
 -- its column-B "Mouse line" values ('nNf1 flox;ccEGFP', 'WTs', 'Myrf', ...) are
--- its subcolonies. The separate `mouse_lines` table was the SAME THING under
+-- its mouse_lines. The separate `mouse_lines` table was the SAME THING under
 -- another name and is gone.
 --
--- The hierarchy colonies > subcolonies > cages > slots holds exactly:
+-- The hierarchy colonies > mouse_lines > cages > slots holds exactly:
 -- measured on Breeders, all 62 cages belong to exactly ONE line (0 span two).
-CREATE TABLE subcolonies (
+CREATE TABLE mouse_lines (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     colony_id  BIGINT      NOT NULL REFERENCES colonies (id),
     -- The line name as the professor writes it, e.g. 'nNf1 flox;ccEGFP'.
@@ -174,23 +174,20 @@ CREATE TABLE subcolonies (
     deleted_at TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX subcolonies_colony_name_key
-    ON subcolonies (colony_id, name)
+CREATE UNIQUE INDEX mouse_lines_colony_name_key
+    ON mouse_lines (colony_id, name)
     WHERE deleted_at IS NULL;
 
--- Lets litters pin its mice to the same subcolony (composite FK further down).
-ALTER TABLE subcolonies ADD CONSTRAINT subcolonies_id_colony_key UNIQUE (id, colony_id);
-
-CREATE TRIGGER subcolonies_set_updated_at
-    BEFORE UPDATE ON subcolonies
+CREATE TRIGGER mouse_lines_set_updated_at
+    BEFORE UPDATE ON mouse_lines
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- cage_number is UNIQUE alone (not scoped to subcolony) — plan Q12, low risk
+-- cage_number is UNIQUE alone (not scoped to mouse line) — plan Q12, low risk
 -- and consistent with the workbook's single cage_number_seq.
 -- Partial unique: tombstone + reimport must not abort (D1 soft-delete bug class).
 CREATE TABLE cages (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    subcolony_id    BIGINT      NOT NULL REFERENCES subcolonies (id),
+    line_id    BIGINT      NOT NULL REFERENCES mouse_lines (id),
     cage_number     TEXT        NOT NULL,
     location        TEXT,
     status          TEXT,
@@ -293,7 +290,7 @@ CREATE TABLE mouse_meta (
     dob             DATE,
     -- The breeding programme (mouse line) this mouse belongs to. Birth-given:
     -- it is the litter's programme, pinned by the composite FK below.
-    subcolony_id    BIGINT REFERENCES subcolonies (id),
+    line_id    BIGINT REFERENCES mouse_lines (id),
     -- Byte-preserved source label, e.g. 'M4+10BCW'. The one stable handle for
     -- re-import when parsing is uncertain.
     raw_mouse_id    TEXT,
@@ -539,11 +536,11 @@ CREATE TABLE litters (
     litter_code           TEXT COLLATE "C" NOT NULL CHECK (litter_code ~ '^[A-Z]{1,5}$'),
     -- Base-26 ordinal of litter_code, stored so issue order is ORDER BY seq.
     seq                   BIGINT      NOT NULL DEFAULT nextval('litter_code_seq'),
-    -- NO subcolony_id (2026-09-05, user): the programme is reachable through
-    -- mate_id -> mates.subcolony_id, so storing it here would be a second copy.
+    -- NO line_id (2026-09-05, user): the programme is reachable through
+    -- mate_id -> mates.line_id, so storing it here would be a second copy.
     -- ACCEPTED LOSS: a litter with mate_id NULL (parents unknown in historical
     -- data, or an is_from_outside shell) then has no programme of its own. The
-    -- information is not gone — every mouse in it carries mouse_meta.subcolony_id.
+    -- information is not gone — every mouse in it carries mouse_meta.line_id.
     -- NO cycle progress of ANY kind here (2026-09-05, user). The mating date,
     -- the expected-delivery date and the pregnancy stages all belong to the
     -- CYCLE: `mates.expected_delivery_on` and the append-only
@@ -612,16 +609,16 @@ ALTER TABLE mouse_meta
         FOREIGN KEY (litter_id, litter_code) REFERENCES litters (id, litter_code)
         ON UPDATE CASCADE;
 
--- NO composite guard tying mouse_meta.subcolony_id to its litter's
+-- NO composite guard tying mouse_meta.line_id to its litter's
 -- (DECIDED 2026-09-05, user). A mouse MAY belong to a different breeding
 -- programme than the litter it was born in — pups are moved into another line's
 -- programme, so litter and mouse legitimately diverge. This is the one place
 -- the litters/mouse_meta overlap is NOT pinned, and it is deliberate:
--- litter_code IS pinned (a mouse cannot rename its own litter), subcolony is
+-- litter_code IS pinned (a mouse cannot rename its own litter), mouse line is
 -- not (a mouse can be reassigned).
---   mouse_meta.subcolony_id = the programme this MOUSE is in now.
---   litters.subcolony_id    = the programme the LITTER was bred under.
--- Both keep a plain FK to subcolonies, so neither can name a programme that
+--   mouse_meta.line_id = the programme this MOUSE is in now.
+--   litters.line_id    = the programme the LITTER was bred under.
+-- Both keep a plain FK to mouse_lines, so neither can name a programme that
 -- does not exist.
 
 -- ---------------------------------------------------------------------------

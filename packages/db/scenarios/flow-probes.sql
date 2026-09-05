@@ -5,8 +5,8 @@ BEGIN;
 INSERT INTO users (display_name,role) VALUES ('P','professor');
 CREATE TEMP TABLE u AS SELECT max(id) id FROM users;
 INSERT INTO colonies (name) VALUES ('MR');
-INSERT INTO subcolonies (colony_id,name) SELECT id,'n' FROM colonies;
-INSERT INTO cages (subcolony_id,cage_number) SELECT id,'2475' FROM subcolonies;
+INSERT INTO mouse_lines (colony_id,name) SELECT id,'n' FROM colonies;
+INSERT INTO cages (line_id,cage_number) SELECT id,'2475' FROM mouse_lines;
 INSERT INTO litters (litter_code,is_from_outside,created_by) SELECT 'BJA',true,(SELECT id FROM u);
 INSERT INTO mouse_meta (litter_id,litter_code,pup_number) SELECT id,'BJA',1 FROM litters;
 INSERT INTO mice (mouse_meta_id,cage_id,sex,actor_id,reason)
@@ -59,8 +59,8 @@ BEGIN;
 INSERT INTO users (display_name,role) VALUES ('P2','professor');
 CREATE TEMP TABLE u2 AS SELECT max(id) id FROM users;
 INSERT INTO colonies (name) VALUES ('MR2');
-INSERT INTO subcolonies (colony_id,name) SELECT id,'n' FROM colonies WHERE name='MR2';
-INSERT INTO cages (subcolony_id,cage_number) SELECT id,'9001' FROM subcolonies WHERE name='n';
+INSERT INTO mouse_lines (colony_id,name) SELECT id,'n' FROM colonies WHERE name='MR2';
+INSERT INTO cages (line_id,cage_number) SELECT id,'9001' FROM mouse_lines WHERE name='n';
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT v,true,(SELECT id FROM u2) FROM (VALUES ('CAA'),('CAB')) t(v);
 INSERT INTO mouse_meta (litter_id,litter_code,pup_number)
