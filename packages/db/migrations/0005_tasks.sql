@@ -56,12 +56,9 @@ CREATE TRIGGER tasks_set_updated_at
     BEFORE UPDATE ON tasks
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- Head of each logical task: latest version row per origin_task_id.
-CREATE VIEW current_tasks AS
-SELECT DISTINCT ON (origin_task_id) *
-FROM tasks
-WHERE deleted_at IS NULL
-ORDER BY origin_task_id, id DESC;
+-- No current_tasks view (removed 2026-09-05, user). Callers write the
+-- DISTINCT ON (origin_task_id) ... ORDER BY origin_task_id, id DESC head query
+-- themselves; tasks_origin_idx serves it.
 
 -- For upcoming-task view: what is open or done (not yet verified) by due date.
 CREATE INDEX tasks_upcoming_idx

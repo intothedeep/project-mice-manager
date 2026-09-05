@@ -38,8 +38,11 @@ CREATE TABLE matings (
     expected_delivery_on         DATE,
     is_expected_delivery_on_approx BOOLEAN   NOT NULL DEFAULT false,
     expected_delivery_on_raw     TEXT,
-    -- Outcome: delivered <=> litter_id IS NOT NULL. No outcome enum needed.
-    litter_id                    BIGINT REFERENCES litters (id),
+    -- The litter this cycle PRODUCED — named baby_litter_id, not litter_id, to
+    -- separate it from the birth-litter sense litter_id carries on mice.
+    -- Outcome state: delivered <=> baby_litter_id IS NOT NULL. NULL until the
+    -- litters row is created at delivery, so no outcome enum is needed.
+    baby_litter_id               BIGINT REFERENCES litters (id),
     created_by                   BIGINT      NOT NULL REFERENCES users (id),
     import_batch_id              BIGINT REFERENCES import_batches (id),
     source_sheet                 TEXT,
@@ -73,9 +76,9 @@ CREATE UNIQUE INDEX matings_unresolved_key
     WHERE mate_mouse_id IS NULL AND deleted_at IS NULL;
 
 -- One mating per litter outcome.
-CREATE UNIQUE INDEX matings_litter_key
-    ON matings (litter_id)
-    WHERE litter_id IS NOT NULL AND deleted_at IS NULL;
+CREATE UNIQUE INDEX matings_baby_litter_key
+    ON matings (baby_litter_id)
+    WHERE baby_litter_id IS NOT NULL AND deleted_at IS NULL;
 
 -- Timeline for a mouse's breeding history.
 CREATE INDEX matings_subject_mated_idx
@@ -178,12 +181,8 @@ CREATE TRIGGER notes_set_updated_at
     BEFORE UPDATE ON notes
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- Head of each logical note.
-CREATE VIEW current_notes AS
-SELECT DISTINCT ON (origin_note_id) *
-FROM notes
-WHERE deleted_at IS NULL
-ORDER BY origin_note_id, id DESC;
+-- No current_notes view (removed 2026-09-05, user) — same call as current_tasks
+-- in 0005: callers write the DISTINCT ON head query, notes_origin_idx serves it.
 
 -- Version history for a logical note.
 CREATE INDEX notes_origin_idx
