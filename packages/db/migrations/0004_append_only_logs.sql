@@ -21,7 +21,8 @@ CREATE TABLE mouse_attr_logs (
     field      TEXT        NOT NULL CHECK (field IN (
                    'sex', 'mouse_label', 'status', 'attention',
                    'notes', 'genotype_label', 'raw_genotype_correction')),
-    value      TEXT,
+    -- NOT NULL: for field='sex', NULL and 'U' would be two encodings of unknown.
+    value      TEXT        NOT NULL,
     actor_id   BIGINT      NOT NULL REFERENCES users (id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -31,9 +32,6 @@ CREATE TABLE mouse_attr_logs (
 -- raises here instead of silently entering the log and corrupting the grid.
 CREATE FUNCTION validate_mouse_attr_value() RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.value IS NULL THEN
-        RETURN NEW;
-    END IF;
     CASE NEW.field
         WHEN 'sex'       THEN PERFORM NEW.value::sex;
         WHEN 'status'    THEN PERFORM NEW.value::mouse_status;
@@ -51,6 +49,11 @@ CREATE TRIGGER mouse_attr_logs_validate_value
 CREATE TRIGGER mouse_attr_logs_append_only
     BEFORE UPDATE OR DELETE ON mouse_attr_logs
     FOR EACH ROW EXECUTE FUNCTION reject_mutation();
+
+-- TRUNCATE does not fire FOR EACH ROW triggers — it would bypass the guard above.
+CREATE TRIGGER mouse_attr_logs_append_only_truncate
+    BEFORE TRUNCATE ON mouse_attr_logs
+    FOR EACH STATEMENT EXECUTE FUNCTION reject_mutation();
 
 -- Serves the "latest value per (mouse, field)" lookup the view performs.
 CREATE INDEX mouse_attr_logs_latest_idx
@@ -76,10 +79,11 @@ CREATE TABLE mouse_moves (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     mouse_id        BIGINT      NOT NULL REFERENCES mice (id),
     from_cage_id    BIGINT REFERENCES cages (id),
-    to_cage_id      BIGINT REFERENCES cages (id),
+    -- Initial placement legitimately has a NULL origin; the DESTINATION never is.
+    to_cage_id      BIGINT      NOT NULL REFERENCES cages (id),
     from_slot_id    BIGINT REFERENCES slots (id),
     to_slot_id      BIGINT REFERENCES slots (id),
-    moved_by        BIGINT      NOT NULL REFERENCES users (id),
+    actor_id        BIGINT      NOT NULL REFERENCES users (id),
     moved_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- Stays TEXT in v0.1; promote to an enum once the real vocabulary is known.
     reason          TEXT,
@@ -89,6 +93,11 @@ CREATE TABLE mouse_moves (
 CREATE TRIGGER mouse_moves_append_only
     BEFORE UPDATE OR DELETE ON mouse_moves
     FOR EACH ROW EXECUTE FUNCTION reject_mutation();
+
+-- TRUNCATE does not fire FOR EACH ROW triggers — it would bypass the guard above.
+CREATE TRIGGER mouse_moves_append_only_truncate
+    BEFORE TRUNCATE ON mouse_moves
+    FOR EACH STATEMENT EXECUTE FUNCTION reject_mutation();
 
 CREATE INDEX mouse_moves_history_idx ON mouse_moves (mouse_id, moved_at, id);
 
@@ -107,4 +116,10 @@ CREATE TRIGGER audit_logs_append_only
     BEFORE UPDATE OR DELETE ON audit_logs
     FOR EACH ROW EXECUTE FUNCTION reject_mutation();
 
+-- TRUNCATE does not fire FOR EACH ROW triggers — it would bypass the guard above.
+CREATE TRIGGER audit_logs_append_only_truncate
+    BEFORE TRUNCATE ON audit_logs
+    FOR EACH STATEMENT EXECUTE FUNCTION reject_mutation();
+
 CREATE INDEX audit_logs_entity_idx ON audit_logs (entity, entity_id, created_at);
+CREATE INDEX audit_logs_actor_idx ON audit_logs (actor_id, created_at);

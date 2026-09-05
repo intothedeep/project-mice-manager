@@ -14,7 +14,12 @@ CREATE TABLE users (
     id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     clerk_user_id TEXT UNIQUE,
     display_name  TEXT        NOT NULL,
-    role          TEXT        NOT NULL DEFAULT 'staff',
+    -- Constrained because canTransition(role, ...) is the P0-a authorization
+    -- boundary: an unconstrained typo would fail open or closed silently.
+    -- Vocabulary unified on 'professor' (2026-09-04) — the P1 genotyping docs
+    -- said 'director' for the same person.
+    role          TEXT        NOT NULL DEFAULT 'staff'
+        CHECK (role IN ('admin', 'professor', 'staff')),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at    TIMESTAMPTZ
 );
@@ -64,18 +69,24 @@ CREATE TABLE cages (
 -- slot.label is UNIQUE GLOBALLY (plan Q19 resolved) — verify the physical
 -- oddity at the first real import.
 CREATE TABLE slots (
-    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    cage_id    BIGINT      NOT NULL REFERENCES cages (id),
-    label      TEXT        NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMPTZ
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cage_id         BIGINT      NOT NULL REFERENCES cages (id),
+    label           TEXT        NOT NULL UNIQUE,
+    import_batch_id BIGINT REFERENCES import_batches (id),
+    source_sheet    TEXT,
+    source_row      INTEGER,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at      TIMESTAMPTZ
 );
 
 CREATE TABLE mouse_lines (
-    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name       TEXT        NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMPTZ
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name            TEXT        NOT NULL UNIQUE,
+    import_batch_id BIGINT REFERENCES import_batches (id),
+    source_sheet    TEXT,
+    source_row      INTEGER,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at      TIMESTAMPTZ
 );
 
 -- The litter letter code is the import's ONLY resolution key (R9). It is
@@ -127,6 +138,13 @@ CREATE TABLE mice (
     -- pup_number is JUST a distinguishing number within one litter (Q11
     -- resolved): no birth-order or tag semantics, so NO CHECK on its values.
     pup_number      INTEGER,
+    -- The raw source ID string exactly as it appeared in the workbook, e.g.
+    -- 'M4+10BCW'. A BIRTH FACT, immutable, byte-preserved. This is the ONLY
+    -- stable handle for re-importing pooled and unparseable rows: the rendered
+    -- mouse_label lives in mouse_attr_logs and is mutable and non-unique, and
+    -- recovering the string from raw_sheet_rows is fragile because row indices
+    -- shift between file versions.
+    raw_mouse_id    TEXT,
     dob             DATE,
     is_pooled       BOOLEAN     NOT NULL DEFAULT false,
     -- `+N` re-clip notation, multiple reclips PIPE-joined ('6|8'); rendered
@@ -152,6 +170,17 @@ CREATE TABLE mice (
 CREATE UNIQUE INDEX mice_litter_pup_natural_key
     ON mice (litter_id, pup_number)
     WHERE is_pooled = false AND deleted_at IS NULL;
+
+-- Pooled rows are deliberately EXCLUDED from the key above (they share a
+-- pup_number by nature), which would otherwise leave them with no uniqueness
+-- guard at all and let re-import duplicate them on every run. They are keyed on
+-- the raw label instead — the documented pooled re-import path.
+CREATE UNIQUE INDEX mice_pooled_raw_key
+    ON mice (raw_mouse_id)
+    WHERE is_pooled = true AND deleted_at IS NULL;
+
+-- Serves the cage-grid view (mice per cage).
+CREATE INDEX mice_cage_idx ON mice (cage_id) WHERE deleted_at IS NULL;
 
 -- Deferred because litters and mice reference each other.
 ALTER TABLE litters

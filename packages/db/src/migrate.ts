@@ -95,6 +95,17 @@ async function main(): Promise<void> {
     const applied = await loadApplied(pool);
     const lastApplied = await lastAppliedFilename(pool);
 
+    // A recorded migration whose file is gone means the tree no longer matches
+    // the database. Without this check the run reports success against a schema
+    // it can no longer reproduce.
+    const missing = [...applied.keys()].filter((f) => !files.includes(f));
+    if (missing.length > 0) {
+      throw new Error(
+        `[migrate] MISSING MIGRATION FILE(S): ${missing.join(", ")} are recorded as applied ` +
+          `but no longer exist on disk. Restore them — the database cannot be reproduced from this tree.`
+      );
+    }
+
     for (const filename of files) {
       const content = fs.readFileSync(
         path.join(MIGRATIONS_DIR, filename),

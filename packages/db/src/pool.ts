@@ -36,7 +36,9 @@ async function withTransaction<T>(
     await client.query("COMMIT");
     return result;
   } catch (err) {
-    await client.query("ROLLBACK");
+    // Swallow a ROLLBACK failure: if the connection died, the rollback throws
+    // and would replace the real error with a misleading one.
+    await client.query("ROLLBACK").catch(() => {});
     throw err;
   } finally {
     client.release();

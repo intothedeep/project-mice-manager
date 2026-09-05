@@ -6,7 +6,6 @@ CREATE TABLE tasks (
     subject_cage_id  BIGINT REFERENCES cages (id),
     litter_id        BIGINT REFERENCES litters (id),
     task_type        TEXT        NOT NULL,
-    title            TEXT        NOT NULL,
     due_date         DATE,
     -- Fast current pointer. The authoritative history is
     -- task_status_transitions; this column is the denormalized head.
@@ -48,6 +47,11 @@ CREATE TABLE task_status_transitions (
 CREATE TRIGGER task_status_transitions_append_only
     BEFORE UPDATE OR DELETE ON task_status_transitions
     FOR EACH ROW EXECUTE FUNCTION reject_mutation();
+
+-- TRUNCATE does not fire FOR EACH ROW triggers — it would bypass the guard above.
+CREATE TRIGGER task_status_transitions_append_only_truncate
+    BEFORE TRUNCATE ON task_status_transitions
+    FOR EACH STATEMENT EXECUTE FUNCTION reject_mutation();
 
 CREATE INDEX task_status_transitions_task_idx
     ON task_status_transitions (task_id, created_at, id);

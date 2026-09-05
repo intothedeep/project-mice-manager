@@ -30,11 +30,12 @@ CREATE TABLE import_errors (
     column_name     TEXT,
     raw_value       TEXT,
     rule_violated   TEXT        NOT NULL,
-    severity        TEXT        NOT NULL,
+    severity        TEXT        NOT NULL CHECK (severity IN ('error', 'warn')),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- Mutated on triage — which is why this table is not append-only.
     resolved_at     TIMESTAMPTZ,
-    resolved_by     BIGINT REFERENCES users (id)
+    resolved_by     BIGINT REFERENCES users (id),
+    deleted_at      TIMESTAMPTZ
 );
 
 CREATE INDEX import_errors_batch_idx
