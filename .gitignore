@@ -1,0 +1,67 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# testing
+coverage
+
+# next.js
+.next/
+out/
+build
+.swc/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production
+.env.production.local
+
+# turbo
+.turbo
+
+# ui
+dist/
+
+# etc
+*.env
+packages/assets/posts
+z_*
+# doc archive — superseded/verbose docs live here, never committed (see CLAUDE.md doc rule)
+_docs/
+_scripts/
+x_*
+
+# real lab data — the source workbook holds REAL colony records; never committed.
+# The anonymized seed generator (P0.5) is the committed substitute.
+_assets/
+
+# agent/claude runtime artifacts (local-only)
+.agent/
+apps/dashboard_server/supabase/seed.prod.sql
+
+# --- Phase I: stock_collector (polyglot sibling; raw CSV NEVER committed) ---
+apps/stock_collector/data/
+apps/stock_collector/.venv/
+apps/stock_collector/queue/
+apps/stock_collector/*.csv
+apps/stock_collector/htmlcov/
+apps/stock_collector/.pytest_cache/
+apps/stock_collector/uv.lock
+apps/stock_collector/**/__pycache__/
+apps/stock_collector/**/*.pyc
+scripts/migration/00_env.sh
+scripts/migration/_dumps/
