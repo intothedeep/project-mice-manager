@@ -1,4 +1,4 @@
--- Professor/staff weekly cycle against the CURRENT schema.
+-- Professor/staff weekly cycle against the R25 schema.
 -- Every step that once failed (scenarios P1-P7) is re-checked here.
 -- Ends in ROLLBACK.
 \set ON_ERROR_STOP off
@@ -15,17 +15,34 @@ CREATE TEMP TABLE w AS SELECT
 INSERT INTO colonies (name) VALUES ('MouseRoomSheet');
 INSERT INTO mouse_lines (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
 INSERT INTO cages (line_id,cage_number) SELECT id,v FROM mouse_lines,(VALUES ('2475'),('2482')) t(v);
-INSERT INTO slots (cage_id,label) SELECT id,'A8' FROM cages;
+-- slots.label is globally unique; give each cage its own labelled slot
+INSERT INTO slots (cage_id,label)
+SELECT id, cage_number||'-A8' FROM cages;
 
 \echo '#### S1 import: 부모 2마리 (litter 포함 — 외부 쥐도 litter 를 받는다) ####'
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT v,true,(SELECT prof FROM w) FROM (VALUES ('BJA'),('BJB')) t(v);
-INSERT INTO mouse_meta (litter_id,litter_code,line_id,pup_number,dob,raw_mouse_id)
-SELECT id,litter_code,(SELECT id FROM mouse_lines),1,'2025-11-24',litter_code FROM litters;
-INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,actor_id,reason,effective_at)
-SELECT id,(SELECT min(id) FROM cages),(SELECT min(id) FROM slots),'F',(SELECT prof FROM w),'import','2026-08-01'
-FROM mouse_meta;
-INSERT INTO mouse_genotypes (mouse_id,order_index,marker_text) SELECT id,1,'Nf1 f/+' FROM mouse_meta LIMIT 1;
+-- R25: mouse_meta no longer has line_id; line_id lives on mice version rows
+INSERT INTO mouse_meta (litter_id,litter_code,pup_number,dob,raw_mouse_id)
+SELECT id,litter_code,1,'2025-11-24',litter_code FROM litters;
+-- R25: line_id required on each mice version row; prev_id NULL for creation rows
+INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,line_id,actor_id,reason,effective_at)
+SELECT mm.id,
+       (SELECT c.id FROM cages c WHERE c.cage_number='2475'),
+       (SELECT s.id FROM slots s WHERE s.label='2475-A8'),
+       'F',(SELECT id FROM mouse_lines),(SELECT prof FROM w),'import','2026-08-01'
+FROM mouse_meta mm;
+-- R25: mouse_genotypes -> mice_genes; marker_text -> gene_id FK to genes.code
+INSERT INTO genes (code) VALUES ('Nf1 f/+') ON CONFLICT DO NOTHING;
+INSERT INTO mice_genes (mouse_id,order_index,gene_id)
+SELECT id,1,(SELECT id FROM genes WHERE code='Nf1 f/+') FROM mouse_meta LIMIT 1;
+-- Verify genotype string via the R25 contract: string_agg(g.code, ';' ORDER BY mg.order_index)
+SELECT mm.litter_code,
+       string_agg(g.code, ';' ORDER BY mg.order_index) AS genotype
+FROM mouse_meta mm
+JOIN mice_genes mg ON mg.mouse_id = mm.id
+JOIN genes g ON g.id = mg.gene_id
+GROUP BY mm.id, mm.litter_code;
 \echo '   -> ok'
 
 \echo '#### P4 같은 (litter, pup) 재삽입 -> 거부 ####'
@@ -37,8 +54,9 @@ ROLLBACK TO p4;
 \echo '#### P5 배치 전 쥐도 상태행을 갖는다 (cage/slot NULL) ####'
 INSERT INTO litters (litter_code,is_from_outside,created_by) VALUES ('BJC',true,(SELECT prof FROM w));
 INSERT INTO mouse_meta (litter_id,litter_code,pup_number) SELECT id,'BJC',1 FROM litters WHERE litter_code='BJC';
-INSERT INTO mice (mouse_meta_id,sex,actor_id,reason)
-SELECT id,'U',(SELECT prof FROM w),'created' FROM mouse_meta WHERE litter_code='BJC';
+INSERT INTO mice (mouse_meta_id,sex,line_id,actor_id,reason)
+SELECT id,'U',(SELECT id FROM mouse_lines),(SELECT prof FROM w),'created'
+FROM mouse_meta WHERE litter_code='BJC';
 SELECT mm.litter_code, m.cage_id, m.is_alive, m.transit_status
 FROM mice m JOIN mouse_meta mm ON mm.id=m.mouse_meta_id WHERE mm.litter_code='BJC';
 
@@ -68,21 +86,37 @@ SELECT task_type FROM tasks t WHERE t.assigned_to=(SELECT staff FROM w)
    OR t.assigned_to IN (SELECT g.user_id FROM groups g JOIN group_members gm ON gm.group_id=g.id
                         WHERE gm.user_id=(SELECT staff FROM w));
 
-\echo '#### S8 task 수명주기 open -> done -> verified ####'
-INSERT INTO tasks (origin_task_id,task_type,status,from_status,actor_role,created_by,done_by,done_at)
-SELECT origin_task_id,task_type,'done','open','staff',created_by,(SELECT staff FROM w),now()
-FROM tasks WHERE from_status IS NULL AND task_type='wean';
-INSERT INTO tasks (origin_task_id,task_type,status,from_status,actor_role,created_by,verified_by,verified_at)
-SELECT origin_task_id,task_type,'verified','done','professor',created_by,(SELECT prof FROM w),now()
-FROM tasks WHERE status='done';
+\echo '#### S8 task 수명주기 open -> done -> verified (prev_id CAS 사용) ####'
+-- R25: tasks have prev_id. Append with prev_id = head id for CAS safety.
+INSERT INTO tasks (origin_task_id,task_type,status,from_status,actor_role,created_by,
+                   assigned_to,direction,prev_id,done_by,done_at)
+SELECT h.origin_task_id,h.task_type,'done','open','staff',h.created_by,
+       h.assigned_to,h.direction,h.id,(SELECT staff FROM w),now()
+FROM (SELECT DISTINCT ON (origin_task_id) * FROM tasks WHERE deleted_at IS NULL
+      ORDER BY origin_task_id,id DESC) h
+WHERE h.from_status IS NULL AND h.task_type='wean';
+INSERT INTO tasks (origin_task_id,task_type,status,from_status,actor_role,created_by,
+                   assigned_to,direction,prev_id,verified_by,verified_at)
+SELECT h.origin_task_id,h.task_type,'verified','done','professor',h.created_by,
+       h.assigned_to,h.direction,h.id,(SELECT prof FROM w),now()
+FROM (SELECT DISTINCT ON (origin_task_id) * FROM tasks WHERE deleted_at IS NULL
+      ORDER BY origin_task_id,id DESC) h
+WHERE h.status='done';
 SELECT DISTINCT ON (origin_task_id) origin_task_id,status FROM tasks ORDER BY origin_task_id,id DESC;
 
 \echo '#### P6/P7 이동 + 성별 정정 = mice 행 추가 (mouse_moves 없음) ####'
-INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,actor_id,reason,transit_status,effective_at,idempotency_key)
-SELECT mouse_meta_id,(SELECT max(id) FROM cages),(SELECT max(id) FROM slots),'M',
-       (SELECT staff FROM w),'weaned + sexed','verified','2026-09-01',gen_random_uuid()
-FROM (SELECT DISTINCT ON (mouse_meta_id) mouse_meta_id FROM mice ORDER BY mouse_meta_id,id DESC) x LIMIT 1;
-SELECT m.id,m.cage_id,m.sex,m.reason,m.effective_at::date
+-- R25: append must carry prev_id = head id; also carry line_id forward.
+INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,line_id,actor_id,reason,
+                  transit_status,effective_at,idempotency_key,prev_id)
+SELECT prev.mouse_meta_id,
+       (SELECT c.id FROM cages c WHERE c.cage_number='2482'),
+       (SELECT s.id FROM slots s WHERE s.label='2482-A8'),
+       'M',prev.line_id,(SELECT staff FROM w),'weaned + sexed','verified','2026-09-01',
+       gen_random_uuid(),prev.id
+FROM (SELECT DISTINCT ON (mouse_meta_id) * FROM mice WHERE deleted_at IS NULL
+      ORDER BY mouse_meta_id,id DESC) prev
+WHERE prev.mouse_meta_id=(SELECT min(id) FROM mouse_meta);
+SELECT m.id,m.cage_id,m.sex,m.reason,m.effective_at::date,m.line_id
 FROM mice m WHERE m.mouse_meta_id=(SELECT min(id) FROM mouse_meta) ORDER BY m.id;
 
 \echo '#### P3 죽음: is_alive (살아있는데 사인 기록 -> 거부) ####'
@@ -90,14 +124,21 @@ SAVEPOINT p3;
 INSERT INTO mice (mouse_meta_id,actor_id,is_alive,death_reason)
 SELECT min(id),(SELECT staff FROM w),true,'sac' FROM mouse_meta;
 ROLLBACK TO p3;
-INSERT INTO mice (mouse_meta_id,actor_id,is_alive,death_reason,reason)
-SELECT min(id),(SELECT staff FROM w),false,'sac','sacrificed' FROM mouse_meta;
+-- Correct append: carry full head state forward, set is_alive=false, prev_id=head id.
+INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,line_id,actor_id,
+                  is_alive,death_reason,reason,prev_id)
+SELECT prev.mouse_meta_id,prev.cage_id,prev.slot_id,prev.sex,prev.line_id,
+       (SELECT staff FROM w),false,'sac','sacrificed',prev.id
+FROM (SELECT DISTINCT ON (mouse_meta_id) * FROM mice WHERE deleted_at IS NULL
+      ORDER BY mouse_meta_id,id DESC) prev
+WHERE prev.mouse_meta_id=(SELECT min(id) FROM mouse_meta);
 SELECT DISTINCT ON (mouse_meta_id) is_alive,death_reason FROM mice
 WHERE mouse_meta_id=(SELECT min(id) FROM mouse_meta) ORDER BY mouse_meta_id,id DESC;
 
-\echo '#### S10 케이지 격자 (빈 케이지 포함) ####'
+\echo '#### S10 케이지 격자 (빈 케이지 포함, 살아있는 쥐만 집계) ####'
 SELECT c.cage_number,count(cur.mouse_meta_id) AS mice
 FROM cages c LEFT JOIN (SELECT DISTINCT ON (mouse_meta_id) * FROM mice
-  WHERE deleted_at IS NULL ORDER BY mouse_meta_id,id DESC) cur ON cur.cage_id=c.id
+  WHERE deleted_at IS NULL ORDER BY mouse_meta_id,id DESC) cur
+  ON cur.cage_id=c.id AND cur.is_alive=true
 GROUP BY 1 ORDER BY 1;
 ROLLBACK;

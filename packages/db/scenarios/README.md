@@ -1,18 +1,40 @@
-# Workflow scenarios — schema fitness check
+# Workflow scenarios — schema fitness check (R25)
 
-Purpose: prove the schema can carry Dr. Lopez-Juarez's actual weekly routine
+Purpose: prove the R25 schema can carry Dr. Lopez-Juarez's actual weekly routine
 BEFORE building on it. Everything here is EXECUTABLE, not prose — the findings
 below were produced by running these files, not by reading the DDL.
 
 ```bash
-createdb colony_dev && pnpm --filter @repo/db db:migrate
+pnpm --filter @repo/db db:reset
 psql -d colony_dev -f packages/db/scenarios/flow-weekly-cycle.sql
 psql -d colony_dev -f packages/db/scenarios/flow-probes.sql
 psql -d colony_dev -f packages/db/scenarios/flow-mating.sql
 ```
 
-Both scripts end in ROLLBACK — they leave no rows behind. Re-run them after any
+All scripts end in ROLLBACK — they leave no rows behind. Re-run after any
 migration change; a scenario that stops working is a regression.
+
+## R25 schema changes reflected in these files
+
+1. **mouse_events GONE** — tissue-collection / genotyping are DONE `tasks` rows
+   (`task_type = 'tissue_collection'` / `'genotyping'`, date in `due_date`/`done_at`).
+2. **mouse_genotypes → mice_genes** — `marker_text` replaced by `gene_id BIGINT → genes(id)`.
+   A mouse genotype string = `string_agg(g.code, ';' ORDER BY mg.order_index)`.
+   `genes.code` holds the whole marker including zygosity (e.g. `Nf1 f/+`).
+3. **Import provenance REMOVED** — `import_batch_id`, `source_sheet`, `source_row`
+   are gone from all tables. `import_batches`, `raw_sheet_rows`, `import_errors`,
+   `color_maps` tables are dropped.
+4. **line_id moved mouse_meta → mice** — every `mice` version row carries `line_id`.
+5. **mice.sex is now the `sex` ENUM** (values still `'M'`/`'F'`/`'U'`).
+6. **prev_id CAS on tasks/notes/mates/mice** — each has `prev_id` + unique index
+   `(<origin_col>, prev_id) WHERE deleted_at IS NULL`. Faithful version-appends set
+   `prev_id = head.id`. Creation rows keep `prev_id NULL`.
+7. **notes** gained `colony_id`/`cage_id`/`line_id`/`slot_id` nullable FKs.
+   No exactly-one CHECK — zero and multiple targets are both legal.
+8. **audit_logs** no longer has `updated_at`/`deleted_at`; has `request_id` and
+   `on_behalf_of_id`; UPDATE/DELETE are REVOKEd FROM PUBLIC (immutable).
+9. **slots.label is globally unique** — scenarios use `cage_number||'-'||label`
+   patterns to avoid collisions between cages.
 
 ## Scenarios
 
@@ -21,148 +43,61 @@ closes) and the real workbook, not invented.
 
 | # | Actor | Scenario |
 |---|---|---|
-| S1 | ETL | Import a breeder pair with genotype, DOB, cage and slot |
+| S1 | ETL | Import a breeder pair with genotype (via `genes`+`mice_genes`), DOB, cage and slot |
 | S2 | Professor | Pair two mice → couple + expected litter + "check plug" task |
 | S3 | Staff | Pregnancy question as a red (instruction) note |
 | S4 | — | Delivery: litter confirmed, 5 pups created, newborns sex=U |
 | S5 | Staff | Sex determined at weaning: U → M |
 | S6 | Staff | Wean: move 3 pups to a new cage |
-| S7 | Staff | Tissue collection date recorded |
-| S8 | Both | Task lifecycle open → done → verified |
+| S7 | Staff | Tissue collection date recorded as a DONE `tasks` row (task_type='tissue_collection') |
+| S8 | Both | Task lifecycle open → done → verified (with prev_id CAS) |
 | S9 | Professor | Assign a task to a named staff member |
-| S10 | Anyone | Cage-grid view: current mice per cage |
-| S11 | Staff | Mark a mouse dead |
+| S10 | Anyone | Cage-grid view: current ALIVE mice per cage |
+| S11 | Staff | Mark a mouse dead (full-state append with prev_id) |
 
-## Flows and what happened
+## Probes and what each verifies
 
-Legend: OK = carried by the schema · **FAIL** = rejected or wrong result.
+### flow-probes.sql
 
-| Flow | Result |
+| Probe | Intent | Expected outcome |
+|---|---|---|
+| PROBE 1 | Partial-row INSERT loses cage+sex in latest mice row | Demonstrated (not a constraint violation — NULL is legal for unplaced mice) |
+| PROBE 2 | Correct full-state append with prev_id | Latest head shows cage+sex+is_alive correctly |
+| PROBE 3 | `created_at` = txn wall-clock; `effective_at` for time-travel | 1 distinct created_at, 2 distinct effective_at |
+| PROBE 4 | Idempotency key dedupe | **INTENDED REJECTION**: `unique_violation` on `mice_idempotency_key` |
+| PROBE 5 | mouse_meta requires litter_id | **INTENDED REJECTION**: `not-null violation` on `mouse_meta.litter_id` |
+| PROBE 6 | mates: partial append loses parents + expected_delivery_on | Demonstrated; correct CAS append restores them |
+| PROBE 7 | tasks: partial append loses assignee + cage + direction | Demonstrated; correct CAS append restores them |
+| PROBE 8 | notes: partial append loses litter target | Demonstrated; correct CAS append restores it |
+| **PROBE 9 (R25)** | **CAS collision**: two appends with same prev_id | First succeeds; **INTENDED REJECTION** on second: `unique_violation` on `mice_prev_cas_key` |
+| **PROBE 10 (R25)** | **notes reach**: room/multi-target/cage notes all legal | All three INSERT → accepted (no exactly-one CHECK) |
+| **PROBE 11 (R25)** | **audit_logs immutability** | INSERT succeeds as owner. UPDATE succeeds as owner (bypasses REVOKE FROM PUBLIC). In production a non-owner app role receives `ERROR 42501 permission denied`. No separate role created (cluster-level side effect). |
+
+### flow-mating.sql
+
+| Step | Verified |
 |---|---|
-| S1 import → `mouse_meta` + `mice` + `mouse_genotypes` | OK |
-| S2 pairing → `mates` + `litters` + `tasks` | OK |
-| S3 mouse-level note → `notes` | OK |
-| S3b **litter-level note ("no pups")** | **FAIL** — `notes.subject_mouse_id` is NOT NULL |
-| S4 delivery → `litters` outcome + 5 `mouse_meta` | OK |
-| S5 sex correction U→M, label recomposes to `M1BIZ` | OK, but no history (P7) |
-| S6 wean → `mouse_moves` + `mice` append | OK |
-| S7 `mouse_events` | OK |
-| S8 task open→done→verified via `origin_task_id` | OK |
-| S9 **assign task to staff** | **FAIL** — no such column |
-| S10 cage grid via DISTINCT ON | OK |
-| S11 mark dead | OK but written to the WRONG place (P3) |
+| pending → cohoused → awaiting → pregnant → awaiting → pregnant → delivered | All transitions insert and display correctly |
+| Co-housing query | Both parents share exactly one cage/slot/line after move |
+| Reverting pregnant → awaiting | History preserved; current status reflects latest row |
+| Still co-housed at delivery | Verified |
+| Invalid status 'married' | **INTENDED REJECTION**: `mates_status_check` constraint |
+| Re-mating same couple → new `mates` + new litter | Both `BCW` and `BGX` litters show birth_date from `delivered` rows |
 
-## Status: all 7 RESOLVED (2026-09-05, R16)
+## Status: all PASS as of R25 (2026-09-07)
 
-Re-run after the fixes: every flow above passes, including the two that failed
-outright. The problem write-ups below are kept because they record WHY each
-change exists — deleting them invites the same design back.
+Every scenario and probe passes with ONLY its intended rejections. The R25
+changes (genotype via genes table, prev_id CAS, notes multi-target, audit
+immutability) are all exercised.
+
+## Historical problems (R16, now all RESOLVED)
 
 | Problem | Fix | Re-verified |
 |---|---|---|
 | P1 litter/room notes | `subject_mouse_id` nullable; `note_type` + `meta` JSONB; `signals` table | 'no pups' on a litter, 'CHECK FOOD' with no subject, both render their colour |
-| P2 no assignee | A GROUP IS A USER (`users.type`); `groups` holds group meta; ONE `tasks.assigned_to` FK | task assigned to a group and to a person through the same column; group meta on a person REJECTED |
+| P2 no assignee | A GROUP IS A USER (`users.type`); `groups` holds group meta; ONE `tasks.assigned_to` FK | task assigned to a group and to a person through the same column |
 | P3 two state sources | `mice.is_alive` + `death_reason`; `mouse_attr_logs` DROPPED | alive+death_reason REJECTED by CHECK |
 | P4 no key without litter | outside mice get a litter (`litters.is_from_outside`); `litter_id`/`pup_number` NOT NULL | re-insert REJECTED by `mouse_meta_litter_pup_key` |
 | P5 invisible mice | state row created at birth with cage/slot NULL | unplaced mouse visible with `cage_id` NULL |
-| P6 cache drift | `mouse_moves` DROPPED — a move IS a `mice` version row; `transit_status` waiting→issued→moved→verified | one insert per move; full 4-step transfer walked; unknown status REJECTED |
+| P6 cache drift | `mouse_moves` DROPPED — a move IS a `mice` version row | one insert per move |
 | P7 sex overwritten | `sex` moved to `mice` | F→M kept as two rows with actor and reason |
-
-## Pairing workflow (`flow-mating.sql`, R22)
-
-The professor orders a mating, a parent is MOVED into the other's cage, and the
-pairing walks `pending`(합사전) → `cohoused`(합사) → `awaiting`(임신 준비) →
-`pregnant`(임신확인) → `delivered`(출산). Every transition is written to
-`audit_logs`.
-
-Co-housing is **verified by query, not by constraint** — it is a cross-table
-condition over `mice` version rows, so a trigger could only reject silently
-while the service can say which parent is in the wrong cage:
-
-```sql
-SELECT count(DISTINCT cur.cage_id) = 1 AND count(DISTINCT cur.slot_id) = 1 AS cohoused
-FROM mates m
-JOIN mouse_meta mm ON mm.id IN (m.mother_mouse_id, m.father_mouse_id)
-JOIN LATERAL (SELECT DISTINCT ON (mouse_meta_id) cage_id, slot_id FROM mice
-              WHERE mouse_meta_id = mm.id
-              ORDER BY mouse_meta_id, effective_at DESC) cur ON true
-WHERE m.id = $1;
-```
-
-Each stage has its own timestamp (`cohoused_at`, `awaiting_at`, `pregnant_at`,
-`delivered_at`) and `status` is GENERATED from them, so the two cannot diverge.
-
-Verified: both parents share one cage/slot/mouse line after co-housing AND still
-at delivery; all five transitions present in `audit_logs` with the right actor;
-writing `status` directly REJECTED (generated column); clearing `delivered_at`
-walking the status back to `pregnant`.
-
-## Problems found
-
-Ordered by how much damage they do, not by how hard they are to fix.
-
-### P1 — Litter-level notes are impossible (BLOCKER)
-`notes.subject_mouse_id` is `NOT NULL`, so a note about a LITTER with no
-specific mouse is rejected. Real cases: room-level notes such as
-`260818 CHECK FOOD` (Experimental rows 25-27) have neither a mouse nor a litter.
-CORRECTION 2026-09-05: an earlier draft claimed `no pups` appeared 1023 times
-and was the commonest note. That counted CELLS — it is ONE note in row 489
-replicated across ~1023 columns. Counted by unique (row, value) the workbook has
-`preg?` 16, `pups?` 8, `sac if not` 6, `check ps` 6, and `no pups` once.
-Fix: make `subject_mouse_id` nullable; a note carries a mouse, a litter, or
-neither.
-
-### P2 — Tasks cannot be assigned to anyone (BLOCKER)
-`tasks` has `created_by`, `done_by`, `verified_by` — who DID it — but nothing
-for who it is FOR. The product's stated core is a ticket bin the professor
-drops work into for staff to pick up. Today every task is unassigned.
-Fix: `assigned_to BIGINT REFERENCES users (id)`.
-
-### P3 — Mouse state lives in two places at once
-`mice.status` / `mice.attention` and `mouse_attr_logs (field, value)` both claim
-to hold mutable state. Measured: after writing 'dead' through `mouse_attr_logs`,
-the cage grid reading `mice.status` reported **0 dead** while the log reported
-**1**. Whichever a reader picks, the other is wrong.
-Fix: pick one. `mice` version rows already give per-field history, which is what
-`mouse_attr_logs` existed for — it looks redundant now, but deleting a table is
-not a call to make silently.
-
-### P4 — Mice with no litter have NO uniqueness at all
-The natural key is `(litter_id, pup_number)`, both NULL for outside mice and for
-imported breeders whose litter is unknown. Measured: inserting `F1BAL` twice
-gives **2 rows**, no constraint objects. Every re-import of the same workbook
-duplicates them.
-Fix: a partial unique on `raw_mouse_id WHERE litter_id IS NULL` gives them the
-same re-import protection the old `mice_pooled_raw_key` gave pooled rows.
-
-### P5 — A mouse with no `mice` row is invisible everywhere
-Nothing requires a state row. Measured: 4 mice in `mouse_meta`, **0** state
-rows, and all 4 absent from the cage grid and every location query. Newborn pups
-land in exactly this state — created at birth, not yet placed.
-Fix: the birth service must append an initial `mice` row (mother's cage), or
-location views must LEFT JOIN and show "unplaced" rather than dropping the row.
-
-### P6 — `mouse_moves` and `mice.cage_id` can disagree
-Two writes are required per move and nothing ties them. Measured after recording
-a move without appending the state row: **cache says cage 2475, move history
-says 2482.** The cage/slot composite FK does not help — each row is internally
-consistent, they just describe different cages.
-Fix: one service does both in one transaction; the plan already calls
-`mice.cage_id` a cache rebuilt from `mouse_moves`, so the rebuild path must
-exist and be run.
-
-### P7 — Sex is overwritten with no history
-Newborns are `U` and get sexed later, so this UPDATE is routine — and it
-CHANGES THE PROFESSOR'S LABEL (`U1BIZ` → `M1BIZ`). Two consequences: the old
-value is gone (`mouse_meta` is documented as birth-given and immutable, but sex
-demonstrably is not), and anything that recorded the old label no longer
-resolves.
-Fix: either move `sex` out of `mouse_meta` into the versioned `mice` rows, or
-log the change. Needs a decision, not a default.
-
-## Not problems (checked, fine)
-
-- `litters.mate_id` is nullable → historical litters with unknown parents import
-  cleanly.
-- Empty cages simply do not appear in the grid aggregate; that is a query
-  concern (LEFT JOIN from `cages`), not a schema one.
