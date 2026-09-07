@@ -209,7 +209,7 @@ CREATE UNIQUE INDEX mice_prev_cas_key ON public.mice USING btree (mouse_meta_id,
 
 ```sql
 CREATE UNIQUE INDEX mice_genes_order_key ON public.mice_genes USING btree (mouse_id, order_index) WHERE (deleted_at IS NULL)
-CREATE UNIQUE INDEX mouse_genotypes_pkey ON public.mice_genes USING btree (id)
+CREATE UNIQUE INDEX mice_genes_pkey ON public.mice_genes USING btree (id)
 ```
 
 ## `mouse_lines`
