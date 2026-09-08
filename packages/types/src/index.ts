@@ -9,3 +9,5 @@ export type {
   GridLine,
   ColonyGrid,
 } from "./grid";
+
+export type { TaskStatus, Role, TaskSubjectKind, TaskCard } from "./task";

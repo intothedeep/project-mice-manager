@@ -36,14 +36,9 @@ export default async function HomePage() {
     return (
         <main className="mx-auto max-w-[1400px] px-6 py-6">
             <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight">
-                        {colony.colonyName}
-                    </h1>
-                    <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                        colony › line › cage › slot › mouse
-                    </p>
-                </div>
+                <p className="font-mono text-xs text-muted-foreground">
+                    {colony.colonyName} · colony › line › cage › slot › mouse
+                </p>
                 <Legend />
             </header>
             <ColonyGridView initial={colony} />
