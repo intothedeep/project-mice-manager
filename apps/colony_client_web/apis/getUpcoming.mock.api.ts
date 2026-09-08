@@ -114,6 +114,9 @@ const ITEMS: UpcomingItem[] = [
     },
 ];
 
+// Seed for the client store; the real fetcher will replace this.
+export const SEED_UPCOMING = ITEMS;
+
 export async function getUpcoming(): Promise<UpcomingItem[]> {
     return ITEMS;
 }

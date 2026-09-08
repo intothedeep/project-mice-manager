@@ -91,6 +91,9 @@ const TASKS: TaskCard[] = [
     },
 ];
 
+// Seed for the client store; the real fetcher will replace this.
+export const SEED_TASKS = TASKS;
+
 export async function getTasks(): Promise<TaskCard[]> {
     return TASKS;
 }

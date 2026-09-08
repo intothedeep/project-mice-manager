@@ -9,7 +9,7 @@ export type TaskStatus = 'open' | 'done' | 'verified' | 'cancelled';
 // Who is acting. `professor` = the director/PI; `staff` = lab members.
 export type Role = 'staff' | 'professor' | 'admin';
 
-export type TaskSubjectKind = 'mouse' | 'cage' | 'litter' | 'room';
+export type TaskSubjectKind = 'mouse' | 'cage' | 'litter' | 'room' | 'mate';
 
 export interface TaskCard {
     id: number;
@@ -22,4 +22,5 @@ export interface TaskCard {
     assignee: string | null; // person or group display name
     doneBy: string | null;
     verifiedBy: string | null;
+    direction?: Record<string, unknown>; // type-specific payload (mirrors tasks.direction jsonb)
 }

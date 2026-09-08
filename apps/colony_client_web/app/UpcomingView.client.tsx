@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { UpcomingItem } from '@/apis/getUpcoming.mock.api';
+import { useUpcoming } from '@/lib/mockStore';
 import { dueStatus, daysUntil, TODAY } from '@/lib/dueDates';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -198,7 +199,8 @@ function SectionPanel({
 
 // --- main export ---
 
-export function UpcomingView({ initial }: { initial: UpcomingItem[] }) {
+export function UpcomingView() {
+    const items = useUpcoming();
     const [activeKinds, setActiveKinds] = useState<Set<UpcomingItem['kind']>>(
         new Set(ALL_KINDS)
     );
@@ -216,7 +218,7 @@ export function UpcomingView({ initial }: { initial: UpcomingItem[] }) {
         });
     }
 
-    const filtered = initial.filter((item) => activeKinds.has(item.kind));
+    const filtered = items.filter((item) => activeKinds.has(item.kind));
 
     return (
         <div className="space-y-3">

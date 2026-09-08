@@ -182,6 +182,9 @@ const COLONY_GRID: ColonyGrid = {
     ],
 };
 
+// Seed for form pickers (mouse/cage options) in the client store era.
+export const SEED_COLONY = COLONY_GRID;
+
 // Simulates the async shape of the real fetcher; echoes the requested colonyId
 // so the seam matches the real endpoint (which will key off it).
 export async function getColonyGrid(colonyId: number): Promise<ColonyGrid> {

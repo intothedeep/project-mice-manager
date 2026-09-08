@@ -1,12 +1,10 @@
-import { getUpcoming } from '@/apis/getUpcoming.mock.api';
 import { UpcomingView } from '../UpcomingView.client';
 
-// Server Component: fetch the upcoming due-date queue (mock now, colony_server
-// later) and hand it to the interactive board.
+// Server Component shell; the board reads the shared client store (mock era) so
+// mate follow-ups auto-cascaded from the Task bin appear here. Swaps to
+// react-query + the real endpoint later.
 
-export default async function UpcomingPage() {
-    const items = await getUpcoming();
-
+export default function UpcomingPage() {
     return (
         <main className="mx-auto max-w-[1400px] px-6 py-6">
             <header className="mb-4">
@@ -18,7 +16,7 @@ export default async function UpcomingPage() {
                     computed automatically from mating and birth records.
                 </p>
             </header>
-            <UpcomingView initial={items} />
+            <UpcomingView />
         </main>
     );
 }

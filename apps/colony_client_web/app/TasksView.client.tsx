@@ -2,7 +2,10 @@
 
 import type { Role, TaskCard, TaskStatus } from '@repo/types';
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { availableActions } from '@/lib/taskFlow';
+import { useTasks, setTaskStatus } from '@/lib/mockStore';
+import { NewTaskDialog } from './NewTaskDialog.client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -14,12 +17,6 @@ const ROLES: { role: Role; label: string }[] = [
     { role: 'admin', label: 'Admin' },
 ];
 
-const ACTOR: Record<Role, string> = {
-    staff: 'You (staff)',
-    professor: 'Dr. Lopez-Juarez',
-    admin: 'Admin',
-};
-
 const COLUMNS: { status: TaskStatus; label: string; hint: string }[] = [
     { status: 'open', label: 'Open', hint: 'dropped by professor' },
     { status: 'done', label: 'Done', hint: 'staff completed' },
@@ -28,42 +25,40 @@ const COLUMNS: { status: TaskStatus; label: string; hint: string }[] = [
 
 const TODAY = '2026-09-08';
 
-export function TasksView({ initial }: { initial: TaskCard[] }) {
-    const [tasks, setTasks] = useState(initial);
+export function TasksView() {
+    const tasks = useTasks();
     const [role, setRole] = useState<Role>('staff');
+    const [creating, setCreating] = useState(false);
 
     function act(task: TaskCard, to: TaskStatus) {
-        setTasks((ts) =>
-            ts.map((t) =>
-                t.id !== task.id
-                    ? t
-                    : {
-                          ...t,
-                          status: to,
-                          doneBy: to === 'done' ? ACTOR[role] : t.doneBy,
-                          verifiedBy:
-                              to === 'verified'
-                                  ? ACTOR[role]
-                                  : to === 'open'
-                                    ? null
-                                    : t.verifiedBy,
-                      }
-            )
-        );
+        setTaskStatus(task.id, to, role);
     }
 
     return (
         <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
-                    Professor drops a task → staff marks it done → professor
-                    verifies. Buttons enable by role.
+                    Anyone can add a task; staff mark done, the professor
+                    verifies. Advance buttons enable by role.
                 </p>
-                <RoleSwitch
-                    role={role}
-                    onChange={setRole}
-                />
+                <div className="flex items-center gap-2">
+                    <RoleSwitch
+                        role={role}
+                        onChange={setRole}
+                    />
+                    <Button
+                        size="sm"
+                        onClick={() => setCreating(true)}
+                    >
+                        <Plus className="size-3.5" /> New task
+                    </Button>
+                </div>
             </div>
+
+            <NewTaskDialog
+                open={creating}
+                onClose={() => setCreating(false)}
+            />
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {COLUMNS.map((col) => {

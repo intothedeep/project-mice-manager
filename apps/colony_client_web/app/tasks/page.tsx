@@ -1,12 +1,10 @@
-import { getTasks } from '@/apis/getTasks.mock.api';
 import { TasksView } from '../TasksView.client';
 
-// Server Component: fetch the task queue (mock now, colony_server later) and
-// hand it to the interactive board.
+// Server Component shell; the board reads the shared client store (mock era)
+// so tasks created here — and their auto-cascaded follow-ups — persist across
+// route navigation. Swaps to react-query + the real endpoint later.
 
-export default async function TasksPage() {
-    const tasks = await getTasks();
-
+export default function TasksPage() {
     return (
         <main className="mx-auto max-w-[1400px] px-6 py-6">
             <header className="mb-4">
@@ -17,7 +15,7 @@ export default async function TasksPage() {
                     The weekly loop that replaces hand-versioned Excel.
                 </p>
             </header>
-            <TasksView initial={tasks} />
+            <TasksView />
         </main>
     );
 }
