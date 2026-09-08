@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 const LINKS = [
     { href: '/', label: 'Cages' },
     { href: '/tasks', label: 'Tasks' },
+    { href: '/upcoming', label: 'Upcoming' },
 ];
 
 export function NavBar() {

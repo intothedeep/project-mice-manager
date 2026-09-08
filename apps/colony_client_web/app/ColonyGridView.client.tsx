@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { MoveMenu } from './MoveMenu.client';
+import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
 
@@ -56,6 +57,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
         initial.lines[0]?.cages[0]?.cageId ?? 0
     );
     const [moving, setMoving] = useState<Moving | null>(null);
+    const [detail, setDetail] = useState<SelectedMouse | null>(null);
 
     const on = isFilterActive(filter);
     const match = useMemo(
@@ -178,6 +180,16 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                     inActiveCage={isActiveCage}
                                                     filterOn={on}
                                                     isMatch={match(m)}
+                                                    onOpen={() =>
+                                                        setDetail({
+                                                            mouse: m,
+                                                            lineName:
+                                                                l.lineName,
+                                                            cageNumber:
+                                                                c.cageNumber,
+                                                            slotLabel: s.label,
+                                                        })
+                                                    }
                                                     onMove={() =>
                                                         setMoving({
                                                             mouse: m,
@@ -208,6 +220,11 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                     onClose={() => setMoving(null)}
                 />
             ) : null}
+
+            <MouseDetailDrawer
+                selected={detail}
+                onClose={() => setDetail(null)}
+            />
         </div>
     );
 }
@@ -472,12 +489,14 @@ function MouseRow({
     inActiveCage,
     filterOn,
     isMatch,
+    onOpen,
     onMove,
 }: {
     mouse: MouseCell;
     inActiveCage: boolean;
     filterOn: boolean;
     isMatch: boolean;
+    onOpen: () => void;
     onMove: () => void;
 }) {
     // Two orthogonal axes:
@@ -499,17 +518,23 @@ function MouseRow({
             )}
         >
             <div className="flex items-baseline gap-2">
-                <span
-                    className={cn(
-                        'font-mono text-[13px] font-semibold',
-                        signalIdClass(mouse.signal)
-                    )}
+                <button
+                    type="button"
+                    onClick={onOpen}
+                    className="flex items-baseline gap-2 text-left hover:underline"
                 >
-                    {mouse.renderedId}
-                </span>
-                <span className="font-mono text-[11px] text-muted-foreground">
-                    {mouse.genotype}
-                </span>
+                    <span
+                        className={cn(
+                            'font-mono text-[13px] font-semibold',
+                            signalIdClass(mouse.signal)
+                        )}
+                    >
+                        {mouse.renderedId}
+                    </span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                        {mouse.genotype}
+                    </span>
+                </button>
                 <span className="ml-auto font-mono text-[11px] text-muted-foreground">
                     {mouse.sex}
                 </span>
