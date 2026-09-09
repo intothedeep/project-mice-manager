@@ -5,15 +5,15 @@
 
 export type ColorBy = 'off' | 'line' | 'genotype';
 
-// Per-line identity hues — indigo / teal / violet / fuchsia / cyan / slate.
-// None are the pure red or pure blue the signals use.
+// Per-line identity hues — teal / orange / cyan / lime / pink / slate.
+// Avoid the violet PRIMARY and the signal families (pure red/blue, yellow, gray).
 const LINE_HUES = [
-    '#6366f1',
     '#0d9488',
-    '#7c3aed',
-    '#c026d3',
+    '#ea580c',
     '#0891b2',
-    '#64748b',
+    '#65a30d',
+    '#db2777',
+    '#475569',
 ];
 
 export function lineColor(index: number): string {
@@ -23,16 +23,16 @@ export function lineColor(index: number): string {
 // Deterministic colour for a genotype string: identical genotype → identical
 // swatch, so same-genotype mice cluster visually.
 const GENO_HUES = [
-    '#2563eb',
-    '#16a34a',
-    '#db2777',
-    '#ca8a04',
-    '#0891b2',
-    '#7c3aed',
-    '#dc2626',
     '#0d9488',
-    '#9333ea',
+    '#ea580c',
+    '#0891b2',
     '#65a30d',
+    '#db2777',
+    '#475569',
+    '#0369a1',
+    '#b45309',
+    '#16a34a',
+    '#be123c',
 ];
 
 export function genotypeColor(genotype: string): string {

@@ -13,25 +13,26 @@
 :root {
     --radius: 0.5rem;
 
-    /* neutral graphite surface set */
-    --background: oklch(0.985 0.002 250);
-    --foreground: oklch(0.21 0.01 260);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.21 0.01 260);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.21 0.01 260);
-    --primary: oklch(0.24 0.012 260);
-    --primary-foreground: oklch(0.985 0.002 250);
-    --secondary: oklch(0.96 0.004 260);
-    --secondary-foreground: oklch(0.24 0.012 260);
-    --muted: oklch(0.965 0.004 260);
-    --muted-foreground: oklch(0.53 0.01 260);
-    --accent: oklch(0.94 0.01 240);
-    --accent-foreground: oklch(0.24 0.012 260);
-    --destructive: oklch(0.58 0.22 27);
-    --border: oklch(0.915 0.004 260);
-    --input: oklch(0.915 0.004 260);
-    --ring: oklch(0.6 0.02 250);
+    /* High-contrast mono — white surface, ink-black text, single violet accent.
+       Chroma stays reserved for the workflow signals below. */
+    --background: #ffffff;
+    --foreground: #0a0a0a;
+    --card: #ffffff;
+    --card-foreground: #0a0a0a;
+    --popover: #ffffff;
+    --popover-foreground: #0a0a0a;
+    --primary: #6d28d9;
+    --primary-foreground: #ffffff;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #0a0a0a;
+    --muted: #f5f5f6;
+    --muted-foreground: #6b7280;
+    --accent: #f3eeff; /* violet-tinted active surface */
+    --accent-foreground: #0a0a0a;
+    --destructive: #dc2626;
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #6d28d9;
 
     /* workflow signal palette — meaning, not decoration.
        Excel: red=instruction, blue=plan, yellow fill=attention,

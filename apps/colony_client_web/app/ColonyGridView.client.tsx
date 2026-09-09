@@ -140,9 +140,20 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                 </Pane>
 
                 {/* ── Pane 2: ALL cages; children of the active line highlighted ── */}
-                <Pane title="Cages — all lines">
+                <Pane
+                    title="Cages — all lines"
+                    grouped
+                >
                     {colony.lines.map((l) => (
-                        <div key={l.lineId}>
+                        <section
+                            key={l.lineId}
+                            className={cn(
+                                'overflow-hidden rounded-lg border',
+                                l.lineId === activeLineId
+                                    ? 'border-primary/40 shadow-sm'
+                                    : 'border-border'
+                            )}
+                        >
                             <GroupHead
                                 active={l.lineId === activeLineId}
                                 hue={lineHue(l.lineId)}
@@ -175,7 +186,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                     />
                                 </PaneRow>
                             ))}
-                        </div>
+                        </section>
                     ))}
                 </Pane>
 
@@ -183,12 +194,21 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                 <Pane
                     title="Mice — all cages"
                     scroll
+                    grouped
                 >
                     {colony.lines.map((l) =>
                         l.cages.map((c) => {
                             const isActiveCage = c.cageId === activeCageId;
                             return (
-                                <div key={c.cageId}>
+                                <section
+                                    key={c.cageId}
+                                    className={cn(
+                                        'overflow-hidden rounded-lg border',
+                                        isActiveCage
+                                            ? 'border-primary/40 shadow-sm'
+                                            : 'border-border'
+                                    )}
+                                >
                                     <GroupHead
                                         active={isActiveCage}
                                         hue={lineHue(l.lineId)}
@@ -249,7 +269,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                             ))}
                                         </div>
                                     ))}
-                                </div>
+                                </section>
                             );
                         })
                     )}
@@ -474,10 +494,12 @@ function Dot({ c }: { c: string }) {
 function Pane({
     title,
     scroll,
+    grouped,
     children,
 }: {
     title: string;
     scroll?: boolean;
+    grouped?: boolean;
     children: React.ReactNode;
 }) {
     return (
@@ -486,7 +508,14 @@ function Pane({
                 {title}
             </div>
             <div
-                className={cn('h-[66vh] overflow-y-auto', scroll ? '' : 'py-1')}
+                className={cn(
+                    'h-[66vh] overflow-y-auto',
+                    grouped
+                        ? 'space-y-2.5 bg-muted/30 p-2.5'
+                        : scroll
+                          ? ''
+                          : 'py-1'
+                )}
             >
                 {children}
             </div>
@@ -550,23 +579,23 @@ function GroupHead({
 }) {
     return (
         <div
+            style={
+                hue ? { borderLeftColor: hue, borderLeftWidth: 4 } : undefined
+            }
             className={cn(
-                'sticky top-0 z-10 flex items-baseline justify-between border-y px-3 py-1.5 backdrop-blur',
+                'sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2',
+                !hue && 'border-l-4',
                 active
-                    ? 'border-primary/30 bg-accent/80'
-                    : 'border-border/60 bg-muted/40'
+                    ? cn('bg-accent', !hue && 'border-l-primary')
+                    : cn('bg-secondary/70', !hue && 'border-l-border')
             )}
         >
-            <span className="flex items-baseline gap-2">
-                {hue ? (
-                    <span className="relative top-0.5">
-                        <Dot c={hue} />
-                    </span>
-                ) : null}
+            <span className="flex items-center gap-2">
+                {hue ? <Dot c={hue} /> : null}
                 <span
                     className={cn(
-                        'font-mono text-[12px] font-semibold',
-                        active ? 'text-foreground' : 'text-muted-foreground'
+                        'font-mono text-[12.5px] font-bold',
+                        active ? 'text-foreground' : 'text-foreground/75'
                     )}
                 >
                     {label}
