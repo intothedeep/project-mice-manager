@@ -5,15 +5,16 @@
 
 export type ColorBy = 'off' | 'line' | 'genotype';
 
-// Per-line identity hues — teal / orange / cyan / lime / pink / slate.
-// Avoid the violet PRIMARY and the signal families (pure red/blue, yellow, gray).
+// Per-line identity hues — teal / pink / orange / green / cyan / slate.
+// The reference's pastel accent family; avoids the indigo PRIMARY and the
+// signal families (pure red/blue, yellow, gray).
 const LINE_HUES = [
-    '#0d9488',
-    '#ea580c',
-    '#0891b2',
-    '#65a30d',
-    '#db2777',
-    '#475569',
+    '#14b8a6',
+    '#ec4899',
+    '#f97316',
+    '#22c55e',
+    '#06b6d4',
+    '#64748b',
 ];
 
 export function lineColor(index: number): string {

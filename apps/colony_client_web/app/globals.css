@@ -13,26 +13,26 @@
 :root {
     --radius: 0.5rem;
 
-    /* High-contrast mono — white surface, ink-black text, single violet accent.
-       Chroma stays reserved for the workflow signals below. */
-    --background: #ffffff;
-    --foreground: #0a0a0a;
-    --card: #ffffff;
-    --card-foreground: #0a0a0a;
+    /* Derived from the reference screenshot: a soft light-gray canvas with white
+       cards and a bright blue-violet accent. Chroma stays reserved for signals. */
+    --background: #f6f6f7; /* soft gray canvas */
+    --foreground: #18181b;
+    --card: #ffffff; /* white cards pop off the gray */
+    --card-foreground: #18181b;
     --popover: #ffffff;
-    --popover-foreground: #0a0a0a;
-    --primary: #6d28d9;
+    --popover-foreground: #18181b;
+    --primary: #6366f1; /* bright blue-violet (indigo-500) */
     --primary-foreground: #ffffff;
-    --secondary: #f4f4f5;
-    --secondary-foreground: #0a0a0a;
-    --muted: #f5f5f6;
-    --muted-foreground: #6b7280;
-    --accent: #f3eeff; /* violet-tinted active surface */
-    --accent-foreground: #0a0a0a;
+    --secondary: #eeeef1;
+    --secondary-foreground: #18181b;
+    --muted: #eeeef1;
+    --muted-foreground: #71717a;
+    --accent: #eef1ff; /* indigo-tinted active surface */
+    --accent-foreground: #18181b;
     --destructive: #dc2626;
-    --border: #e4e4e7;
-    --input: #e4e4e7;
-    --ring: #6d28d9;
+    --border: #e3e3e8;
+    --input: #e3e3e8;
+    --ring: #6366f1;
 
     /* workflow signal palette — meaning, not decoration.
        Excel: red=instruction, blue=plan, yellow fill=attention,
