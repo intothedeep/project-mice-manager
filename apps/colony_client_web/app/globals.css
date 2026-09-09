@@ -11,28 +11,30 @@
    ============================================================ */
 
 :root {
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    /* Derived from the reference screenshot: a soft light-gray canvas with white
-       cards and a bright blue-violet accent. Chroma stays reserved for signals. */
-    --background: #f6f6f7; /* soft gray canvas */
-    --foreground: #18181b;
-    --card: #ffffff; /* white cards pop off the gray */
-    --card-foreground: #18181b;
-    --popover: #ffffff;
-    --popover-foreground: #18181b;
-    --primary: #6366f1; /* bright blue-violet (indigo-500) */
-    --primary-foreground: #ffffff;
-    --secondary: #eeeef1;
-    --secondary-foreground: #18181b;
-    --muted: #eeeef1;
-    --muted-foreground: #71717a;
-    --accent: #eef1ff; /* indigo-tinted active surface */
-    --accent-foreground: #18181b;
-    --destructive: #dc2626;
-    --border: #e3e3e8;
-    --input: #e3e3e8;
-    --ring: #6366f1;
+    /* Light (neutral) theme ported from the sibling project's shadcn.css :root
+       (project_tradelunch). White surface, near-black neutral primary, light-gray
+       accents. Chroma stays reserved for the workflow signals below. Light only —
+       no dark/green variant for this project (user directive 2026-09-09). */
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
 
     /* workflow signal palette — meaning, not decoration.
        Excel: red=instruction, blue=plan, yellow fill=attention,

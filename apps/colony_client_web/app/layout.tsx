@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import { NavBar } from './NavBar.client';
 
 const sans = Inter({
@@ -9,7 +9,8 @@ const sans = Inter({
     display: 'swap',
 });
 
-const mono = JetBrains_Mono({
+const mono = IBM_Plex_Mono({
+    weight: ['400', '500', '700'],
     subsets: ['latin'],
     variable: '--font-mono',
     display: 'swap',

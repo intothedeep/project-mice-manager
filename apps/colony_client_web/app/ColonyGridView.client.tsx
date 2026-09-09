@@ -552,9 +552,9 @@ function PaneRow({
                 hue
                     ? 'hover:bg-muted/60'
                     : selected
-                      ? 'border-l-primary bg-accent'
+                      ? 'border-l-primary bg-primary/10'
                       : highlight
-                        ? 'border-l-primary/40 bg-accent/40 hover:bg-accent/60'
+                        ? 'border-l-primary/40 bg-muted/70 hover:bg-muted'
                         : 'border-l-transparent hover:bg-muted/60'
             )}
         >
@@ -586,8 +586,8 @@ function GroupHead({
                 'sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2',
                 !hue && 'border-l-4',
                 active
-                    ? cn('bg-accent', !hue && 'border-l-primary')
-                    : cn('bg-secondary/70', !hue && 'border-l-border')
+                    ? cn('bg-primary/10', !hue && 'border-l-primary')
+                    : cn('bg-muted/60', !hue && 'border-l-border')
             )}
         >
             <span className="flex items-center gap-2">
