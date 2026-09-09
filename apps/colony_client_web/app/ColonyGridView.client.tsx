@@ -9,7 +9,7 @@ import type {
     SignalColor,
 } from '@repo/types';
 import { useMemo, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, ListPlus } from 'lucide-react';
 import {
     EMPTY_FILTER,
     isFilterActive,
@@ -24,12 +24,14 @@ import {
     signalIdClass,
     signalRowClass,
 } from '@/lib/signal';
+import { genotypeColor, lineColor, type ColorBy } from '@/lib/colors';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { MoveMenu } from './MoveMenu.client';
 import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
+import { NewTaskDialog } from './NewTaskDialog.client';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
 
@@ -50,6 +52,7 @@ const cageMice = (c: GridCage) => c.slots.flatMap((s) => s.mice);
 export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     const [colony, setColony] = useState(initial);
     const [filter, setFilter] = useState<GridFilter>(EMPTY_FILTER);
+    const [colorBy, setColorBy] = useState<ColorBy>('off');
     const [activeLineId, setActiveLineId] = useState(
         initial.lines[0]?.lineId ?? 0
     );
@@ -58,12 +61,24 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     );
     const [moving, setMoving] = useState<Moving | null>(null);
     const [detail, setDetail] = useState<SelectedMouse | null>(null);
+    const [selected, setSelected] = useState<Record<number, string>>({});
+    const [taskOpen, setTaskOpen] = useState(false);
 
     const on = isFilterActive(filter);
     const match = useMemo(
         () => (m: MouseCell) => matchesMouse(m, filter),
         [filter]
     );
+
+    const hueByLine = useMemo(() => {
+        const map = new Map<number, string>();
+        colony.lines.forEach((l, i) => map.set(l.lineId, lineColor(i)));
+        return map;
+    }, [colony.lines]);
+    const lineHue = (lineId: number) =>
+        colorBy === 'line' ? hueByLine.get(lineId) : undefined;
+
+    const selectedIds = Object.values(selected);
 
     function selectLine(l: GridLine) {
         setActiveLineId(l.lineId);
@@ -72,6 +87,14 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     function selectCage(l: GridLine, c: GridCage) {
         setActiveLineId(l.lineId);
         setActiveCageId(c.cageId);
+    }
+    function toggleSelect(m: MouseCell) {
+        setSelected((prev) => {
+            const next = { ...prev };
+            if (next[m.metaId]) delete next[m.metaId];
+            else next[m.metaId] = m.renderedId;
+            return next;
+        });
     }
     function applyMove(target: MoveTarget) {
         if (!moving) return;
@@ -85,6 +108,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                 filter={filter}
                 active={on}
                 onChange={setFilter}
+                colorBy={colorBy}
+                onColorBy={setColorBy}
             />
 
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(190px,15rem)_minmax(230px,19rem)_1fr]">
@@ -94,10 +119,16 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                         <PaneRow
                             key={l.lineId}
                             selected={l.lineId === activeLineId}
+                            hue={lineHue(l.lineId)}
                             onClick={() => selectLine(l)}
                         >
-                            <span className="truncate font-mono text-[13px]">
-                                {l.lineName}
+                            <span className="flex items-center gap-2 truncate">
+                                {lineHue(l.lineId) ? (
+                                    <Dot c={lineHue(l.lineId)!} />
+                                ) : null}
+                                <span className="truncate font-mono text-[13px]">
+                                    {l.lineName}
+                                </span>
                             </span>
                             <Count
                                 n={countMatches(lineMice(l), filter, on)}
@@ -108,12 +139,13 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                     ))}
                 </Pane>
 
-                {/* ── Pane 2: ALL cages; children of the active line are highlighted ── */}
+                {/* ── Pane 2: ALL cages; children of the active line highlighted ── */}
                 <Pane title="Cages — all lines">
                     {colony.lines.map((l) => (
                         <div key={l.lineId}>
                             <GroupHead
                                 active={l.lineId === activeLineId}
+                                hue={lineHue(l.lineId)}
                                 label={l.lineName}
                             />
                             {l.cages.map((c) => (
@@ -121,6 +153,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                     key={c.cageId}
                                     selected={c.cageId === activeCageId}
                                     highlight={l.lineId === activeLineId}
+                                    hue={lineHue(l.lineId)}
                                     onClick={() => selectCage(l, c)}
                                 >
                                     <span className="flex flex-col">
@@ -146,7 +179,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                     ))}
                 </Pane>
 
-                {/* ── Pane 3: ALL mice; the active cage's mice are highlighted ── */}
+                {/* ── Pane 3: ALL mice; the active cage's mice highlighted ── */}
                 <Pane
                     title="Mice — all cages"
                     scroll
@@ -158,6 +191,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                 <div key={c.cageId}>
                                     <GroupHead
                                         active={isActiveCage}
+                                        hue={lineHue(l.lineId)}
                                         label={`cage ${c.cageNumber}`}
                                         sub={l.lineName}
                                         count={
@@ -180,6 +214,19 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                     inActiveCage={isActiveCage}
                                                     filterOn={on}
                                                     isMatch={match(m)}
+                                                    swatch={
+                                                        colorBy === 'genotype'
+                                                            ? genotypeColor(
+                                                                  m.genotype
+                                                              )
+                                                            : undefined
+                                                    }
+                                                    checked={
+                                                        !!selected[m.metaId]
+                                                    }
+                                                    onToggle={() =>
+                                                        toggleSelect(m)
+                                                    }
                                                     onOpen={() =>
                                                         setDetail({
                                                             mouse: m,
@@ -209,6 +256,28 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                 </Pane>
             </div>
 
+            {/* selection action bar */}
+            {selectedIds.length > 0 ? (
+                <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-card px-4 py-2 shadow-lg">
+                    <span className="text-sm font-medium">
+                        {selectedIds.length} selected
+                    </span>
+                    <Button
+                        size="sm"
+                        onClick={() => setTaskOpen(true)}
+                    >
+                        <ListPlus className="size-3.5" /> Create task
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelected({})}
+                    >
+                        Clear
+                    </Button>
+                </div>
+            ) : null}
+
             {moving ? (
                 <MoveMenu
                     colony={colony}
@@ -218,6 +287,17 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                     currentSlotId={moving.slotId}
                     onMove={applyMove}
                     onClose={() => setMoving(null)}
+                />
+            ) : null}
+
+            {taskOpen ? (
+                <NewTaskDialog
+                    open
+                    presetMice={selectedIds}
+                    onClose={() => {
+                        setTaskOpen(false);
+                        setSelected({});
+                    }}
                 />
             ) : null}
 
@@ -235,10 +315,14 @@ function FilterBar({
     filter,
     active,
     onChange,
+    colorBy,
+    onColorBy,
 }: {
     filter: GridFilter;
     active: boolean;
     onChange: (f: GridFilter) => void;
+    colorBy: ColorBy;
+    onColorBy: (c: ColorBy) => void;
 }) {
     return (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-3 py-2.5">
@@ -298,6 +382,27 @@ function FilterBar({
                     <X className="size-3" /> clear
                 </Button>
             ) : null}
+
+            <div className="ml-auto flex items-center gap-1 rounded-md border p-0.5">
+                <span className="px-1.5 text-[11px] text-muted-foreground">
+                    color by
+                </span>
+                {(['off', 'line', 'genotype'] as ColorBy[]).map((c) => (
+                    <button
+                        key={c}
+                        type="button"
+                        onClick={() => onColorBy(c)}
+                        className={cn(
+                            'rounded px-2 py-0.5 text-[11px] font-medium capitalize transition-colors',
+                            colorBy === c
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-accent'
+                        )}
+                    >
+                        {c}
+                    </button>
+                ))}
+            </div>
         </div>
     );
 }
@@ -356,6 +461,16 @@ function Chip({
 
 /* ---------- panes ---------- */
 
+function Dot({ c }: { c: string }) {
+    return (
+        <span
+            className="size-2 shrink-0 rounded-full"
+            style={{ background: c }}
+            aria-hidden
+        />
+    );
+}
+
 function Pane({
     title,
     scroll,
@@ -382,25 +497,36 @@ function Pane({
 function PaneRow({
     selected,
     highlight,
+    hue,
     onClick,
     children,
 }: {
     selected: boolean;
     highlight?: boolean;
+    hue?: string;
     onClick: () => void;
     children: React.ReactNode;
 }) {
+    const style: React.CSSProperties | undefined =
+        hue && selected
+            ? { borderLeftColor: hue, backgroundColor: `${hue}1a` }
+            : hue && highlight
+              ? { borderLeftColor: `${hue}80` }
+              : undefined;
     return (
         <button
             type="button"
             onClick={onClick}
+            style={style}
             className={cn(
                 'flex w-full items-center justify-between gap-2 border-l-2 px-3 py-2 text-left transition-colors',
-                selected
-                    ? 'border-l-primary bg-accent'
-                    : highlight
-                      ? 'border-l-primary/40 bg-accent/40 hover:bg-accent/60'
-                      : 'border-l-transparent hover:bg-muted/60'
+                hue
+                    ? 'hover:bg-muted/60'
+                    : selected
+                      ? 'border-l-primary bg-accent'
+                      : highlight
+                        ? 'border-l-primary/40 bg-accent/40 hover:bg-accent/60'
+                        : 'border-l-transparent hover:bg-muted/60'
             )}
         >
             {children}
@@ -411,11 +537,13 @@ function PaneRow({
 // Group subheader inside pane 2 (per line) and pane 3 (per cage).
 function GroupHead({
     active,
+    hue,
     label,
     sub,
     count,
 }: {
     active: boolean;
+    hue?: string;
     label: string;
     sub?: string;
     count?: number;
@@ -430,6 +558,11 @@ function GroupHead({
             )}
         >
             <span className="flex items-baseline gap-2">
+                {hue ? (
+                    <span className="relative top-0.5">
+                        <Dot c={hue} />
+                    </span>
+                ) : null}
                 <span
                     className={cn(
                         'font-mono text-[12px] font-semibold',
@@ -489,6 +622,9 @@ function MouseRow({
     inActiveCage,
     filterOn,
     isMatch,
+    swatch,
+    checked,
+    onToggle,
     onOpen,
     onMove,
 }: {
@@ -496,18 +632,19 @@ function MouseRow({
     inActiveCage: boolean;
     filterOn: boolean;
     isMatch: boolean;
+    swatch?: string;
+    checked: boolean;
+    onToggle: () => void;
     onOpen: () => void;
     onMove: () => void;
 }) {
-    // Two orthogonal axes:
-    //  · active status → persistent left-border marker on the active cage's mice.
-    //  · emphasis/dim  → filter match drives it when a filter is on; otherwise
-    //                    active-cage membership does. Active markers never drop.
+    // active status → persistent left-border marker; emphasis/dim → filter match
+    // when a filter is on, else active-cage membership. Markers never drop.
     const dimmed = filterOn ? !isMatch : !inActiveCage;
     return (
         <div
             className={cn(
-                'group border-b border-l-2 border-border/60 px-3 py-2 pl-5 transition-opacity last:border-b-0',
+                'group border-b border-l-2 border-border/60 px-3 py-2 pl-2 transition-opacity last:border-b-0',
                 inActiveCage ? 'border-l-primary/70' : 'border-l-transparent',
                 signalRowClass(mouse.signal),
                 dimmed
@@ -518,6 +655,21 @@ function MouseRow({
             )}
         >
             <div className="flex items-baseline gap-2">
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={onToggle}
+                    className="mt-0.5 size-3.5 shrink-0 cursor-pointer accent-primary"
+                    aria-label={`select ${mouse.renderedId}`}
+                />
+                {swatch ? (
+                    <span
+                        className="mt-1 size-2.5 shrink-0 rounded-[3px]"
+                        style={{ background: swatch }}
+                        title={mouse.genotype}
+                        aria-hidden
+                    />
+                ) : null}
                 <button
                     type="button"
                     onClick={onOpen}
@@ -550,7 +702,7 @@ function MouseRow({
             {mouse.attention ? (
                 <p
                     className={cn(
-                        'mt-0.5 text-[11px]',
+                        'mt-0.5 pl-6 text-[11px]',
                         signalIdClass(mouse.signal)
                     )}
                 >
