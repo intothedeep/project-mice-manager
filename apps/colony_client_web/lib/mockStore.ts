@@ -1,10 +1,10 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { Role, TaskCard, TaskStatus } from '@repo/types';
+import type { Role, TaskCard, TaskSignal, TaskStatus } from '@repo/types';
 import { SEED_TASKS } from '@/apis/getTasks.mock.api';
 import { SEED_UPCOMING, type UpcomingItem } from '@/apis/getUpcoming.mock.api';
-import { expectedDeliveryOn, plugCheckOn } from '@/lib/dueDates';
+import { expectedDeliveryOn, plugCheckOn, TODAY } from '@/lib/dueDates';
 import type { TaskTypeDef } from '@/lib/taskTypes';
 
 // Mock-era shared store. Both /tasks and /upcoming read from it, so a task
@@ -69,6 +69,7 @@ export function setTaskStatus(id: number, to: TaskStatus, role: Role): void {
 export interface NewTaskInput {
     def: TaskTypeDef;
     values: Record<string, string | string[]>;
+    signal: TaskSignal;
     subjectLabel: string | null;
     detail: string | null;
     dueDate: string | null;
@@ -81,10 +82,12 @@ export function addTask(input: NewTaskInput): void {
     const card: TaskCard = {
         id: nextTaskId++,
         taskType: input.def.type,
+        signal: input.signal,
         status: 'open',
         subjectKind: input.def.subjectKind,
         subjectLabel: input.subjectLabel,
         detail: input.detail,
+        createdAt: TODAY,
         dueDate: input.dueDate,
         assignee: input.assignee,
         doneBy: null,

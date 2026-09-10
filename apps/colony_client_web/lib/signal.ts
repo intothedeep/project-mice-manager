@@ -1,7 +1,32 @@
-import type { SignalColor } from '@repo/types';
+import type { SignalColor, TaskSignal } from '@repo/types';
 
 // Maps a workflow signal to its label + the Tailwind classes that render the
 // Excel encoding. Chroma lives ONLY here so the meaning stays in one place.
+
+// Task intent signal → text + left-border classes (instruction=red, plan=blue,
+// note=neutral), mirroring the same Excel font-colour semantics.
+export function taskSignalText(s: TaskSignal): string {
+    return s === 'instruction'
+        ? 'text-signal-instruction'
+        : s === 'plan'
+          ? 'text-signal-plan'
+          : 'text-muted-foreground';
+}
+export function taskSignalBorder(s: TaskSignal): string {
+    return s === 'instruction'
+        ? 'border-l-signal-instruction'
+        : s === 'plan'
+          ? 'border-l-signal-plan'
+          : 'border-l-border';
+}
+// Light background tint per signal (kept subtle so it reads as state, not noise).
+export function taskSignalBg(s: TaskSignal): string {
+    return s === 'instruction'
+        ? 'bg-signal-instruction/8'
+        : s === 'plan'
+          ? 'bg-signal-plan/8'
+          : 'bg-muted/40';
+}
 
 export const SIGNAL_LABEL: Record<SignalColor, string> = {
     done: 'done',

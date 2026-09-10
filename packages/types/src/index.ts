@@ -10,7 +10,13 @@ export type {
     ColonyGrid,
 } from './grid';
 
-export type { TaskStatus, Role, TaskSubjectKind, TaskCard } from './task';
+export type {
+    TaskStatus,
+    Role,
+    TaskSubjectKind,
+    TaskSignal,
+    TaskCard,
+} from './task';
 
 export type {
     GeneCall,

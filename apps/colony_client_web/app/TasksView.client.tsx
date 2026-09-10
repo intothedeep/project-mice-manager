@@ -4,6 +4,7 @@ import type { Role, TaskCard, TaskStatus } from '@repo/types';
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { availableActions } from '@/lib/taskFlow';
+import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { useTasks, setTaskStatus } from '@/lib/mockStore';
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { Button } from '@/components/ui/button';
@@ -144,10 +145,20 @@ function TaskItem({
     const overdue = task.status === 'open' && task.dueDate! < TODAY;
 
     return (
-        <div className="rounded-md border bg-background p-2.5">
+        <div className={cn('border p-2.5', taskSignalBg(task.signal))}>
             <div className="flex items-start justify-between gap-2">
-                <span className="text-[13px] font-semibold">
-                    {task.taskType}
+                <span className="flex items-baseline gap-2">
+                    <span className="text-[13px] font-semibold">
+                        {task.taskType}
+                    </span>
+                    <span
+                        className={cn(
+                            'text-[10px] font-medium',
+                            taskSignalText(task.signal)
+                        )}
+                    >
+                        {task.signal}
+                    </span>
                 </span>
                 {task.subjectLabel ? (
                     <Badge
@@ -173,6 +184,7 @@ function TaskItem({
             ) : null}
 
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
+                <span>created {task.createdAt}</span>
                 {task.dueDate ? (
                     <span className={cn(overdue && 'text-signal-instruction')}>
                         due {task.dueDate}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { TaskSignal } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import { addTask } from '@/lib/mockStore';
 import {
@@ -62,6 +63,7 @@ export function NewTaskDialog({
     );
 
     const [typeName, setTypeName] = useState(TYPES[0]!.type);
+    const [signal, setSignal] = useState<TaskSignal>('instruction');
     const [values, setValues] = useState<Values>({});
     const [due, setDue] = useState(TODAY);
     const [assignee, setAssignee] = useState('');
@@ -94,6 +96,7 @@ export function NewTaskDialog({
 
     function reset() {
         setTypeName(TYPES[0]!.type);
+        setSignal('instruction');
         setValues({});
         setDue(TODAY);
         setAssignee('');
@@ -109,6 +112,7 @@ export function NewTaskDialog({
             : due;
         addTask({
             def,
+            signal,
             values: batch ? { ...values, mice: presetMice! } : values,
             subjectLabel,
             detail: buildDetail(def, values),
@@ -153,6 +157,20 @@ export function NewTaskDialog({
                                 {t.type}
                             </option>
                         ))}
+                    </select>
+                </Label>
+
+                <Label text="Signal">
+                    <select
+                        className={SELECT_CLASS}
+                        value={signal}
+                        onChange={(e) =>
+                            setSignal(e.target.value as TaskSignal)
+                        }
+                    >
+                        <option value="instruction">instruction</option>
+                        <option value="plan">plan</option>
+                        <option value="note">note</option>
                     </select>
                 </Label>
 
