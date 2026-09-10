@@ -1,14 +1,11 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, IBM_Plex_Mono } from 'next/font/google';
+import { IBM_Plex_Mono } from 'next/font/google';
 import { NavBar } from './NavBar.client';
 
-const sans = Inter({
-    subsets: ['latin'],
-    variable: '--font-sans',
-    display: 'swap',
-});
-
+// Whole-UI IBM Plex Mono (user directive) — bound to BOTH --font-sans and
+// --font-mono so every surface renders in Plex Mono, matching the technical,
+// square, dark-line direction.
 const mono = IBM_Plex_Mono({
     weight: ['400', '500', '700'],
     subsets: ['latin'],
@@ -29,9 +26,9 @@ export default function RootLayout({
     return (
         <html
             lang="en"
-            className={`${sans.variable} ${mono.variable}`}
+            className={mono.variable}
         >
-            <body className="font-sans antialiased">
+            <body className="font-mono antialiased">
                 <NavBar />
                 {children}
             </body>

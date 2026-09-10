@@ -150,7 +150,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                             className={cn(
                                 'overflow-hidden rounded-lg border',
                                 l.lineId === activeLineId
-                                    ? 'border-primary/40 shadow-sm'
+                                    ? 'border-primary'
                                     : 'border-border'
                             )}
                         >
@@ -205,7 +205,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                     className={cn(
                                         'overflow-hidden rounded-lg border',
                                         isActiveCage
-                                            ? 'border-primary/40 shadow-sm'
+                                            ? 'border-primary'
                                             : 'border-border'
                                     )}
                                 >
@@ -278,7 +278,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
 
             {/* selection action bar */}
             {selectedIds.length > 0 ? (
-                <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-card px-4 py-2 shadow-lg">
+                <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-none border-2 border-primary bg-card px-4 py-2 shadow-lg">
                     <span className="text-sm font-medium">
                         {selectedIds.length} selected
                     </span>
@@ -413,7 +413,7 @@ function FilterBar({
                         type="button"
                         onClick={() => onColorBy(c)}
                         className={cn(
-                            'rounded px-2 py-0.5 text-[11px] font-medium capitalize transition-colors',
+                            'rounded-none px-2 py-0.5 text-[11px] font-medium capitalize transition-colors',
                             colorBy === c
                                 ? 'bg-primary text-primary-foreground'
                                 : 'text-muted-foreground hover:bg-accent'
@@ -465,7 +465,7 @@ function Chip({
             aria-pressed={on}
             onClick={onClick}
             className={cn(
-                'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+                'rounded-none border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
                 on
                     ? 'border-primary bg-primary text-primary-foreground'
                     : cn(
@@ -607,7 +607,7 @@ function GroupHead({
                 ) : null}
             </span>
             {count != null ? (
-                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] text-primary">
+                <span className="rounded-none bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] text-primary">
                     {count} ✓
                 </span>
             ) : null}
@@ -637,7 +637,7 @@ function Count({
     return (
         <span
             className={cn(
-                'shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px]',
+                'shrink-0 rounded-none px-1.5 py-0.5 font-mono text-[10px]',
                 active ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
             )}
         >
@@ -693,7 +693,7 @@ function MouseRow({
                 />
                 {swatch ? (
                     <span
-                        className="mt-1 size-2.5 shrink-0 rounded-[3px]"
+                        className="mt-1 size-2.5 shrink-0 rounded-none"
                         style={{ background: swatch }}
                         title={mouse.genotype}
                         aria-hidden

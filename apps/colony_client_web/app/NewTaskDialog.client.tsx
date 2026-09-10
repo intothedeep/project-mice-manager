@@ -285,7 +285,7 @@ function FieldInput({
                                     )
                                 }
                                 className={cn(
-                                    'rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors',
+                                    'rounded-none border px-2.5 py-0.5 font-mono text-[11px] transition-colors',
                                     on
                                         ? 'border-primary bg-primary text-primary-foreground'
                                         : 'border-border bg-background hover:bg-accent'
