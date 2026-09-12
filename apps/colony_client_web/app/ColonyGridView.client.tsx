@@ -368,7 +368,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                         goTo({ level: 'line', id: l.lineId })
                                     }
                                 />
-                                <div className="min-w-0 flex-1 border-b border-border/40">
+                                <div className="min-w-0 flex-1">
                                     {l.cages.map((c) => (
                                         <div
                                             key={c.cageId}
@@ -398,7 +398,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                     })
                                                 }
                                             />
-                                            <div className="min-w-0 flex-1 border-b border-border/40">
+                                            <div className="min-w-0 flex-1">
                                                 {c.slots.map((s) => (
                                                     <div
                                                         key={s.slotId}
@@ -429,7 +429,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                 })
                                                             }
                                                         />
-                                                        <div className="min-w-0 flex-1 border-b border-border/40">
+                                                        <div className="min-w-0 flex-1">
                                                             {s.mice.map((m) => (
                                                                 <MouseRow
                                                                     key={
