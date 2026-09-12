@@ -30,7 +30,7 @@ import {
     signalSwatchClass,
     signalTagFillClass,
 } from '@/lib/signal';
-import { SEX_TINT, isOldMouse } from '@/lib/colors';
+import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -1238,7 +1238,7 @@ function MouseRow({
     onMate: (color: string) => void;
 }) {
     const dimmed = filterOn && !isMatch;
-    const old = isOldMouse(mouse.dob, mouse.sex);
+    const stage = lifeStage(mouse.dob, mouse.sex);
     // Dead → the WHOLE row goes dark; identity colours (sex/genotype/age) are moot
     // for a sac'd mouse, so their cell tints are suppressed and the dark row + id
     // strikethrough carry the state (mirrors the sheet's gray-fill dead cell).
@@ -1350,18 +1350,20 @@ function MouseRow({
                             </span>
                         </button>
 
-                        {/* DOB cell — amber when old (♂>1y / ♀>10mo) */}
+                        {/* DOB cell — life-stage tint: baby green / adult blank / old amber */}
                         <div
                             className={cn(
                                 CELL,
                                 'px-1.5 font-mono text-[10px]',
-                                dead
-                                    ? 'text-neutral-400'
-                                    : old
-                                      ? 'bg-amber-100 text-amber-900'
-                                      : 'text-muted-foreground'
+                                dead ? 'text-neutral-400' : DOB_TINT[stage]
                             )}
-                            title={old ? 'old (age threshold reached)' : 'DOB'}
+                            title={
+                                stage === 'baby'
+                                    ? 'baby (pre-weaning)'
+                                    : stage === 'old'
+                                      ? 'old (age threshold reached)'
+                                      : 'DOB'
+                            }
                         >
                             {fmtDate(mouse.dob)}
                         </div>

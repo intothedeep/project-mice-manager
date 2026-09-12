@@ -187,7 +187,7 @@ const COLONY_GRID: ColonyGrid = {
                                             signal: 'instruction',
                                         },
                                     ],
-                                    dob: '2026-08-01',
+                                    dob: '2026-09-02',
                                     genotypeColor: geno('?'),
                                     mates: [],
                                     parents: {
@@ -218,7 +218,7 @@ const COLONY_GRID: ColonyGrid = {
                                     activeTasks: [
                                         { type: 'Genotyping', signal: 'plan' },
                                     ],
-                                    dob: '2026-08-01',
+                                    dob: '2026-09-02',
                                     genotypeColor: geno('?'),
                                     mates: [],
                                 },

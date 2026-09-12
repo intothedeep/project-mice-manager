@@ -20,22 +20,43 @@ export const SEX_TINT: Record<Sex, string> = {
     U: '', // undecided → no colour (default cell background)
 };
 
-// Age threshold — a mouse is "old" past ♂ 1 year / ♀ ~10 months. Domain constants;
-// unsexed (U) gets no age flag. Computed from dob + sex vs today, never stored.
+// Life-stage — a maturity channel read straight from dob, so the professor sees
+// "baby vs not" at a glance. Only the non-default stages get a fill (baby green,
+// old amber); adult = no fill, matching WT-genotype-is-blank (keeps the grid calm
+// so the outliers pop). Computed from dob + sex vs today, never stored.
+//
+// The baby/adult boundary is the SAME threshold that the slot overcrowding warning
+// counts "adults" against (plan Q32) — one source of truth, so the green cells are
+// exactly the mice NOT counted toward a slot's adult capacity.
+export type LifeStage = 'baby' | 'adult' | 'old';
+
+// Weaning age (~3 weeks). Below this = pup. Domain constant, professor-confirm (Q32:
+// 21d is weaning; a stricter "adult" may be later — flip this one number if so).
+const ADULT_MIN_DAYS = 21;
+
+// "Old" past ♂ 1 year / ♀ ~10 months. Unsexed (U) never flags old (no basis).
 const OLD_DAYS: Record<Sex, number | null> = {
     M: 365,
     F: 304,
     U: null,
 };
 
-export function isOldMouse(
+export function lifeStage(
     dob: string | null,
     sex: Sex,
     now: Date = new Date()
-): boolean {
-    if (!dob) return false;
-    const limit = OLD_DAYS[sex];
-    if (limit == null) return false;
+): LifeStage {
+    if (!dob) return 'adult'; // unknown dob → neutral (no fill)
     const ageDays = (now.getTime() - new Date(dob).getTime()) / 86_400_000;
-    return ageDays > limit;
+    if (ageDays < ADULT_MIN_DAYS) return 'baby';
+    const oldLimit = OLD_DAYS[sex];
+    if (oldLimit != null && ageDays > oldLimit) return 'old';
+    return 'adult';
 }
+
+// DOB-cell tint per stage. adult = text-only (default background, no fill).
+export const DOB_TINT: Record<LifeStage, string> = {
+    baby: 'bg-emerald-100 text-emerald-900',
+    adult: 'text-muted-foreground',
+    old: 'bg-amber-100 text-amber-900',
+};
