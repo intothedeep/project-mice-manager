@@ -368,7 +368,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                         goTo({ level: 'line', id: l.lineId })
                                     }
                                 />
-                                <div className="min-w-0 flex-1">
+                                <div className="min-w-0 flex-1 border-b border-border/40">
                                     {l.cages.map((c) => (
                                         <div
                                             key={c.cageId}
@@ -398,7 +398,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                     })
                                                 }
                                             />
-                                            <div className="min-w-0 flex-1">
+                                            <div className="min-w-0 flex-1 border-b border-border/40">
                                                 {c.slots.map((s) => (
                                                     <div
                                                         key={s.slotId}
@@ -429,7 +429,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                 })
                                                             }
                                                         />
-                                                        <div className="min-w-0 flex-1">
+                                                        <div className="min-w-0 flex-1 border-b border-border/40">
                                                             {s.mice.map((m) => (
                                                                 <MouseRow
                                                                     key={
@@ -1263,8 +1263,9 @@ function MouseRow({
         <div
             id={id}
             className={cn(
-                // thicker bottom border clearly separates each mouse
-                'group relative border-b-2 border-border transition-opacity last:border-b-0',
+                // thin divider between mice (slot/cage/line blocks carry the heavier
+                // structural borders); zebra striping does the row separation
+                'group relative border-b border-border/40 transition-opacity last:border-b-0',
                 // zebra base bg (alternating) so each mouse row reads distinctly
                 !dead && (zebra ? 'bg-muted/40' : 'bg-background'),
                 dead && 'bg-neutral-700 text-neutral-300',
