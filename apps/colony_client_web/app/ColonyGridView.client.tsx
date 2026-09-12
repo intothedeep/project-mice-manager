@@ -24,12 +24,7 @@ import {
     type Selection,
     type SelPath,
 } from '@/lib/gridSelection';
-import {
-    SIGNAL_LABEL,
-    SIGNAL_ORDER,
-    signalSwatchClass,
-    signalTagFillClass,
-} from '@/lib/signal';
+import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass } from '@/lib/signal';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -278,9 +273,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
 
     return (
         <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <Breadcrumb items={crumbs} />
-                <Legend />
             </div>
 
             <FilterBar
@@ -913,29 +907,6 @@ function Breadcrumb({ items }: { items: string[] }) {
 }
 
 // Signal colour key — meaning of the task-badge colours (Excel semantics).
-function Legend() {
-    return (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
-            <span className="font-medium text-foreground">Legend</span>
-            {SIGNAL_ORDER.map((s) => (
-                <span
-                    key={s}
-                    className="inline-flex items-center gap-1.5"
-                >
-                    <span
-                        className={cn(
-                            'inline-block size-3 rounded-sm border',
-                            signalSwatchClass(s)
-                        )}
-                        aria-hidden
-                    />
-                    {SIGNAL_LABEL[s]}
-                </span>
-            ))}
-        </div>
-    );
-}
-
 // Column-label row under the body header — aligns to the same grid as the mouse
 // rows (rail spacers offset past line/cage/slot so the labels sit over their cells).
 function ColumnHeader() {
