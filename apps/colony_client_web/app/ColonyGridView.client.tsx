@@ -1049,11 +1049,16 @@ function LineLabel({
             type="button"
             onClick={onClick}
             title={`${index}. ${line.lineName}`}
+            // Genotype-first rail: the line's nominal genotype colour is the PRIMARY
+            // fill (headline "this line = genotype X", a touch stronger — 33 — than
+            // the per-mouse 22 cells so the whole-line summary reads first). lineColor
+            // is demoted to a thin 3px identity accent (secondary: "which line"). WT
+            // lines (null genotype) show no fill, just the accent + neutral base.
             style={{
                 borderLeftColor: line.lineColor,
-                borderLeftWidth: 4,
+                borderLeftWidth: 3,
                 backgroundColor: line.nominalGenotypeColor
-                    ? `${line.nominalGenotypeColor}22`
+                    ? `${line.nominalGenotypeColor}33`
                     : undefined,
             }}
             className={cn(
