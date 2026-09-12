@@ -44,18 +44,6 @@ export const SIGNAL_ORDER: SignalColor[] = [
     'dead',
 ];
 
-// Row background (fill signals) — flag/dead paint the cell like the sheet.
-export function signalRowClass(signal: SignalColor): string {
-    switch (signal) {
-        case 'flag':
-            return 'bg-signal-flag-fill';
-        case 'dead':
-            return 'bg-signal-dead-fill';
-        default:
-            return '';
-    }
-}
-
 // Mouse-id colour (font signals) — instruction/plan tint the code itself.
 export function signalIdClass(signal: SignalColor): string {
     switch (signal) {
@@ -67,6 +55,25 @@ export function signalIdClass(signal: SignalColor): string {
             return 'text-signal-dead-ink line-through';
         default:
             return 'text-foreground';
+    }
+}
+
+// Filled swatch for task tags on a mouse card — SOLID signal colour. Distinct
+// from signalSwatchClass (the legend swatch), where instruction/plan are
+// outline-only to mirror their Excel FONT-colour meaning; a task tag reads
+// better as a solid chip.
+export function signalTagFillClass(signal: SignalColor): string {
+    switch (signal) {
+        case 'instruction':
+            return 'bg-signal-instruction border-signal-instruction';
+        case 'plan':
+            return 'bg-signal-plan border-signal-plan';
+        case 'flag':
+            return 'bg-signal-flag-fill border-signal-flag-line';
+        case 'dead':
+            return 'bg-signal-dead-fill border-border';
+        default:
+            return 'bg-foreground border-foreground';
     }
 }
 

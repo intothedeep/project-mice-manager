@@ -95,3 +95,28 @@
         font-feature-settings: 'cv11', 'ss01';
     }
 }
+
+/* Thin, square, minimal scrollbars (user directive). */
+@layer utilities {
+    .thin-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+    }
+    .thin-scroll::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .thin-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .thin-scroll::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 0; /* rectangular */
+    }
+    .thin-scroll::-webkit-scrollbar-thumb:hover {
+        background: var(--muted-foreground);
+    }
+    .thin-scroll::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+}

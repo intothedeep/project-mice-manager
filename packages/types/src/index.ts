@@ -3,6 +3,11 @@
 export type {
     SignalColor,
     Sex,
+    MouseTaskTag,
+    ParentCell,
+    MouseParents,
+    MateRef,
+    MouseDates,
     MouseCell,
     GridSlot,
     GridCage,
