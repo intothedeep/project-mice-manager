@@ -22,6 +22,7 @@ import {
     resolvePath,
     isOnSelection,
     type Selection,
+    type SelLevel,
     type SelPath,
 } from '@/lib/gridSelection';
 import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass } from '@/lib/signal';
@@ -47,7 +48,7 @@ const lineMice = (l: GridLine) =>
     l.cages.flatMap((c) => c.slots.flatMap((s) => s.mice));
 
 // Scroll the clicked node into the body view (no-op if already visible).
-function scrollToNode(level: Selection['level'], id: number) {
+function scrollToNode(level: SelLevel, id: number) {
     document
         .getElementById(`${level}-${id}`)
         ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -56,14 +57,11 @@ function scrollToNode(level: Selection['level'], id: number) {
 export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     const [colony, setColony] = useState(initial);
     const [filter, setFilter] = useState<GridFilter>(EMPTY_FILTER);
-    // Structural selection (highlight path + subtree). Null = nothing highlighted.
+    // The ONE current selection — a tree node, a genotype, or a mate group (see the
+    // Selection union). All three highlight their targets AND feed the breadcrumb +
+    // action bar identically, so genotype/mate behave exactly like a node click.
+    // Null = nothing selected.
     const [selection, setSelection] = useState<Selection | null>(null);
-    // Genotype highlight — click a genotype cell to light every line/cage/mouse
-    // sharing that genotype. Mutually exclusive with the structural selection.
-    const [hlGenotype, setHlGenotype] = useState<string | null>(null);
-    // Mate-group highlight — click a mate badge to light every mouse in that group
-    // (same mate colour). Mutually exclusive with selection + genotype highlight.
-    const [hlMate, setHlMate] = useState<string | null>(null);
     const [moving, setMoving] = useState<Moving | null>(null);
     const [detail, setDetail] = useState<SelectedMouse | null>(null);
     const [selected, setSelected] = useState<Record<number, string>>({});
@@ -89,12 +87,15 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
 
     // Resolve the selection to full coords once; every rail/row compares its own ids.
     const path = useMemo(
-        () => resolvePath(colony, selection),
+        () => resolvePath(colony, selection?.kind === 'node' ? selection : null),
         [colony, selection]
     );
     const hl = (elemLevel: number, ids: SelPath) =>
-        selection != null &&
+        selection?.kind === 'node' &&
         isOnSelection(path, selection.level, elemLevel, ids);
+
+    const hlGenotype = selection?.kind === 'genotype' ? selection.value : null;
+    const hlMate = selection?.kind === 'mate' ? selection.color : null;
 
     // Line/cage/slot ids that CONTAIN a mouse of the highlighted genotype.
     const genoSets = useMemo(() => {
@@ -157,21 +158,27 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
         return map;
     }, [colony]);
 
-    // Click a genotype cell → highlight that genotype everywhere (clears the others).
+    // Click a genotype cell → select that genotype (toggle off if already selected).
+    // Same selection concept as a node click, so breadcrumb + action bar follow.
     function pickGenotype(g: string) {
-        setSelection(null);
-        setHlMate(null);
-        setHlGenotype((prev) => (prev === g ? null : g));
+        setSelection((prev) =>
+            prev?.kind === 'genotype' && prev.value === g
+                ? null
+                : { kind: 'genotype', value: g }
+        );
     }
-    // Click a mate badge → highlight every mouse in that mate group (clears the others).
+    // Click a mate badge → select that mate group (toggle off if already selected).
     function pickMate(color: string) {
-        setSelection(null);
-        setHlGenotype(null);
-        setHlMate((prev) => (prev === color ? null : color));
+        setSelection((prev) =>
+            prev?.kind === 'mate' && prev.color === color
+                ? null
+                : { kind: 'mate', color }
+        );
     }
 
-    // All mice under the current structural selection (line → all its mice, cage →
-    // its mice, slot → its mice, mouse → itself) — used for "create task for selection".
+    // All mice under the current selection — node (line→all its mice, cage/slot→its
+    // mice, mouse→itself), genotype (every mouse of it), or mate (every mouse in the
+    // group). Feeds "create task for selection" the same way for all three kinds.
     const selectionMice = useMemo(() => {
         if (!selection) return [];
         const out: string[] = [];
@@ -179,15 +186,20 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             l.cages.forEach((c) =>
                 c.slots.forEach((s) =>
                     s.mice.forEach((m) => {
-                        if (
-                            isOnSelection(path, selection.level, 4, {
-                                lineId: l.lineId,
-                                cageId: c.cageId,
-                                slotId: s.slotId,
-                                mouseId: m.metaId,
-                            })
-                        )
-                            out.push(m.renderedId);
+                        const inSel =
+                            selection.kind === 'node'
+                                ? isOnSelection(path, selection.level, 4, {
+                                      lineId: l.lineId,
+                                      cageId: c.cageId,
+                                      slotId: s.slotId,
+                                      mouseId: m.metaId,
+                                  })
+                                : selection.kind === 'genotype'
+                                  ? m.genotype === selection.value
+                                  : m.mates.some(
+                                        (mt) => mt.color === selection.color
+                                    );
+                        if (inSel) out.push(m.renderedId);
                     })
                 )
             )
@@ -195,18 +207,41 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
         return out;
     }, [colony, selection, path]);
 
-    // Names along the selection path — feeds the breadcrumb (strictly better than
-    // the old line→cage version: it descends to the selected slot/mouse).
+    // Breadcrumb — the selection rendered as a path/label. Node → line›cage›slot›
+    // mouse (descends to whatever level was clicked); genotype → the genotype;
+    // mate → the partner names in the group (no human name exists for the colour).
     const selLine = colony.lines.find((l) => l.lineId === path.lineId);
     const selCage = selLine?.cages.find((c) => c.cageId === path.cageId);
     const selSlot = selCage?.slots.find((s) => s.slotId === path.slotId);
     const selMouse = selSlot?.mice.find((m) => m.metaId === path.mouseId);
-    const crumbs = [
-        selLine ? `line: ${selLine.lineName}` : undefined,
-        selCage ? `cage: ${selCage.cageNumber}` : undefined,
-        selSlot ? `slot ${selSlot.label}` : undefined,
-        selMouse ? `mouse: ${selMouse.renderedId}` : undefined,
-    ].filter((s): s is string => !!s);
+    let crumbs: string[];
+    if (selection?.kind === 'genotype') {
+        crumbs = [`genotype: ${selection.value}`];
+    } else if (selection?.kind === 'mate') {
+        const names = new Set<string>();
+        colony.lines.forEach((l) =>
+            l.cages.forEach((c) =>
+                c.slots.forEach((s) =>
+                    s.mice.forEach((m) =>
+                        m.mates.forEach((mt) => {
+                            if (mt.color === selection.color) {
+                                names.add(m.renderedId);
+                                names.add(mt.partnerId);
+                            }
+                        })
+                    )
+                )
+            )
+        );
+        crumbs = [`mate: ${[...names].slice(0, 4).join(' × ')}`];
+    } else {
+        crumbs = [
+            selLine ? `line: ${selLine.lineName}` : undefined,
+            selCage ? `cage: ${selCage.cageNumber}` : undefined,
+            selSlot ? `slot ${selSlot.label}` : undefined,
+            selMouse ? `mouse: ${selMouse.renderedId}` : undefined,
+        ].filter((s): s is string => !!s);
+    }
 
     // Jump-menu item lists (header dropdowns). Search-friendly for scale.
     const lineItems = colony.lines.map((l) => ({
@@ -243,18 +278,18 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     );
 
     // Click a node → toggle its selection (click again clears) + scroll to it.
-    function goTo(sel: Selection) {
-        setHlGenotype(null);
-        setHlMate(null);
+    function goTo(node: { level: SelLevel; id: number }) {
         setSelection((prev) =>
-            prev && prev.level === sel.level && prev.id === sel.id ? null : sel
+            prev?.kind === 'node' &&
+            prev.level === node.level &&
+            prev.id === node.id
+                ? null
+                : { kind: 'node', level: node.level, id: node.id }
         );
-        scrollToNode(sel.level, sel.id);
+        scrollToNode(node.level, node.id);
     }
-    function jump(level: Selection['level'], id: number) {
-        setHlGenotype(null);
-        setHlMate(null);
-        setSelection({ level, id });
+    function jump(level: SelLevel, id: number) {
+        setSelection({ kind: 'node', level, id });
         scrollToNode(level, id);
     }
     function toggleSelect(m: MouseCell) {

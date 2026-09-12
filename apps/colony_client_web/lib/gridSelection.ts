@@ -7,10 +7,21 @@ import type { ColonyGrid } from '@repo/types';
 
 export type SelLevel = 'line' | 'cage' | 'slot' | 'mouse';
 
-export interface Selection {
+// A structural (tree-node) selection: a line/cage/slot/mouse and its ancestor
+// path + subtree.
+export interface NodeSel {
+    kind: 'node';
     level: SelLevel;
     id: number;
 }
+
+// The current selection is ONE of three kinds — a tree node, a genotype, or a
+// mate group. All three feed the same downstream (highlight + breadcrumb + action
+// bar), so they are one mutually-exclusive concept, not three parallel states.
+export type Selection =
+    | NodeSel
+    | { kind: 'genotype'; value: string }
+    | { kind: 'mate'; color: string };
 
 export interface SelPath {
     lineId?: number;
@@ -30,7 +41,7 @@ export const LEVEL_RANK: Record<SelLevel, number> = {
 // selected mouse does not know its cage/slot, so this one walk supplies them.
 export function resolvePath(
     colony: ColonyGrid,
-    sel: Selection | null
+    sel: NodeSel | null
 ): SelPath {
     if (!sel) return {};
     for (const l of colony.lines) {
