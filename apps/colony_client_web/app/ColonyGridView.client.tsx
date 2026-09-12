@@ -407,6 +407,16 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                     >
                                                         <SlotLabel
                                                             label={s.label}
+                                                            adults={countSlotAdults(
+                                                                s.mice
+                                                            )}
+                                                            cap={SLOT_ADULT_CAP}
+                                                            over={
+                                                                countSlotAdults(
+                                                                    s.mice
+                                                                ) >
+                                                                SLOT_ADULT_CAP
+                                                            }
                                                             highlighted={
                                                                 hl(3, {
                                                                     lineId: l.lineId,
@@ -1091,10 +1101,21 @@ function CageLabel({
 function SlotLabel({
     label,
     highlighted,
+    over,
+    adults,
+    cap,
     onClick,
 }: {
     label: string;
     highlighted: boolean;
+    // Overcrowding: live adults exceed the slot's adult capacity. A STATE colour
+    // (red = action required: split the slot), fill on the rail itself so it reads
+    // at a glance; the count badge makes it actionable. Kept distinct from the
+    // amber "old" DOB tint and orthogonal to the selection overlay (which layers on
+    // top via HlOverlay when the slot is also selected).
+    over: boolean;
+    adults: number;
+    cap: number;
     onClick: () => void;
 }) {
     return (
@@ -1103,13 +1124,31 @@ function SlotLabel({
             onClick={onClick}
             className={cn(
                 RAIL_BASE,
-                'relative w-9 items-center bg-muted/40 px-1 py-1.5 hover:bg-accent'
+                'relative w-9 items-center px-1 py-1.5',
+                over
+                    ? 'bg-red-100 hover:bg-red-200'
+                    : 'bg-muted/40 hover:bg-accent'
             )}
+            title={
+                over
+                    ? `overcrowded — ${adults} adults > ${cap} capacity (split slot)`
+                    : undefined
+            }
         >
             {highlighted ? <HlOverlay /> : null}
-            <span className="font-mono text-[11px] font-semibold text-muted-foreground">
+            <span
+                className={cn(
+                    'font-mono text-[11px] font-semibold',
+                    over ? 'text-red-700' : 'text-muted-foreground'
+                )}
+            >
                 {label}
             </span>
+            {over ? (
+                <span className="rounded-sm bg-red-600 px-1 text-[8px] leading-tight font-bold text-white">
+                    {adults}/{cap}
+                </span>
+            ) : null}
         </button>
     );
 }
@@ -1205,6 +1244,18 @@ const fmtDate = (d: string | null | undefined) =>
 const TASK_W = 'w-24';
 // Left-rail widths (line · cage · slot) the header must offset past to align.
 const RAIL_W = { line: 'w-8', cage: 'w-16', slot: 'w-9' } as const;
+
+// Slot adult capacity — a live mouse past weaning (lifeStage !== 'baby') counts;
+// pups don't. Over this → overcrowding warning on the slot rail. User-specified
+// (5 per slot); professor-confirm later (plan Q33/Q34: value + per-slot vs cage).
+const SLOT_ADULT_CAP = 5;
+const countSlotAdults = (mice: MouseCell[]): number =>
+    mice.filter(
+        (m) =>
+            m.isAlive !== false &&
+            m.signal !== 'dead' &&
+            lifeStage(m.dob, m.sex) !== 'baby'
+    ).length;
 
 function MouseRow({
     id,
