@@ -53,7 +53,6 @@ const COLONY_GRID: ColonyGrid = {
         {
             lineId: 1,
             lineName: 'pNf1 flox;ccEGFP',
-            lineColor: '#14b8a6',
             nominalGenotypeColor: geno('Nf1 f/+'),
             cages: [
                 {
@@ -327,7 +326,6 @@ const COLONY_GRID: ColonyGrid = {
         {
             lineId: 2,
             lineName: 'PlpCre;Ai14',
-            lineColor: '#f97316',
             nominalGenotypeColor: geno('PlpCre;Ai14 +/-'),
             cages: [
                 {
@@ -445,7 +443,6 @@ const COLONY_GRID: ColonyGrid = {
         {
             lineId: 3,
             lineName: 'C57BL/6 (WT ctrl)',
-            lineColor: '#64748b',
             nominalGenotypeColor: geno('WT'),
             cages: [
                 {

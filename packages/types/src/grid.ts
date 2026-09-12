@@ -101,8 +101,7 @@ export interface GridCage {
 export interface GridLine {
   lineId: number;
   lineName: string; // e.g. "pNf1 flox;ccEGFP"
-  lineColor: string; // line-identity hex (color_assignments channel='line', key=lineId)
-  nominalGenotypeColor: string | null; // the line's nominal genotype colour (same palette as MouseCell.genotypeColor); null for the default WT line. A mouse whose genotypeColor differs is a transfer.
+  nominalGenotypeColor: string | null; // the line's SOLE rail colour — its nominal genotype colour (same palette as MouseCell.genotypeColor); null for the default WT line (neutral, on-brand). A mouse whose genotypeColor differs is a transfer. (Dropped the separate lineColor identity hue 2026-09-12: line ≈ genotype 1:1, so it was redundant; lines stay identifiable by index badge + name.)
   cages: GridCage[];
 }
 
