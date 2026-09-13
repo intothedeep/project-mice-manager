@@ -63,12 +63,16 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     // Collapsed by default; ⌘K / click opens it (state owned here — see NavSearch).
     const navNode = useNavSlotNode();
     const [searchOpen, setSearchOpen] = useState(false);
-    // ⌘K / Ctrl+K opens the search (preventDefault — Firefox binds Ctrl+K natively).
+    // ⌘K / Ctrl+K opens the search (preventDefault — Firefox binds Ctrl+K
+    // natively); Esc closes it. Both are GLOBAL so they work regardless of where
+    // focus currently sits (clicking a cell moves focus out of the overlay).
     useEffect(() => {
         function onKey(e: KeyboardEvent) {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
                 setSearchOpen(true);
+            } else if (e.key === 'Escape') {
+                setSearchOpen(false);
             }
         }
         window.addEventListener('keydown', onKey);
@@ -833,10 +837,7 @@ function NavSearch({
 
     return (
         <div
-            onKeyDown={(e) => {
-                if (e.key === 'Escape') onOpenChange(false);
-            }}
-            // full overlay over the whole nav row (all sizes); Esc / × closes.
+            // full overlay over the whole nav row (all sizes); Esc (global) / × closes.
             className="absolute inset-0 z-40 flex items-center bg-background"
         >
             <div className="mx-auto flex w-full max-w-[1400px] flex-nowrap items-center gap-3 px-4">
