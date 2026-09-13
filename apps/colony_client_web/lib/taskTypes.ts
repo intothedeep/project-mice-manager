@@ -92,6 +92,16 @@ export const TASK_TYPES: TaskTypeDef[] = [
         ],
     },
     {
+        // Tail/ear tissue sampling — the step BEFORE genotyping (PCR runs on it).
+        type: 'Tissue collection',
+        subjectKind: 'mouse',
+        subjectFrom: 'mouse',
+        fields: [
+            { key: 'mouse', label: 'Mouse', kind: 'mouse', required: true },
+            { key: 'collectDate', label: 'Collection date', kind: 'date' },
+        ],
+    },
+    {
         type: 'Genotyping',
         subjectKind: 'mouse',
         subjectFrom: 'mouse',
