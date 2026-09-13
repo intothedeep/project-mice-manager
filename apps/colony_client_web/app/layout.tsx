@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { IBM_Plex_Mono } from 'next/font/google';
 import { NavBar } from './NavBar.client';
+import { NavSlotProvider } from './NavSlot.client';
 
 // Whole-UI IBM Plex Mono (user directive) — bound to BOTH --font-sans and
 // --font-mono so every surface renders in Plex Mono, matching the technical,
@@ -29,8 +30,10 @@ export default function RootLayout({
             className={mono.variable}
         >
             <body className="flex h-dvh flex-col overflow-hidden font-mono antialiased">
-                <NavBar />
-                {children}
+                <NavSlotProvider>
+                    <NavBar />
+                    {children}
+                </NavSlotProvider>
             </body>
         </html>
     );

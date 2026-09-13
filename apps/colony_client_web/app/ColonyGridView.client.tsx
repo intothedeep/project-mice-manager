@@ -8,7 +8,8 @@ import type {
     Sex,
     SignalColor,
 } from '@repo/types';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, ListPlus, ChevronDown } from 'lucide-react';
 import {
     EMPTY_FILTER,
@@ -31,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useNavSlotNode } from './NavSlot.client';
 import { MoveMenu } from './MoveMenu.client';
 import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
@@ -57,6 +59,21 @@ function scrollToNode(level: SelLevel, id: number) {
 export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     const [colony, setColony] = useState(initial);
     const [filter, setFilter] = useState<GridFilter>(EMPTY_FILTER);
+    // Search+filter now lives in the NavBar (portal slot) to free the toolbar row.
+    // Collapsed by default; ⌘K / click opens it (state owned here — see NavSearch).
+    const navNode = useNavSlotNode();
+    const [searchOpen, setSearchOpen] = useState(false);
+    // ⌘K / Ctrl+K opens the search (preventDefault — Firefox binds Ctrl+K natively).
+    useEffect(() => {
+        function onKey(e: KeyboardEvent) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setSearchOpen(true);
+            }
+        }
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
     // The ONE current selection — a tree node, a genotype, or a mate group (see the
     // Selection union). All three highlight their targets AND feed the breadcrumb +
     // action bar identically, so genotype/mate behave exactly like a node click.
@@ -308,16 +325,21 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-2">
-            {/* breadcrumb + filter each on their own row (aligned row-by-row) */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <Breadcrumb items={crumbs} />
-            </div>
-
-            <FilterBar
-                filter={filter}
-                active={on}
-                onChange={setFilter}
-            />
+            {/* Search+filter is portaled into the NavBar slot (frees the toolbar
+                row); breadcrumb rides the jump-to header (below). Renders only
+                once the NavBar anchor has mounted. */}
+            {navNode
+                ? createPortal(
+                      <NavSearch
+                          filter={filter}
+                          active={on}
+                          onChange={setFilter}
+                          open={searchOpen}
+                          onOpenChange={setSearchOpen}
+                      />,
+                      navNode
+                  )
+                : null}
 
             {/* ── Unified body: line | cage | slot | mice, all as nested columns ── */}
             <Card className="flex min-h-0 flex-1 flex-col py-0">
@@ -360,8 +382,13 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                             align="right"
                         />
                     </div>
+                    {/* breadcrumb rides the right of the jump-to header (its own
+                        row is gone); hidden on mobile where width is scarce */}
+                    <div className="ml-auto hidden items-center sm:flex">
+                        <Breadcrumb items={crumbs} />
+                    </div>
                     {selection ? (
-                        <div className="ml-auto flex items-center gap-2">
+                        <div className="ml-auto flex items-center gap-2 sm:ml-3">
                             {selectionMice.length > 0 ? (
                                 <Button
                                     size="xs"
@@ -748,107 +775,161 @@ function JumpMenu({
     );
 }
 
-/* ---------- filter bar ---------- */
+/* ---------- nav search + filter ---------- */
 
-function FilterBar({
+// Lives in the NavBar slot (portaled). Collapsed = a search trigger (icon + ⌘K
+// hint, with an active dot when any filter is on, so filter state is never
+// hidden). Expanded = the full search field + sex/signal chips: inline in the
+// nav row on sm+, an absolute drop-panel under the sticky header on mobile.
+function NavSearch({
     filter,
     active,
     onChange,
+    open,
+    onOpenChange,
 }: {
     filter: GridFilter;
     active: boolean;
     onChange: (f: GridFilter) => void;
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
 }) {
-    return (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-3 py-2.5">
-            {/* search field: active sex/signal filters show as in-field badges,
-                a clear-all × sits at the right end whenever any filter is on */}
-            <div className="flex min-h-8 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 sm:w-auto sm:min-w-52 sm:flex-1">
-                <Search className="size-3.5 shrink-0 text-muted-foreground" />
-                {filter.sexes.map((s) => (
-                    <FieldBadge
-                        key={`sex-${s}`}
-                        onRemove={() =>
-                            onChange({
-                                ...filter,
-                                sexes: toggleIn(filter.sexes, s),
-                            })
-                        }
-                    >
-                        {s}
-                    </FieldBadge>
-                ))}
-                {filter.signals.map((s) => (
-                    <FieldBadge
-                        key={`sig-${s}`}
-                        signal={s}
-                        onRemove={() =>
-                            onChange({
-                                ...filter,
-                                signals: toggleIn(filter.signals, s),
-                            })
-                        }
-                    >
-                        {SIGNAL_LABEL[s]}
-                    </FieldBadge>
-                ))}
-                <input
-                    value={filter.query}
-                    onChange={(e) =>
-                        onChange({ ...filter, query: e.target.value })
-                    }
-                    placeholder={active ? 'filter…' : 'Search id or genotype…'}
-                    className="h-6 min-w-16 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                />
+    const inputRef = useRef<HTMLInputElement>(null);
+    // Focus the field once the expanded UI has rendered.
+    useEffect(() => {
+        if (open) inputRef.current?.focus();
+    }, [open]);
+
+    if (!open) {
+        return (
+            <button
+                type="button"
+                onClick={() => onOpenChange(true)}
+                aria-label="Open search (⌘K)"
+                className="relative flex items-center gap-1.5 border border-input bg-background px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+                <Search className="size-3.5" />
+                <span className="hidden sm:inline">search</span>
+                <kbd className="hidden border border-border px-1 text-[10px] leading-tight sm:inline">
+                    ⌘K
+                </kbd>
                 {active ? (
-                    <button
-                        type="button"
-                        onClick={() => onChange(EMPTY_FILTER)}
-                        aria-label="clear filters"
-                        className="shrink-0 rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                        <X className="size-3.5" />
-                    </button>
+                    <span
+                        aria-label="filters active"
+                        className="absolute -top-1 -right-1 size-2 rounded-full bg-primary"
+                    />
                 ) : null}
-            </div>
+            </button>
+        );
+    }
 
-            {/* sex + signal ALWAYS on one row (M/F/U beside the signal chips); on
-                mobile the row scrolls horizontally instead of wrapping down */}
-            <div className="thin-scroll flex w-full flex-nowrap items-center gap-x-4 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
-                <FilterGroup label="sex">
-                {SEXES.map((s) => (
-                    <Chip
-                        key={s}
-                        on={filter.sexes.includes(s)}
-                        onClick={() =>
-                            onChange({
-                                ...filter,
-                                sexes: toggleIn(filter.sexes, s),
-                            })
+    return (
+        <div
+            onKeyDown={(e) => {
+                if (e.key === 'Escape') onOpenChange(false);
+            }}
+            // mobile: absolute panel under the sticky header; sm+: inline in nav
+            className="absolute inset-x-0 top-full z-40 border-b bg-background p-2 shadow-sm sm:static sm:inset-auto sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none"
+        >
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:flex-nowrap">
+                {/* search field: active sex/signal filters show as in-field badges */}
+                <div className="flex min-h-7 w-full flex-wrap items-center gap-1 border border-input bg-background px-2 py-0.5 sm:w-56 sm:flex-none">
+                    <Search className="size-3.5 shrink-0 text-muted-foreground" />
+                    {filter.sexes.map((s) => (
+                        <FieldBadge
+                            key={`sex-${s}`}
+                            onRemove={() =>
+                                onChange({
+                                    ...filter,
+                                    sexes: toggleIn(filter.sexes, s),
+                                })
+                            }
+                        >
+                            {s}
+                        </FieldBadge>
+                    ))}
+                    {filter.signals.map((s) => (
+                        <FieldBadge
+                            key={`sig-${s}`}
+                            signal={s}
+                            onRemove={() =>
+                                onChange({
+                                    ...filter,
+                                    signals: toggleIn(filter.signals, s),
+                                })
+                            }
+                        >
+                            {SIGNAL_LABEL[s]}
+                        </FieldBadge>
+                    ))}
+                    <input
+                        ref={inputRef}
+                        value={filter.query}
+                        onChange={(e) =>
+                            onChange({ ...filter, query: e.target.value })
                         }
-                    >
-                        {s}
-                    </Chip>
-                ))}
-            </FilterGroup>
+                        placeholder={active ? 'filter…' : 'id or genotype…'}
+                        className="h-6 min-w-16 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    />
+                    {active ? (
+                        <button
+                            type="button"
+                            onClick={() => onChange(EMPTY_FILTER)}
+                            aria-label="clear filters"
+                            className="shrink-0 p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                            <X className="size-3.5" />
+                        </button>
+                    ) : null}
+                </div>
 
-            <FilterGroup label="signal">
-                {SIGNAL_ORDER.map((s) => (
-                    <Chip
-                        key={s}
-                        on={filter.signals.includes(s)}
-                        signal={s}
-                        onClick={() =>
-                            onChange({
-                                ...filter,
-                                signals: toggleIn(filter.signals, s),
-                            })
-                        }
-                    >
-                        {SIGNAL_LABEL[s]}
-                    </Chip>
-                ))}
-            </FilterGroup>
+                {/* sex + signal ALWAYS one row; scrolls horizontally when tight */}
+                <div className="thin-scroll flex w-full flex-nowrap items-center gap-x-3 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
+                    <FilterGroup label="sex">
+                        {SEXES.map((s) => (
+                            <Chip
+                                key={s}
+                                on={filter.sexes.includes(s)}
+                                onClick={() =>
+                                    onChange({
+                                        ...filter,
+                                        sexes: toggleIn(filter.sexes, s),
+                                    })
+                                }
+                            >
+                                {s}
+                            </Chip>
+                        ))}
+                    </FilterGroup>
+
+                    <FilterGroup label="signal">
+                        {SIGNAL_ORDER.map((s) => (
+                            <Chip
+                                key={s}
+                                on={filter.signals.includes(s)}
+                                signal={s}
+                                onClick={() =>
+                                    onChange({
+                                        ...filter,
+                                        signals: toggleIn(filter.signals, s),
+                                    })
+                                }
+                            >
+                                {SIGNAL_LABEL[s]}
+                            </Chip>
+                        ))}
+                    </FilterGroup>
+                </div>
+
+                {/* collapse back to the trigger */}
+                <button
+                    type="button"
+                    onClick={() => onOpenChange(false)}
+                    aria-label="Close search"
+                    className="ml-auto shrink-0 p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:ml-0"
+                >
+                    <X className="size-4" />
+                </button>
             </div>
         </div>
     );

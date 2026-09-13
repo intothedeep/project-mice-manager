@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useNavSlotAnchor } from './NavSlot.client';
 
 const LINKS = [
     { href: '/', label: 'Cages' },
@@ -12,6 +13,7 @@ const LINKS = [
 
 export function NavBar() {
     const path = usePathname();
+    const slotRef = useNavSlotAnchor();
     return (
         <header className="sticky top-0 z-30 shrink-0 border-b bg-background/85 backdrop-blur">
             <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 py-1">
@@ -40,6 +42,11 @@ export function NavBar() {
                         );
                     })}
                 </nav>
+                {/* page-specific slot (Cages page portals its search+filter here) */}
+                <div
+                    ref={slotRef}
+                    className="ml-auto flex min-w-0 items-center"
+                />
             </div>
         </header>
     );
