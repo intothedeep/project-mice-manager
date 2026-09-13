@@ -16,7 +16,8 @@ export function NavBar() {
     const slotRef = useNavSlotAnchor();
     return (
         <header className="sticky top-0 z-30 shrink-0 border-b bg-background/85 backdrop-blur">
-            <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 py-1">
+            {/* fixed height so the search trigger vs. overlay never changes nav size */}
+            <div className="mx-auto flex h-10 max-w-[1400px] items-center gap-4 px-4">
                 <span className="text-sm font-semibold tracking-tight">
                     Lopez-Juarez Lab
                 </span>

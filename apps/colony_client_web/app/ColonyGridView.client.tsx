@@ -344,7 +344,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             {/* ── Unified body: line | cage | slot | mice, all as nested columns ── */}
             <Card className="flex min-h-0 flex-1 flex-col py-0">
                 {/* body header — jump-to dropdowns (navigate to any line / cage / mouse) */}
-                <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-2">
+                <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-1.5">
                     {/* label hidden on mobile; the 4 jump menus tile 2×2 on mobile,
                         inline row on sm+ */}
                     <span className="hidden text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:inline">
@@ -385,32 +385,32 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                     {/* right rail: breadcrumb (top) + selection actions (bottom)
                         stacked into two compact lines whose combined height ≈ the
                         jump-to dropdown row. Breadcrumb hidden on mobile. */}
-                    <div className="ml-auto flex flex-col items-end gap-1">
+                    <div className="ml-auto flex flex-col items-end gap-0.5">
                         <div className="hidden sm:block">
                             <Breadcrumb items={crumbs} />
                         </div>
                         {selection ? (
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1">
                                 {selectionMice.length > 0 ? (
                                     <Button
                                         size="xs"
-                                        className="h-6 px-2 text-[11px]"
+                                        className="h-5 gap-1 px-1.5 text-[10px]"
                                         onClick={() => {
                                             setTaskMice(selectionMice);
                                             setTaskOpen(true);
                                         }}
                                     >
-                                        <ListPlus className="size-3" /> Create task
+                                        <ListPlus className="size-2.5" /> Create task
                                         · {selectionMice.length}
                                     </Button>
                                 ) : null}
                                 <Button
                                     variant="ghost"
                                     size="xs"
-                                    className="h-6 px-2 text-[11px]"
+                                    className="h-5 gap-1 px-1.5 text-[10px]"
                                     onClick={() => setSelection(null)}
                                 >
-                                    <X className="size-3" /> clear
+                                    <X className="size-2.5" /> clear
                                 </Button>
                             </div>
                         ) : null}
@@ -1038,7 +1038,7 @@ function Breadcrumb({ items }: { items: string[] }) {
     return (
         <nav
             aria-label="Breadcrumb"
-            className="flex flex-nowrap items-center gap-1 font-mono text-[11px] leading-none"
+            className="flex flex-nowrap items-center gap-1 font-mono text-[10px] leading-none"
         >
             {items.map((label, i) => (
                 <span
