@@ -763,7 +763,7 @@ function FilterBar({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-3 py-2.5">
             {/* search field: active sex/signal filters show as in-field badges,
                 a clear-all × sits at the right end whenever any filter is on */}
-            <div className="flex min-h-8 min-w-52 flex-1 flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1">
+            <div className="flex min-h-8 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 sm:w-auto sm:min-w-52 sm:flex-1">
                 <Search className="size-3.5 shrink-0 text-muted-foreground" />
                 {filter.sexes.map((s) => (
                     <FieldBadge
@@ -812,7 +812,10 @@ function FilterBar({
                 ) : null}
             </div>
 
-            <FilterGroup label="sex">
+            {/* sex + signal kept together so M/F/U and the signal chips sit
+                side by side (wrap as a unit under the search field on mobile) */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <FilterGroup label="sex">
                 {SEXES.map((s) => (
                     <Chip
                         key={s}
@@ -846,6 +849,7 @@ function FilterBar({
                     </Chip>
                 ))}
             </FilterGroup>
+            </div>
         </div>
     );
 }
