@@ -323,33 +323,41 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             <Card className="flex min-h-0 flex-1 flex-col py-0">
                 {/* body header — jump-to dropdowns (navigate to any line / cage / mouse) */}
                 <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-2">
-                    <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                    {/* label hidden on mobile; the 4 jump menus tile 2×2 on mobile,
+                        inline row on sm+ */}
+                    <span className="hidden text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:inline">
                         jump to
                     </span>
-                    <JumpMenu
-                        label="Lines"
-                        count={colony.lines.length}
-                        items={lineItems}
-                        onPick={(id) => jump('line', id)}
-                    />
-                    <JumpMenu
-                        label="Cages"
-                        count={totalCages}
-                        items={cageItems}
-                        onPick={(id) => jump('cage', id)}
-                    />
-                    <JumpMenu
-                        label="Slots"
-                        count={totalSlots}
-                        items={slotItems}
-                        onPick={(id) => jump('slot', id)}
-                    />
-                    <JumpMenu
-                        label="Mice"
-                        count={totalMice}
-                        items={mouseItems}
-                        onPick={(id) => jump('mouse', id)}
-                    />
+                    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                        <JumpMenu
+                            label="Lines"
+                            count={colony.lines.length}
+                            items={lineItems}
+                            onPick={(id) => jump('line', id)}
+                            className="w-full sm:w-auto"
+                        />
+                        <JumpMenu
+                            label="Cages"
+                            count={totalCages}
+                            items={cageItems}
+                            onPick={(id) => jump('cage', id)}
+                            className="w-full sm:w-auto"
+                        />
+                        <JumpMenu
+                            label="Slots"
+                            count={totalSlots}
+                            items={slotItems}
+                            onPick={(id) => jump('slot', id)}
+                            className="w-full sm:w-auto"
+                        />
+                        <JumpMenu
+                            label="Mice"
+                            count={totalMice}
+                            items={mouseItems}
+                            onPick={(id) => jump('mouse', id)}
+                            className="w-full sm:w-auto"
+                        />
+                    </div>
                     {selection ? (
                         <div className="ml-auto flex items-center gap-2">
                             {selectionMice.length > 0 ? (
@@ -647,11 +655,13 @@ function JumpMenu({
     count,
     items,
     onPick,
+    className,
 }: {
     label: string;
     count: number;
     items: JumpItem[];
     onPick: (id: number) => void;
+    className?: string;
 }) {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState('');
@@ -662,14 +672,16 @@ function JumpMenu({
           )
         : items;
     return (
-        <div className="relative">
+        <div className={cn('relative', className)}>
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex items-center gap-1 rounded-none border border-border bg-background px-2 py-1 text-[11px] font-medium transition-colors hover:bg-accent"
+                className="flex w-full items-center justify-between gap-1 rounded-none border border-border bg-background px-2 py-1 text-[11px] font-medium transition-colors hover:bg-accent sm:w-auto sm:justify-start"
             >
-                {label}
-                <span className="text-muted-foreground">{count}</span>
+                <span className="flex items-center gap-1">
+                    {label}
+                    <span className="text-muted-foreground">{count}</span>
+                </span>
                 <ChevronDown className="size-3 text-muted-foreground" />
             </button>
             {open ? (
@@ -742,7 +754,7 @@ function FilterBar({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-3 py-2.5">
             {/* search field: active sex/signal filters show as in-field badges,
                 a clear-all × sits at the right end whenever any filter is on */}
-            <div className="flex h-8 min-w-52 flex-1 items-center gap-1 rounded-md border border-input bg-background px-2">
+            <div className="flex min-h-8 min-w-52 flex-1 flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1">
                 <Search className="size-3.5 shrink-0 text-muted-foreground" />
                 {filter.sexes.map((s) => (
                     <FieldBadge
@@ -777,7 +789,7 @@ function FilterBar({
                         onChange({ ...filter, query: e.target.value })
                     }
                     placeholder={active ? 'filter…' : 'Search id or genotype…'}
-                    className="h-full min-w-16 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    className="h-6 min-w-16 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
                 {active ? (
                     <button
@@ -874,7 +886,9 @@ function FilterGroup({
 }) {
     return (
         <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">{label}</span>
+            <span className="hidden text-[11px] text-muted-foreground sm:inline">
+                {label}
+            </span>
             {children}
         </div>
     );

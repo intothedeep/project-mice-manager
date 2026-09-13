@@ -33,7 +33,7 @@ export const SIGNAL_LABEL: Record<SignalColor, string> = {
     instruction: 'instruction',
     plan: 'plan',
     flag: 'attention',
-    dead: 'sac / dead',
+    dead: 'sac',
 };
 
 export const SIGNAL_ORDER: SignalColor[] = [
