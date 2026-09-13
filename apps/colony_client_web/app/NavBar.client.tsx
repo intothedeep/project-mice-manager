@@ -14,11 +14,11 @@ export function NavBar() {
     const path = usePathname();
     return (
         <header className="sticky top-0 z-30 shrink-0 border-b bg-background/85 backdrop-blur">
-            <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-6 py-1.5">
-                <span className="font-semibold tracking-tight">
+            <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 py-1">
+                <span className="text-sm font-semibold tracking-tight">
                     Lopez-Juarez Lab
                 </span>
-                <nav className="flex items-center gap-1">
+                <nav className="flex items-center gap-0.5">
                     {LINKS.map((l) => {
                         const active =
                             l.href === '/'
@@ -29,7 +29,7 @@ export function NavBar() {
                                 key={l.href}
                                 href={l.href}
                                 className={cn(
-                                    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                                    'px-2 py-0.5 text-xs font-medium transition-colors',
                                     active
                                         ? 'bg-accent text-foreground'
                                         : 'text-muted-foreground hover:bg-muted'
