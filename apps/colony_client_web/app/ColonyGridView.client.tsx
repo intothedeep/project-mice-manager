@@ -1495,7 +1495,7 @@ function MouseRow({
                         >
                             <span
                                 className={cn(
-                                    'truncate font-mono text-[13px] font-semibold',
+                                    'truncate font-mono text-[11px] font-semibold',
                                     dead && 'text-neutral-400 line-through'
                                 )}
                             >
