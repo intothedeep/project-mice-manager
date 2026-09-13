@@ -878,7 +878,7 @@ function NavSearch({
                             onChange({ ...filter, query: e.target.value })
                         }
                         placeholder={active ? 'filter…' : 'id or genotype…'}
-                        className="h-6 min-w-16 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        className="h-6 min-w-16 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
                     />
                     {active ? (
                         <button
