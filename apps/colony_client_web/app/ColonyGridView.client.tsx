@@ -382,34 +382,39 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                             align="right"
                         />
                     </div>
-                    {/* breadcrumb rides the right of the jump-to header (its own
-                        row is gone); hidden on mobile where width is scarce */}
-                    <div className="ml-auto hidden items-center sm:flex">
-                        <Breadcrumb items={crumbs} />
-                    </div>
-                    {selection ? (
-                        <div className="ml-auto flex items-center gap-2 sm:ml-3">
-                            {selectionMice.length > 0 ? (
-                                <Button
-                                    size="xs"
-                                    onClick={() => {
-                                        setTaskMice(selectionMice);
-                                        setTaskOpen(true);
-                                    }}
-                                >
-                                    <ListPlus className="size-3" /> Create task
-                                    · {selectionMice.length} mice
-                                </Button>
-                            ) : null}
-                            <Button
-                                variant="ghost"
-                                size="xs"
-                                onClick={() => setSelection(null)}
-                            >
-                                <X className="size-3" /> clear selection
-                            </Button>
+                    {/* right rail: breadcrumb (top) + selection actions (bottom)
+                        stacked into two compact lines whose combined height ≈ the
+                        jump-to dropdown row. Breadcrumb hidden on mobile. */}
+                    <div className="ml-auto flex flex-col items-end gap-1">
+                        <div className="hidden sm:block">
+                            <Breadcrumb items={crumbs} />
                         </div>
-                    ) : null}
+                        {selection ? (
+                            <div className="flex items-center gap-1.5">
+                                {selectionMice.length > 0 ? (
+                                    <Button
+                                        size="xs"
+                                        className="h-6 px-2 text-[11px]"
+                                        onClick={() => {
+                                            setTaskMice(selectionMice);
+                                            setTaskOpen(true);
+                                        }}
+                                    >
+                                        <ListPlus className="size-3" /> Create task
+                                        · {selectionMice.length}
+                                    </Button>
+                                ) : null}
+                                <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    className="h-6 px-2 text-[11px]"
+                                    onClick={() => setSelection(null)}
+                                >
+                                    <X className="size-3" /> clear
+                                </Button>
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
                 {/* one scroll container for BOTH axes; the column header sticks on
                     Y-scroll and moves with the body on X-scroll (kept in flow). */}
@@ -828,12 +833,12 @@ function NavSearch({
             onKeyDown={(e) => {
                 if (e.key === 'Escape') onOpenChange(false);
             }}
-            // mobile: absolute panel under the sticky header; sm+: inline in nav
-            className="absolute inset-x-0 top-full z-40 border-b bg-background p-2 shadow-sm sm:static sm:inset-auto sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none"
+            // full overlay over the whole nav row (all sizes); Esc / × closes.
+            className="absolute inset-0 z-40 flex items-center bg-background"
         >
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:flex-nowrap">
+            <div className="mx-auto flex w-full max-w-[1400px] flex-nowrap items-center gap-3 px-4">
                 {/* search field: active sex/signal filters show as in-field badges */}
-                <div className="flex min-h-7 w-full flex-wrap items-center gap-1 border border-input bg-background px-2 py-0.5 sm:w-56 sm:flex-none">
+                <div className="flex min-h-7 min-w-0 flex-1 flex-wrap items-center gap-1 border border-input bg-background px-2 py-0.5">
                     <Search className="size-3.5 shrink-0 text-muted-foreground" />
                     {filter.sexes.map((s) => (
                         <FieldBadge
@@ -884,7 +889,7 @@ function NavSearch({
                 </div>
 
                 {/* sex + signal ALWAYS one row; scrolls horizontally when tight */}
-                <div className="thin-scroll flex w-full flex-nowrap items-center gap-x-3 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
+                <div className="thin-scroll flex min-w-0 shrink flex-nowrap items-center gap-x-3 overflow-x-auto">
                     <FilterGroup label="sex">
                         {SEXES.map((s) => (
                             <Chip
@@ -926,7 +931,7 @@ function NavSearch({
                     type="button"
                     onClick={() => onOpenChange(false)}
                     aria-label="Close search"
-                    className="ml-auto shrink-0 p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:ml-0"
+                    className="shrink-0 p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                     <X className="size-4" />
                 </button>
@@ -1033,12 +1038,12 @@ function Breadcrumb({ items }: { items: string[] }) {
     return (
         <nav
             aria-label="Breadcrumb"
-            className="flex min-h-[1.25rem] flex-wrap items-center gap-1.5 font-mono text-xs"
+            className="flex flex-nowrap items-center gap-1 font-mono text-[11px] leading-none"
         >
             {items.map((label, i) => (
                 <span
                     key={i}
-                    className="flex items-center gap-1.5"
+                    className="flex items-center gap-1"
                 >
                     {i > 0 ? (
                         <span className="text-muted-foreground/50">›</span>
