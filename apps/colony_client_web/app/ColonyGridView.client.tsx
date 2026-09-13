@@ -719,7 +719,7 @@ function JumpMenu({
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex w-full items-center justify-between gap-1 rounded-none border border-border bg-background px-2 py-1 text-[11px] font-medium transition-colors hover:bg-accent sm:w-auto sm:justify-start"
+                className="flex w-full items-center justify-between gap-1 rounded-none border border-border bg-background px-2 py-1 text-[10px] font-medium transition-colors hover:bg-accent sm:w-auto sm:justify-start"
             >
                 <span className="flex items-center gap-1">
                     {label}
