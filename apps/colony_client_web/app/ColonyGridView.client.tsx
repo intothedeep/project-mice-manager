@@ -344,7 +344,10 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             {/* ── Unified body: line | cage | slot | mice, all as nested columns ── */}
             <Card className="flex min-h-0 flex-1 flex-col py-0">
                 {/* body header — jump-to dropdowns (navigate to any line / cage / mouse) */}
-                <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-1.5">
+                {/* sm+: fixed height so selecting (breadcrumb + action buttons)
+                    never changes the header size. mobile keeps auto height for the
+                    2×2 jump grid. */}
+                <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-1.5 sm:h-9 sm:flex-nowrap sm:py-0">
                     {/* label hidden on mobile; the 4 jump menus tile 2×2 on mobile,
                         inline row on sm+ */}
                     <span className="hidden text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:inline">
