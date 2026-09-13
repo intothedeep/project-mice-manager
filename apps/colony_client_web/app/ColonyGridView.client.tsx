@@ -342,6 +342,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                             items={cageItems}
                             onPick={(id) => jump('cage', id)}
                             className="w-full sm:w-auto"
+                            align="right"
                         />
                         <JumpMenu
                             label="Slots"
@@ -356,6 +357,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                             items={mouseItems}
                             onPick={(id) => jump('mouse', id)}
                             className="w-full sm:w-auto"
+                            align="right"
                         />
                     </div>
                     {selection ? (
@@ -656,12 +658,14 @@ function JumpMenu({
     items,
     onPick,
     className,
+    align,
 }: {
     label: string;
     count: number;
     items: JumpItem[];
     onPick: (id: number) => void;
     className?: string;
+    align?: 'left' | 'right'; // which button edge the dropdown anchors to (right = opens leftward, avoids right-overflow)
 }) {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState('');
@@ -693,7 +697,12 @@ function JumpMenu({
                             setQ('');
                         }}
                     />
-                    <div className="absolute left-0 z-50 mt-1 w-60 border border-border bg-card shadow-md">
+                    <div
+                        className={cn(
+                            'absolute z-50 mt-1 w-60 border border-border bg-card shadow-md',
+                            align === 'right' ? 'right-0' : 'left-0'
+                        )}
+                    >
                         <div className="p-1.5">
                             <Input
                                 autoFocus
