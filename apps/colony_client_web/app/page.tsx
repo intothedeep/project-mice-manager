@@ -9,7 +9,7 @@ export default async function HomePage() {
     const colony = await getColonyGrid(1);
 
     return (
-        <main className="mx-auto max-w-[1400px] px-6 py-6">
+        <main className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 flex-col px-6 py-3">
             <ColonyGridView initial={colony} />
         </main>
     );

@@ -28,7 +28,7 @@ export default function RootLayout({
             lang="en"
             className={mono.variable}
         >
-            <body className="font-mono antialiased">
+            <body className="flex min-h-dvh flex-col font-mono antialiased">
                 <NavBar />
                 {children}
             </body>

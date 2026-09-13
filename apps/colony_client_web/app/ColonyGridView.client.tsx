@@ -307,23 +307,20 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     }
 
     return (
-        <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <Breadcrumb items={crumbs} />
-            </div>
-
-            <FilterBar
-                filter={filter}
-                active={on}
-                onChange={setFilter}
-            />
-
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
             {/* ── Unified body: line | cage | slot | mice, all as nested columns ── */}
-            <Card className="py-0">
-                {/* body header — jump-to dropdowns (navigate to any line / cage / mouse) */}
-                <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-2">
+            <Card className="flex min-h-0 flex-1 flex-col py-0">
+                {/* ONE consolidated sticky toolbar: breadcrumb + filter + jump + actions
+                    (folded from three stacked rows so the body fills the viewport) */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-muted/50 px-3 py-2">
+                    {crumbs.length > 0 ? <Breadcrumb items={crumbs} /> : null}
+                    <FilterBar
+                        filter={filter}
+                        active={on}
+                        onChange={setFilter}
+                    />
                     <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                        jump to
+                        jump
                     </span>
                     <JumpMenu
                         label="Lines"
@@ -375,7 +372,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                 </div>
                 {/* one scroll container for BOTH axes; the column header sticks on
                     Y-scroll and moves with the body on X-scroll (kept in flow). */}
-                <div className="thin-scroll h-[70vh] overflow-auto">
+                <div className="thin-scroll min-h-0 flex-1 overflow-auto">
                     <div className="min-w-[78rem]">
                         <ColumnHeader />
                         {colony.lines.map((l, i) => (
@@ -738,7 +735,7 @@ function FilterBar({
     onChange: (f: GridFilter) => void;
 }) {
     return (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-3 py-2.5">
+        <div className="flex min-w-64 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
             {/* search field: active sex/signal filters show as in-field badges,
                 a clear-all × sits at the right end whenever any filter is on */}
             <div className="flex h-8 min-w-52 flex-1 items-center gap-1 rounded-md border border-input bg-background px-2">

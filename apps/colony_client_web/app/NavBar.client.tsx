@@ -13,8 +13,8 @@ const LINKS = [
 export function NavBar() {
     const path = usePathname();
     return (
-        <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
-            <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-6 py-2.5">
+        <header className="sticky top-0 z-30 shrink-0 border-b bg-background/85 backdrop-blur">
+            <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-6 py-1.5">
                 <span className="font-semibold tracking-tight">
                     Lopez-Juarez Lab
                 </span>
