@@ -6,7 +6,7 @@ import { TasksView } from '../TasksView.client';
 
 export default function TasksPage() {
     return (
-        <main className="mx-auto max-w-[1400px] px-6 py-6">
+        <main className="mx-auto min-h-0 w-full max-w-[1400px] flex-1 overflow-auto px-6 py-6">
             <header className="mb-4">
                 <h1 className="text-xl font-semibold tracking-tight">
                     Task bin
