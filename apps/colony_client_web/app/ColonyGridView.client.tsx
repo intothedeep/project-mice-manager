@@ -894,7 +894,7 @@ function FilterGroup({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
             <span className="hidden text-[11px] text-muted-foreground sm:inline">
                 {label}
             </span>
