@@ -812,9 +812,9 @@ function FilterBar({
                 ) : null}
             </div>
 
-            {/* sex + signal kept together so M/F/U and the signal chips sit
-                side by side (wrap as a unit under the search field on mobile) */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* sex + signal ALWAYS on one row (M/F/U beside the signal chips); on
+                mobile the row scrolls horizontally instead of wrapping down */}
+            <div className="thin-scroll flex w-full flex-nowrap items-center gap-x-4 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
                 <FilterGroup label="sex">
                 {SEXES.map((s) => (
                     <Chip
@@ -898,7 +898,7 @@ function FilterGroup({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
             <span className="hidden text-[11px] text-muted-foreground sm:inline">
                 {label}
             </span>
