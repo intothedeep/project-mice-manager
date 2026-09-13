@@ -98,10 +98,12 @@
 
 /* Thin, square, minimal scrollbars (user directive). */
 @layer utilities {
-    .thin-scroll {
-        scrollbar-width: thin;
-        scrollbar-color: oklch(0.78 0 0) transparent; /* soft theme gray */
-    }
+    /* NOTE: no `scrollbar-width`/`scrollbar-color` here on purpose. Modern Chrome
+       makes the standard props and ::-webkit-scrollbar MUTUALLY EXCLUSIVE — if
+       `scrollbar-width: thin` is set, Chrome uses its OWN rounded thin bar and
+       IGNORES the ::-webkit rules below (square corners, 4px, colour). So we drop
+       the standard props and drive everything through ::-webkit for a square,
+       compact bar. (Firefox then falls back to its default scrollbar.) */
     .thin-scroll::-webkit-scrollbar {
         width: 4px;
         height: 4px;
