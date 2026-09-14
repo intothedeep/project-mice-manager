@@ -9,6 +9,7 @@ const LINKS = [
     { href: '/', label: 'Cages' },
     { href: '/tasks', label: 'Tasks' },
     { href: '/upcoming', label: 'Upcoming' },
+    { href: '/palette', label: 'Palette' },
 ];
 
 export function NavBar() {
