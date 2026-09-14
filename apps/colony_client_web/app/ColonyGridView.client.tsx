@@ -1753,7 +1753,12 @@ function MouseRow({
                            no case → the muted MouseDates seed fallback. */}
                         {(['plug', 'deliv', 'tissue', 'genotyping'] as const).map(
                             (col) => {
-                                const hit = dateHits?.[col];
+                                // PLUG/DELIV are breeding events on the DAM → female-only.
+                                // Males/undecided show a blank cell for these two columns.
+                                const na =
+                                    (col === 'plug' || col === 'deliv') &&
+                                    mouse.sex !== 'F';
+                                const hit = na ? undefined : dateHits?.[col];
                                 return (
                                     <div
                                         key={col}
@@ -1765,9 +1770,11 @@ function MouseRow({
                                                 : 'text-muted-foreground'
                                         )}
                                     >
-                                        {hit
-                                            ? fmtDate(hit.date)
-                                            : fmtDate(mouse.dates?.[col])}
+                                        {na
+                                            ? ''
+                                            : hit
+                                              ? fmtDate(hit.date)
+                                              : fmtDate(mouse.dates?.[col])}
                                     </div>
                                 );
                             }
