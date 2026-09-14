@@ -28,6 +28,16 @@ export function taskSignalBg(s: TaskSignal): string {
           : 'bg-muted/40';
 }
 
+// Maps a TaskSignal to its SignalColor for badge rendering on the grid.
+//   instruction → 'instruction' (red badge)
+//   plan        → 'plan'        (blue badge)
+//   note        → 'flag'        (yellow badge — "attention" in the Excel semantics)
+export function signalColorOf(s: TaskSignal): SignalColor {
+    if (s === 'instruction') return 'instruction';
+    if (s === 'plan') return 'plan';
+    return 'flag';
+}
+
 export const SIGNAL_LABEL: Record<SignalColor, string> = {
     done: 'done',
     instruction: 'instruction',

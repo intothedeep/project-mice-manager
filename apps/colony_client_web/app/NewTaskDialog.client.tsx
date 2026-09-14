@@ -45,15 +45,17 @@ const CAGE_OPTIONS = SEED_COLONY.lines.flatMap((l) =>
 export function NewTaskDialog({
     open,
     onClose,
-    presetMice,
+    preset,
 }: {
     open: boolean;
     onClose: () => void;
-    presetMice?: string[]; // when set: create a batch task over these mice
+    // Batch mode: when set, create ONE case with subjectKind='mice' covering
+    // all these mice. metaId drives the badge index; label is the renderedId.
+    preset?: { metaId: number; label: string }[];
 }) {
     // In batch mode the subject is the preset mice, so only mouse-subject task
     // types make sense and their own "mouse" field is hidden.
-    const batch = presetMice != null && presetMice.length > 0;
+    const batch = preset != null && preset.length > 0;
     const TYPES = useMemo(
         () =>
             batch
@@ -107,7 +109,7 @@ export function NewTaskDialog({
     function submit() {
         if (missing) return;
         const subjectLabel = batch
-            ? batchSubjectLabel(presetMice!)
+            ? batchSubjectLabel(preset!.map((m) => m.label))
             : buildSubjectLabel(def, values);
         const dueDate = def.dueFromField
             ? String(values[def.dueFromField] || due)
@@ -115,11 +117,13 @@ export function NewTaskDialog({
         addTask({
             def,
             signal,
-            values: batch ? { ...values, mice: presetMice! } : values,
+            values,
             subjectLabel,
             detail: buildDetail(def, values),
             dueDate,
             assignee: assignee.trim() || null,
+            // Pass mice pairs so addTask builds subjectKind='mice' case.
+            mice: batch ? preset! : undefined,
         });
         reset();
         onClose();
@@ -134,14 +138,14 @@ export function NewTaskDialog({
                 <DialogHeader>
                     <DialogTitle>
                         {batch
-                            ? `New task · ${presetMice!.length} mice`
+                            ? `New task · ${preset!.length} mice`
                             : 'New task'}
                     </DialogTitle>
                 </DialogHeader>
 
                 {batch ? (
                     <p className="rounded-md bg-muted px-3 py-2 font-mono text-[11px]">
-                        {presetMice!.join(', ')}
+                        {preset!.map((m) => m.label).join(', ')}
                     </p>
                 ) : null}
 
@@ -344,11 +348,11 @@ function FieldInput({
     }
 }
 
-function batchSubjectLabel(mice: string[]): string {
-    const head = mice.slice(0, 3).join(', ');
-    return mice.length > 3
-        ? `${mice.length} mice: ${head}…`
-        : `${mice.length} mice: ${head}`;
+function batchSubjectLabel(labels: string[]): string {
+    const head = labels.slice(0, 3).join(', ');
+    return labels.length > 3
+        ? `${labels.length} mice: ${head}…`
+        : `${labels.length} mice: ${head}`;
 }
 
 function buildSubjectLabel(def: TaskTypeDef, values: Values): string | null {

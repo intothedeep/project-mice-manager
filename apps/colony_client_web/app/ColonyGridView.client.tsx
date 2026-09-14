@@ -4,6 +4,7 @@ import type {
     ColonyGrid,
     GridLine,
     MouseCell,
+    MouseTaskTag,
     ParentCell,
     Sex,
     SignalColor,
@@ -26,8 +27,9 @@ import {
     type SelLevel,
     type SelPath,
 } from '@/lib/gridSelection';
-import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass } from '@/lib/signal';
+import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass, signalColorOf } from '@/lib/signal';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
+import { useTasks } from '@/lib/mockStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -35,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { useNavSlotNode } from './NavSlot.client';
 import { MoveMenu } from './MoveMenu.client';
 import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
+import { MouseCaseDrawer, type CaseDrawerTarget } from './MouseCaseDrawer.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
@@ -87,9 +90,40 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     const [detail, setDetail] = useState<SelectedMouse | null>(null);
     const [selected, setSelected] = useState<Record<number, string>>({});
     const [taskOpen, setTaskOpen] = useState(false);
-    // Mice fed to the New-task dialog (batch mode) — set from either the checkbox
-    // multi-select or the structural selection (line/cage/slot → all mice under it).
-    const [taskMice, setTaskMice] = useState<string[]>([]);
+    // Mice fed to the New-task dialog (batch mode): {metaId, label} pairs so
+    // addTask can create a subjectKind='mice' case keyed by metaId (not label).
+    const [taskMice, setTaskMice] = useState<{ metaId: number; label: string }[]>([]);
+    // Case drawer: opened by badge-click (focus) or tasks-label-click (list).
+    // Only one of detail/caseDrawer is non-null at a time.
+    const [caseDrawer, setCaseDrawer] = useState<CaseDrawerTarget | null>(null);
+
+    // Badge index (T6): memoized Map<metaId, MouseTaskTag[]> over open cases.
+    // Derived from the case store (useTasks) — never from MouseCell.activeTasks.
+    //   subjectKind='mouse' → push tag at subjectMouseId
+    //   subjectKind='mice'  → expand mice[], push tag at each metaId
+    // Only open cases (status ∈ {todo, doing}) produce badges.
+    const allCases = useTasks();
+    const badgeIndex = useMemo(() => {
+        const index = new Map<number, MouseTaskTag[]>();
+        const push = (metaId: number, tag: MouseTaskTag) => {
+            const existing = index.get(metaId);
+            if (existing) existing.push(tag);
+            else index.set(metaId, [tag]);
+        };
+        for (const c of allCases) {
+            if (c.status !== 'todo' && c.status !== 'doing') continue;
+            const tag: MouseTaskTag = {
+                type: c.caseType,
+                signal: signalColorOf(c.signal),
+            };
+            if (c.subjectKind === 'mouse' && c.subjectMouseId != null) {
+                push(c.subjectMouseId, tag);
+            } else if (c.subjectKind === 'mice' && c.mice) {
+                for (const metaId of c.mice) push(metaId, tag);
+            }
+        }
+        return index;
+    }, [allCases]);
 
     const on = isFilterActive(filter);
     const match = useMemo(
@@ -97,7 +131,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
         [filter]
     );
 
-    const selectedIds = Object.values(selected);
+    const selectedIds = Object.keys(selected).map(Number);
 
     const totalCages = colony.lines.reduce((n, l) => n + l.cages.length, 0);
     const totalSlots = colony.lines.reduce(
@@ -199,10 +233,10 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
 
     // All mice under the current selection — node (line→all its mice, cage/slot→its
     // mice, mouse→itself), genotype (every mouse of it), or mate (every mouse in the
-    // group). Feeds "create task for selection" the same way for all three kinds.
+    // group). Returns {metaId, label} pairs so the dialog can create a keyed batch case.
     const selectionMice = useMemo(() => {
         if (!selection) return [];
-        const out: string[] = [];
+        const out: { metaId: number; label: string }[] = [];
         colony.lines.forEach((l) =>
             l.cages.forEach((c) =>
                 c.slots.forEach((s) =>
@@ -220,7 +254,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                   : m.mates.some(
                                         (mt) => mt.color === selection.color
                                     );
-                        if (inSel) out.push(m.renderedId);
+                        if (inSel)
+                            out.push({ metaId: m.metaId, label: m.renderedId });
                     })
                 )
             )
@@ -526,6 +561,11 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                     }
                                                                     id={`mouse-${m.metaId}`}
                                                                     mouse={m}
+                                                                    tags={
+                                                                        badgeIndex.get(
+                                                                            m.metaId
+                                                                        ) ?? []
+                                                                    }
                                                                     zebra={
                                                                         (rowIndex.get(
                                                                             m.metaId
@@ -580,7 +620,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                             mid
                                                                         )
                                                                     }
-                                                                    onOpen={() =>
+                                                                    onOpen={() => {
+                                                                        setCaseDrawer(null);
                                                                         setDetail(
                                                                             {
                                                                                 mouse: m,
@@ -591,8 +632,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                                 slotLabel:
                                                                                     s.label,
                                                                             }
-                                                                        )
-                                                                    }
+                                                                        );
+                                                                    }}
                                                                     onMove={() =>
                                                                         setMoving(
                                                                             {
@@ -611,6 +652,10 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                     onMate={
                                                                         pickMate
                                                                     }
+                                                                    onOpenCases={(t) => {
+                                                                        setDetail(null);
+                                                                        setCaseDrawer(t);
+                                                                    }}
                                                                 />
                                                             ))}
                                                         </div>
@@ -635,7 +680,14 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                     <Button
                         size="sm"
                         onClick={() => {
-                            setTaskMice(selectedIds);
+                            // Build {metaId, label} pairs from the selected map.
+                            const mice = Object.entries(selected).map(
+                                ([id, label]) => ({
+                                    metaId: Number(id),
+                                    label,
+                                })
+                            );
+                            setTaskMice(mice);
                             setTaskOpen(true);
                         }}
                     >
@@ -666,7 +718,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             {taskOpen ? (
                 <NewTaskDialog
                     open
-                    presetMice={taskMice}
+                    preset={taskMice}
                     onClose={() => {
                         setTaskOpen(false);
                         setTaskMice([]);
@@ -678,6 +730,11 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             <MouseDetailDrawer
                 selected={detail}
                 onClose={() => setDetail(null)}
+            />
+
+            <MouseCaseDrawer
+                target={caseDrawer}
+                onClose={() => setCaseDrawer(null)}
             />
         </div>
     );
@@ -1388,6 +1445,7 @@ const countSlotAdults = (mice: MouseCell[]): number =>
 function MouseRow({
     id,
     mouse,
+    tags,
     zebra,
     highlighted,
     filterOn,
@@ -1400,9 +1458,13 @@ function MouseRow({
     onJumpMouse,
     onGenotype,
     onMate,
+    onOpenCases,
 }: {
     id: string;
     mouse: MouseCell;
+    // Derived badge tags from the case store (replaces mouse.activeTasks).
+    // Passed as a prop so the parent controls derivation (useTasks + badgeIndex).
+    tags: MouseTaskTag[];
     zebra: boolean;
     highlighted: boolean;
     filterOn: boolean;
@@ -1415,6 +1477,7 @@ function MouseRow({
     onJumpMouse: (metaId: number) => void;
     onGenotype: () => void;
     onMate: (color: string) => void;
+    onOpenCases: (target: CaseDrawerTarget) => void;
 }) {
     const dimmed = filterOn && !isMatch;
     const stage = lifeStage(mouse.dob, mouse.sex);
@@ -1424,7 +1487,7 @@ function MouseRow({
     const dead = mouse.signal === 'dead';
     // Active tasks collapsed by SIGNAL (colour) → one badge per signal, count when
     // repeated (two plan tasks = one blue badge showing "2"); tooltip lists types.
-    const bySignal = mouse.activeTasks.reduce((m, t) => {
+    const bySignal = tags.reduce((m, t) => {
         const g = m.get(t.signal);
         if (g) {
             g.count += 1;
@@ -1686,17 +1749,24 @@ function MouseRow({
                                     'flex shrink-0 flex-wrap items-center gap-1 border-r border-border/40 px-2 py-0.5'
                                 )}
                             >
+                                {/* 'tasks' text affordance removed (user) — badges below
+                                   open the drawer directly (list of the mouse's cases). */}
                                 {taskGroups.map((g) => {
                                     const lightFill =
                                         g.signal === 'flag' ||
                                         g.signal === 'dead';
                                     return (
-                                        <span
+                                        <button
                                             key={g.signal}
+                                            type="button"
                                             title={g.types.join(', ')}
-                                            aria-label={`${g.count} ${g.signal} task(s): ${g.types.join(', ')}`}
+                                            aria-label={`${g.count} ${g.signal} task(s): ${g.types.join(', ')} — click to view cases`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onOpenCases({ kind: 'focus', metaId: mouse.metaId, label: mouse.renderedId, signal: g.signal });
+                                            }}
                                             className={cn(
-                                                'flex size-3.5 items-center justify-center rounded-sm border text-[8px] leading-none font-bold',
+                                                'flex size-3.5 items-center justify-center rounded-sm border text-[8px] leading-none font-bold cursor-pointer hover:ring-1 hover:ring-primary',
                                                 signalTagFillClass(g.signal),
                                                 lightFill
                                                     ? 'text-neutral-900'
@@ -1704,7 +1774,7 @@ function MouseRow({
                                             )}
                                         >
                                             {g.count > 1 ? g.count : ''}
-                                        </span>
+                                        </button>
                                     );
                                 })}
                             </div>

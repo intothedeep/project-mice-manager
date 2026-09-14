@@ -14,6 +14,10 @@ import type { ColonyGrid } from '@repo/types';
 //   - U3BCX    : an unsexed newborn pup (sex = U until genotyped/sexed)
 //   - F10BEVe  : ear-tag suffix "e"
 //   - M4BCW.2  : reclip / re-issue suffix ".2"
+//
+// NOTE (T6): activeTasks removed from all MouseCell objects. Badges are now
+// derived from the case store (useTasks + signalColorOf) in ColonyGridView,
+// keyed by mouse metaId. No per-mouse task data lives here.
 
 // Seed identity colours — the mock of the future `color_assignments`/`color_palette`
 // tables (server will resolve these before serializing). Same genotype → same hex by
@@ -72,7 +76,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2024-02-10',
                                     genotypeColor: geno('Nf1 f/+'),
                                     mates: [],
@@ -85,7 +88,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2025-05-01',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -105,13 +107,6 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         "pooled '+10' — meaning TBD, confirm with professor",
-                                    activeTasks: [
-                                        {
-                                            type: 'Genes to check',
-                                            signal: 'flag',
-                                        },
-                                        { type: 'Move', signal: 'plan' },
-                                    ],
                                     dob: '2026-05-20',
                                     genotypeColor: geno('PlpCre;Nf1 f/+'),
                                     mates: [],
@@ -151,7 +146,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-02-01',
                                     genotypeColor: geno('Nf1 +/+'),
                                     mates: [],
@@ -179,13 +173,6 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         'unsexed pup — genotype + sex pending',
-                                    activeTasks: [
-                                        { type: 'Genotyping', signal: 'plan' },
-                                        {
-                                            type: 'Genes to check',
-                                            signal: 'instruction',
-                                        },
-                                    ],
                                     dob: '2026-09-02',
                                     genotypeColor: geno('?'),
                                     mates: [],
@@ -214,9 +201,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'plan',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [
-                                        { type: 'Genotyping', signal: 'plan' },
-                                    ],
                                     dob: '2026-09-02',
                                     genotypeColor: geno('?'),
                                     mates: [],
@@ -243,17 +227,6 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         're-genotype + set up mating this week',
-                                    activeTasks: [
-                                        {
-                                            type: 'Genotyping',
-                                            signal: 'instruction',
-                                        },
-                                        { type: 'Mate', signal: 'plan' },
-                                        {
-                                            type: 'Genes to check',
-                                            signal: 'flag',
-                                        },
-                                    ],
                                     dob: '2024-03-01',
                                     genotypeColor: geno('Nf1 f/f'),
                                     mates: [
@@ -273,10 +246,6 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         'mated with two males (BEZ line-up)',
-                                    activeTasks: [
-                                        { type: 'Mate', signal: 'plan' },
-                                        { type: 'Plug check', signal: 'plan' },
-                                    ],
                                     dob: '2025-04-01',
                                     genotypeColor: geno('Nf1 f/+'),
                                     mates: [
@@ -306,7 +275,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2024-06-01',
                                     genotypeColor: geno('WT'),
                                     mates: [
@@ -345,7 +313,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'dead',
                                     isAlive: false,
                                     attention: "sac'd 09-05",
-                                    activeTasks: [],
                                     dob: '2025-01-15',
                                     genotypeColor: geno('Ai14 f/f'),
                                     mates: [],
@@ -372,12 +339,6 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         're-clip (.2) — re-genotype this week',
-                                    activeTasks: [
-                                        {
-                                            type: 'Genotyping',
-                                            signal: 'instruction',
-                                        },
-                                    ],
                                     dob: '2024-08-01',
                                     genotypeColor: geno('PlpCre;Ai14 +/-'),
                                     // `dates` is a VIEW field: the real server RESOLVES it from
@@ -413,10 +374,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'plan',
                                     isAlive: true,
                                     attention: 'set up mating with M4BCW.2',
-                                    activeTasks: [
-                                        { type: 'Mate', signal: 'plan' },
-                                        { type: 'Plug check', signal: 'plan' },
-                                    ],
                                     dob: '2025-06-15',
                                     genotypeColor: geno('PlpCre;Ai14 +/+'),
                                     dates: {
@@ -462,7 +419,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-03-01',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -475,12 +431,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'flag',
                                     isAlive: true,
                                     attention: 'small wound on flank — check',
-                                    activeTasks: [
-                                        {
-                                            type: 'Genes to check',
-                                            signal: 'flag',
-                                        },
-                                    ],
                                     dob: '2025-02-01',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -500,9 +450,6 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         'new pup — sex + genotype pending',
-                                    activeTasks: [
-                                        { type: 'Genotyping', signal: 'plan' },
-                                    ],
                                     dob: '2026-08-20',
                                     genotypeColor: geno('?'),
                                     mates: [],
@@ -538,7 +485,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-01-10',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -551,7 +497,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-02-15',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -564,7 +509,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-03-01',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -577,7 +521,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-03-20',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -590,7 +533,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-04-05',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -603,7 +545,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    activeTasks: [],
                                     dob: '2026-05-01',
                                     genotypeColor: geno('WT'),
                                     mates: [],
@@ -616,7 +557,6 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'plan',
                                     isAlive: true,
                                     attention: 'litter pup — not yet weaned',
-                                    activeTasks: [],
                                     dob: '2026-09-04',
                                     genotypeColor: geno('WT'),
                                     mates: [],

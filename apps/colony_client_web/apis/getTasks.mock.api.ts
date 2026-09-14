@@ -91,6 +91,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'todo' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'M4BCW.2',
+        subjectMouseId: 401,               // metaId: M4BCW.2 in PlpCre;Ai14 cage 2502
         detail: 're-clip (.2) — re-run PCR',
         dueDate: '2026-09-10',
         createdAt: '2026-09-03',
@@ -103,6 +104,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'todo' as CaseTaskStatus,
         subjectKind: 'slot' as TaskSubjectKind, // ⓐ: 'room' removed; 'slot' is closest
         subjectLabel: null,
+        subjectMouseId: null,
         detail: 'Rack B — whole rack',
         dueDate: '2026-09-20',
         createdAt: '2026-09-03',
@@ -115,6 +117,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'doing' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'F5AYL',
+        subjectMouseId: 402,               // metaId: F5AYL in PlpCre;Ai14 cage 2502 slot B8
         detail: 'pair with M4BCW.2',
         dueDate: '2026-09-15',
         createdAt: '2026-09-03',
@@ -127,6 +130,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'doing' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'M4BCW',
+        subjectMouseId: 101,               // metaId: M4BCW in pNf1 flox cage 2413 slot A8
         detail: 'cage 2413 → 2414',
         dueDate: '2026-09-07',
         createdAt: '2026-09-03',
@@ -139,6 +143,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'done' as CaseTaskStatus,
         subjectKind: 'litter' as TaskSubjectKind,
         subjectLabel: 'litter BCX',
+        subjectMouseId: null,
         detail: '2 pups → new cage',
         dueDate: '2026-09-06',
         createdAt: '2026-09-03',
@@ -151,6 +156,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'verified' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'F5BGX',
+        subjectMouseId: 301,               // metaId: F5BGX in PlpCre;Ai14 cage 2501 slot F8
         detail: 'endpoint reached',
         dueDate: '2026-09-05',
         createdAt: '2026-09-03',
@@ -163,6 +169,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'verified' as CaseTaskStatus,
         subjectKind: 'cage' as TaskSubjectKind,
         subjectLabel: 'cage 2414',
+        subjectMouseId: null,
         detail: 'unsexed pups U3BCX, U4BCX',
         dueDate: '2026-09-04',
         createdAt: '2026-09-03',
@@ -175,9 +182,158 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'cancelled' as CaseTaskStatus,
         subjectKind: 'slot' as TaskSubjectKind, // ⓐ: 'room' removed; 'slot' is closest
         subjectLabel: null,
+        subjectMouseId: null,
         detail: 'Rack C — superseded by full rack audit',
         dueDate: '2026-09-01',
         createdAt: '2026-09-01',
+        assignee: null,
+    },
+    {
+        // Batch case: ONE case covering U3BCX (202) and U4BCX (203) together.
+        // subjectKind='mice' → no individual subject FK; membership in mice[].
+        id: 9,
+        caseType: 'Genotyping',
+        signal: 'plan' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mice' as TaskSubjectKind,
+        subjectLabel: '2 mice: U3BCX, U4BCX',
+        subjectMouseId: null,
+        mice: [202, 203],
+        detail: null,
+        dueDate: '2026-09-20',
+        createdAt: '2026-09-03',
+        assignee: 'Jia',
+    },
+
+    // T7 — Parity seed cases.
+    // Previously-badged metaIds needing ≥1 open case each:
+    //   103  (M4+10AZZ)  → note case → signalColorOf('note')='flag'
+    //   501  (M1BCW)     → note case → 'flag'
+    //   502  (F9AYL)     → plan case (Mate) → 'plan'
+    //   602  (F3WT)      → note case → 'flag'
+    //   603  (U5BFA)     → plan case (Genotyping) → 'plan'
+    // 202/203 already covered by case 9; 401/402 by cases 1/3; 101 by case 4.
+    {
+        id: 10,
+        caseType: 'Genes to check',
+        signal: 'note' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M4+10AZZ',
+        subjectMouseId: 103,
+        detail: "pooled '+10' notation — meaning TBD with professor",
+        dueDate: '2026-09-25',
+        createdAt: '2026-09-03',
+        assignee: null,
+    },
+    {
+        id: 11,
+        caseType: 'Genotyping',
+        signal: 'note' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M1BCW',
+        subjectMouseId: 501,
+        detail: 're-genotype this week',
+        dueDate: '2026-09-25',
+        createdAt: '2026-09-03',
+        assignee: null,
+    },
+    {
+        id: 12,
+        caseType: 'Mate',
+        signal: 'plan' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'F9AYL',
+        subjectMouseId: 502,
+        detail: 'plug check scheduled',
+        dueDate: '2026-09-25',
+        createdAt: '2026-09-03',
+        assignee: 'Sam',
+    },
+    {
+        id: 13,
+        caseType: 'Genes to check',
+        signal: 'note' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'F3WT',
+        subjectMouseId: 602,
+        detail: 'small wound on flank — monitor',
+        dueDate: '2026-09-25',
+        createdAt: '2026-09-03',
+        assignee: null,
+    },
+    {
+        id: 14,
+        caseType: 'Genotyping',
+        signal: 'plan' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'U5BFA',
+        subjectMouseId: 603,
+        detail: 'sex + genotype pending',
+        dueDate: '2026-09-25',
+        createdAt: '2026-09-03',
+        assignee: 'Jia',
+    },
+
+    // Demo: M4BCW (metaId 101) carries MULTIPLE open 'instruction' cases so its
+    // instruction badge shows a COUNT (3 = case 4 Move + 15 + 16). The badge
+    // renders the number only when count > 1 (ColonyGridView bySignal).
+    {
+        id: 15,
+        caseType: 'Tissue collection',
+        signal: 'instruction' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M4BCW',
+        subjectMouseId: 101,
+        detail: 'tail clip for PCR',
+        dueDate: '2026-09-12',
+        createdAt: '2026-09-03',
+        assignee: 'Jia',
+    },
+    {
+        id: 16,
+        caseType: 'Genotyping',
+        signal: 'instruction' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M4BCW',
+        subjectMouseId: 101,
+        detail: 'confirm Nf1 flox band',
+        dueDate: '2026-09-13',
+        createdAt: '2026-09-03',
+        assignee: 'Sam',
+    },
+    // ...plus a 'plan' and a 'note' case on the SAME mouse (101) so M4BCW shows
+    // MULTIPLE badge types at once: instruction(3) + plan + note(→flag).
+    {
+        id: 17,
+        caseType: 'Mate',
+        signal: 'plan' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M4BCW',
+        subjectMouseId: 101,
+        detail: 'pair after genotyping confirmed',
+        dueDate: '2026-09-18',
+        createdAt: '2026-09-03',
+        assignee: 'Sam',
+    },
+    {
+        id: 18,
+        caseType: 'Genes to check',
+        signal: 'note' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M4BCW',
+        subjectMouseId: 101,
+        detail: 'verify line records vs cage card',
+        dueDate: '2026-09-22',
+        createdAt: '2026-09-03',
         assignee: null,
     },
 ];
@@ -223,6 +379,22 @@ export const SEED_TASK_LOG: ClientTask[] = [
     // case 8 — todo + cancelled → both null
     { id: 801, caseId: 8, status: 'todo',      actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-01' },
     { id: 802, caseId: 8, status: 'cancelled', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: 'superseded by full rack audit', createdAt: '2026-09-01' },
+
+    // case 9 — batch (mice: 202, 203) — todo only
+    { id: 901, caseId: 9, status: 'todo',      actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+
+    // T7 parity cases — all todo only
+    { id: 1001, caseId: 10, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 1101, caseId: 11, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 1201, caseId: 12, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 1301, caseId: 13, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 1401, caseId: 14, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+
+    // M4BCW (101) showcase — 3 instruction + 1 plan + 1 note, all open (todo)
+    { id: 1501, caseId: 15, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 1601, caseId: 16, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 1701, caseId: 17, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 1801, caseId: 18, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
 ];
 
 // Seed for the client store; the real fetcher will replace this.

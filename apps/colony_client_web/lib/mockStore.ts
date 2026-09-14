@@ -79,6 +79,16 @@ export function useUpcoming(): UpcomingItem[] {
         () => upcoming
     );
 }
+// Returns the whole append-only task log. taskLog is reassigned (not mutated)
+// on every write, so the reference is stable between writes — no extra cache
+// needed (mirrors useTasks / the projectedCases pattern).
+export function useTaskLog(): ClientTask[] {
+    return useSyncExternalStore(
+        subscribe,
+        () => taskLog,
+        () => taskLog
+    );
+}
 
 // ---- public writes ---------------------------------------------------------
 
@@ -106,10 +116,10 @@ export function setTaskStatus(caseId: number, to: CaseTaskStatus, role: Role): v
     emit();
 }
 
-// NewTaskInput — same shape as before; addTask does not take a role because
-// NewTaskDialog (outside file ownership) does not pass one. The first todo
-// task-log row's actor is display-inert (displayed fields come from done/
-// verified rows), so a fixed default is correct here.
+// NewTaskInput — shape passed from the dialog into addTask.
+// mice: present when the task covers N mice as a batch (subjectKind='mice').
+// When mice is set, a single case covering all N mice is created instead of
+// per-mouse cases. Single-subject cases leave mice undefined.
 export interface NewTaskInput {
     def: TaskTypeDef;
     values: Record<string, string | string[]>;
@@ -118,31 +128,72 @@ export interface NewTaskInput {
     detail: string | null;
     dueDate: string | null;
     assignee: string | null;
+    // Batch mode: N mice in one case. When present and non-empty, addTask
+    // creates ONE case with subjectKind='mice' covering all metaIds.
+    mice?: { metaId: number; label: string }[];
 }
 
 // addTask: creates a case (status=todo) + its first todo task-log row.
+// Batch path: mice[] present → ONE case with subjectKind='mice', all metaIds
+// in the mice[] field. No per-mouse cases.
+// Single-subject path: mice absent → one case, subjectKind from def.subjectKind,
+// subjectMouseId set when def.subjectKind === 'mouse' and a metaId is available
+// in input (NOT resolved from renderedId to avoid the 102-vs-402 ambiguity).
 // For a Mate, auto-enqueues plug-check + delivery into Upcoming.
 export function addTask(input: NewTaskInput): void {
     const caseId = nextCaseId++;
 
-    // 1. Insert the case row (status=todo).
-    const caseRow: SeedCaseRow = {
-        id: caseId,
-        caseType: input.def.type,
-        signal: input.signal,
-        status: 'todo',
-        subjectKind: input.def.subjectKind,
-        subjectLabel: input.subjectLabel,
-        detail: input.detail,
-        createdAt: TODAY,
-        dueDate: input.dueDate,
-        assignee: input.assignee,
-        direction: input.values,
-    };
+    let caseRow: SeedCaseRow;
+
+    if (input.mice && input.mice.length > 0) {
+        // Batch path: N mice → ONE case, subjectKind='mice'.
+        const labels = input.mice.map((m) => m.label);
+        const head = labels.slice(0, 3).join(', ');
+        const batchLabel =
+            labels.length > 3
+                ? `${labels.length} mice: ${head}…`
+                : `${labels.length} mice: ${head}`;
+
+        caseRow = {
+            id: caseId,
+            caseType: input.def.type,
+            signal: input.signal,
+            status: 'todo',
+            subjectKind: 'mice',
+            subjectLabel: input.subjectLabel ?? batchLabel,
+            subjectMouseId: null,
+            mice: input.mice.map((m) => m.metaId),
+            detail: input.detail,
+            createdAt: TODAY,
+            dueDate: input.dueDate,
+            assignee: input.assignee,
+            direction: input.values,
+        };
+    } else {
+        // Single-subject path.
+        caseRow = {
+            id: caseId,
+            caseType: input.def.type,
+            signal: input.signal,
+            status: 'todo',
+            subjectKind: input.def.subjectKind,
+            subjectLabel: input.subjectLabel,
+            // subjectMouseId is not available from the dialog (the dialog passes
+            // renderedId strings, not metaIds). Set null here; the real server
+            // will resolve the FK. Avoids the 102-vs-402 label-lookup bug.
+            subjectMouseId: null,
+            detail: input.detail,
+            createdAt: TODAY,
+            dueDate: input.dueDate,
+            assignee: input.assignee,
+            direction: input.values,
+        };
+    }
+
     cases = [caseRow, ...cases];
 
-    // 2. Append the first todo task-log row (actor = staff default; display-
-    //    inert since doneBy/verifiedBy only fold done/verified rows).
+    // Append the first todo task-log row (actor = staff default; display-
+    // inert since doneBy/verifiedBy only fold done/verified rows).
     const taskRow: ClientTask = {
         id: nextTaskId++,
         caseId,
@@ -154,8 +205,8 @@ export function addTask(input: NewTaskInput): void {
     };
     taskLog = [...taskLog, taskRow];
 
-    // 3. Mate cascade — auto-create upcoming events.
-    if (input.def.cascade) {
+    // Mate cascade — auto-create upcoming events (single-subject only).
+    if (!input.mice?.length && input.def.cascade) {
         const matingDate = String(
             input.values.matingDate ?? input.dueDate ?? ''
         );
