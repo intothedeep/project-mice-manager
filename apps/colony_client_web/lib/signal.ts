@@ -1,4 +1,4 @@
-import type { SignalColor, TaskSignal } from '@repo/types';
+import type { CaseTaskStatus, SignalColor, TaskSignal } from '@repo/types';
 
 // Maps a workflow signal to its label + the Tailwind classes that render the
 // Excel encoding. Chroma lives ONLY here so the meaning stays in one place.
@@ -101,4 +101,23 @@ export function signalSwatchClass(signal: SignalColor): string {
         default:
             return 'bg-foreground border-foreground';
     }
+}
+
+// Tailwind class for a DATE cell driven by a case's status × signal.
+//
+// Precedence (checked in order):
+//   1. cancelled          → muted + strikethrough (case is void)
+//   2. done | verified    → text-foreground (completion date — normal ink, distinct from muted fallback)
+//   3. todo | doing + instruction → text-signal-instruction (red — "must be done BY this date")
+//   4. todo | doing + plan        → text-signal-plan        (blue — "planned execution date")
+//   5. todo | doing + note        → text-foreground         (informational — normal ink)
+//
+// Callers: ColonyGridView.client.tsx date cells (PLUG/DELIV/TISSUE/GENOTYPING).
+export function dateColorOf(status: CaseTaskStatus, signal: TaskSignal): string {
+    if (status === 'cancelled') return 'text-muted-foreground line-through';
+    if (status === 'done' || status === 'verified') return 'text-foreground';
+    // open (todo | doing)
+    if (signal === 'instruction') return 'text-signal-instruction';
+    if (signal === 'plan') return 'text-signal-plan';
+    return 'text-foreground'; // note → normal (not muted)
 }

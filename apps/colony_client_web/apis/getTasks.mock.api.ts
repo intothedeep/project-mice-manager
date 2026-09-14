@@ -387,6 +387,36 @@ export const SEED_CASES: SeedCaseRow[] = [
         createdAt: '2024-03-12',
         assignee: 'Sam',
     },
+
+    // date-colour demo: PLUG on a dam (mock keys it to the dam; TODO real
+    // subject_mate_id→dam) → open instruction = RED; a clean done Tissue →
+    // NORMAL ink (completion date). red/blue also via cases 1 (genotyping) + 9 (plan).
+    {
+        id: 22,
+        caseType: 'Plug check',
+        signal: 'instruction' as TaskSignal,
+        status: 'todo' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'F9AYL',
+        subjectMouseId: 502,
+        detail: 'check for plug',
+        dueDate: '2026-09-18',
+        createdAt: '2026-09-14',
+        assignee: 'Jia',
+    },
+    {
+        id: 23,
+        caseType: 'Tissue collection',
+        signal: 'plan' as TaskSignal,
+        status: 'done' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'F5BGX',
+        subjectMouseId: 301,
+        detail: 'tail clip stored',
+        dueDate: '2026-09-05',
+        createdAt: '2026-09-03',
+        assignee: 'Sam',
+    },
 ];
 
 // Append-only task log — each row = a status the case moved to.
@@ -458,6 +488,11 @@ export const SEED_TASK_LOG: ClientTask[] = [
     // case 21 (M1BCW, metaId 501, N=1 → bare label) → doneBy='Sam'
     { id: 2101, caseId: 21, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2024-03-12' },
     { id: 2102, caseId: 21, status: 'done', actorRole: 'staff',     actor: 'Sam',              note: null, createdAt: '2024-03-15' },
+
+    // date-colour demo (cases 22 plug / 23 done tissue)
+    { id: 2201, caseId: 22, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-14' },
+    { id: 2301, caseId: 23, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    { id: 2302, caseId: 23, status: 'done', actorRole: 'staff',     actor: 'Sam',              note: null, createdAt: '2026-09-05' },
 ];
 
 // Seed for the client store; the real fetcher will replace this.

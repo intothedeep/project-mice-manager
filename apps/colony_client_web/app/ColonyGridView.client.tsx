@@ -27,9 +27,10 @@ import {
     type SelLevel,
     type SelPath,
 } from '@/lib/gridSelection';
-import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass, signalColorOf } from '@/lib/signal';
+import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass, signalColorOf, dateColorOf } from '@/lib/signal';
+import { buildDateCaseIndex, type DateColumn, type DateCaseHit } from '@/lib/dateSignal';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
-import { useTasks, addTask } from '@/lib/mockStore';
+import { useTasks, useTaskLog, addTask } from '@/lib/mockStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -131,6 +132,14 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
 
     // Reclip index (T3/T4): Map<metaId, done-Tissue-collection count> → drives .N suffix.
     const reclipIndex = useMemo(() => buildReclipIndex(allCases), [allCases]);
+
+    // Date-cell colour index: Map<metaId, {plug|deliv|tissue|genotyping: hit}>.
+    // Read-time join of colony date cells ⟺ the case store (status/signal → colour).
+    const taskLog = useTaskLog();
+    const dateIndex = useMemo(
+        () => buildDateCaseIndex(allCases, taskLog),
+        [allCases, taskLog]
+    );
     // Helper: compose the display label for a mouse cell.
     const composed = (m: MouseCell) =>
         composeMouseLabel(m.renderedId, reclipIndex.get(m.metaId) ?? 0);
@@ -574,6 +583,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                     id={`mouse-${m.metaId}`}
                                                                     mouse={m}
                                                                     composedLabel={composed(m)}
+                                                                    dateHits={dateIndex.get(m.metaId)}
                                                                     tags={
                                                                         badgeIndex.get(
                                                                             m.metaId
@@ -1485,6 +1495,7 @@ function MouseRow({
     mouse,
     composedLabel,
     tags,
+    dateHits,
     zebra,
     highlighted,
     filterOn,
@@ -1507,6 +1518,8 @@ function MouseRow({
     // Derived badge tags from the case store (replaces mouse.activeTasks).
     // Passed as a prop so the parent controls derivation (useTasks + badgeIndex).
     tags: MouseTaskTag[];
+    // Per-column date hit (date + status/signal) for the breeding/genotyping cells.
+    dateHits: Partial<Record<DateColumn, DateCaseHit>> | undefined;
     zebra: boolean;
     highlighted: boolean;
     filterOn: boolean;
@@ -1734,39 +1747,31 @@ function MouseRow({
                             />
                         </div>
 
-                        {/* breeding dates — PLUG · ~DELIV · TISSUE · GENOTYPING */}
-                        <div
-                            className={cn(
-                                CELL,
-                                'px-1.5 font-mono text-[10px] text-muted-foreground'
-                            )}
-                        >
-                            {fmtDate(mouse.dates?.plug)}
-                        </div>
-                        <div
-                            className={cn(
-                                CELL,
-                                'px-1.5 font-mono text-[10px] text-muted-foreground'
-                            )}
-                        >
-                            {fmtDate(mouse.dates?.deliv)}
-                        </div>
-                        <div
-                            className={cn(
-                                CELL,
-                                'px-1.5 font-mono text-[10px] text-muted-foreground'
-                            )}
-                        >
-                            {fmtDate(mouse.dates?.tissue)}
-                        </div>
-                        <div
-                            className={cn(
-                                CELL,
-                                'px-1.5 font-mono text-[10px] text-muted-foreground'
-                            )}
-                        >
-                            {fmtDate(mouse.dates?.genotyping)}
-                        </div>
+                        {/* breeding dates — PLUG · ~DELIV · TISSUE · GENOTYPING.
+                           Date + colour come from the backing case (read-time join):
+                           open+instruction→red, open+plan→blue, done→normal ink;
+                           no case → the muted MouseDates seed fallback. */}
+                        {(['plug', 'deliv', 'tissue', 'genotyping'] as const).map(
+                            (col) => {
+                                const hit = dateHits?.[col];
+                                return (
+                                    <div
+                                        key={col}
+                                        className={cn(
+                                            CELL,
+                                            'px-1.5 font-mono text-[10px]',
+                                            hit
+                                                ? dateColorOf(hit.status, hit.signal)
+                                                : 'text-muted-foreground'
+                                        )}
+                                    >
+                                        {hit
+                                            ? fmtDate(hit.date)
+                                            : fmtDate(mouse.dates?.[col])}
+                                    </div>
+                                );
+                            }
+                        )}
 
                         {/* actions */}
                         <div className="flex items-center px-2">

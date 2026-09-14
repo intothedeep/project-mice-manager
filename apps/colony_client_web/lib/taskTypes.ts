@@ -55,14 +55,18 @@ export const TASK_TYPES: TaskTypeDef[] = [
         ],
     },
     {
+        // Mate-cycle event: the plug check follows a mating, subject is the breeding pair/dam.
+        // subjectKind='mate' so buildDateCaseIndex can route it to the DAM's date column.
         type: 'Plug check',
-        subjectKind: 'cage',
+        subjectKind: 'mate',
         subjectFrom: 'cage',
         fields: [{ key: 'cage', label: 'Cage', kind: 'cage', required: true }],
     },
     {
+        // Mate-cycle event: birth/delivery follows plug check.
+        // subjectKind='mate' for the same reason as Plug check above.
         type: 'Birth / delivery',
-        subjectKind: 'cage',
+        subjectKind: 'mate',
         subjectFrom: 'cage',
         fields: [
             { key: 'cage', label: 'Cage', kind: 'cage', required: true },
