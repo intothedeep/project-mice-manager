@@ -9,7 +9,9 @@ export type TaskStatus = 'open' | 'done' | 'verified' | 'cancelled';
 // Who is acting. `professor` = the director/PI; `staff` = lab members.
 export type Role = 'staff' | 'professor' | 'admin';
 
-export type TaskSubjectKind = 'mouse' | 'cage' | 'litter' | 'room' | 'mate';
+// Subject kinds match the cases.subject_kind DB column (0023: 'room' removed,
+// 'slot' and 'line' added).
+export type TaskSubjectKind = 'mouse' | 'cage' | 'slot' | 'litter' | 'mate' | 'line';
 
 // Intent marker, mirrored from the Excel font-colour semantics:
 //   instruction = must-do (red), plan = planned (blue), note = informational.
@@ -20,7 +22,7 @@ export interface TaskCard {
     taskType: string; // e.g. "Genotype", "Wean", "Set up mating", "Check food"
     signal: TaskSignal; // instruction / plan / note
     status: TaskStatus;
-    subjectKind: TaskSubjectKind | null; // null = room-level task (0 subjects)
+    subjectKind: TaskSubjectKind | null; // null = no specific subject entity
     subjectLabel: string | null; // e.g. "M4BCW", "cage 2413", "litter BCW"
     detail: string | null; // rendered from tasks.direction, e.g. "2413 → 2414"
     createdAt: string; // ISO date the row was created (tasks.created_at)
