@@ -26,6 +26,14 @@ export interface CaseCard {
     status: TaskStatus;                  // cases.current_status (denorm cache)
     subjectKind: TaskSubjectKind | null; // null when no specific subject entity
     subjectLabel: string | null;         // e.g. 'M4BCW', 'cage 2413', 'litter BCW'
+    // subjectMouseId: the resolved mouse_meta.id for single-subject 'mouse' cases.
+    // Also present on 'mice' batch cases (always null — membership is in case_mice).
+    // Optional for backward compat — consumers that only read subject_kind='mouse'
+    // and 'mice' need this; other kinds leave it absent.
+    subjectMouseId?: number | null;
+    // mice: metaIds of all members for 'mice' batch cases. Populated by the server
+    // JOIN on case_mice; absent for all other subject kinds.
+    mice?: number[];
     createdAt: string;                   // ISO datetime (cases.created_at)
     dueDate: string | null;              // ISO date (cases.due_date)
     // OPEN QUESTION: assigned_to absent from cases spec — flagged for architect

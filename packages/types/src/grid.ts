@@ -5,7 +5,7 @@
 // server collapses the append-only history down to "latest" before serializing.
 // The mock fetcher and the future real fetcher both honour this contract.
 //
-// Hierarchy (mirrors the schema): colony › line › cage › slot › mouse.
+// Full hierarchy: colony › line › cage › slot › mouse.
 //   colony  → colonies
 //   line    → mouse_lines (colony_id)
 //   cage    → cages       (line_id, cage_number)
@@ -77,7 +77,9 @@ export interface MouseCell {
   signal: SignalColor;
   isAlive: boolean;
   attention: string | null; // short note surfaced on the cell (why it is flagged / planned)
-  activeTasks: MouseTaskTag[]; // open tasks on this mouse, rendered as colour tags
+  // activeTasks removed (T6): badges are now derived from the case store in
+  // ColonyGridView.client.tsx (useTasks + signalColorOf), keyed by metaId.
+  // MouseTaskTag and SignalColor are kept — the derived index is typed by them.
   dob: string | null; // ISO date of birth; the "age" colour is computed from dob + sex at read (never stored — it changes daily)
   genotypeColor: string | null; // resolved identity hex for this mouse's genotype; null = unknown '?' → neutral. Server resolves from color_assignments(channel='genotype').
   mates: MateRef[]; // current mate(s): partner id + group colour badge. [] if not breeding; several when mated to multiple partners.
