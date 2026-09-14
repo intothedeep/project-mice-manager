@@ -9,6 +9,7 @@ import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { useTasks, setTaskStatus } from '@/lib/mockStore';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
+import { CaseTimeline } from './CaseTimeline.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -200,7 +201,6 @@ function TaskItem({
             ) : null}
 
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
-                <span>created {task.createdAt}</span>
                 {task.dueDate ? (
                     <span
                         className={cn(
@@ -212,8 +212,11 @@ function TaskItem({
                     </span>
                 ) : null}
                 {task.assignee ? <span>→ {task.assignee}</span> : null}
-                {task.doneBy ? <span>done: {task.doneBy}</span> : null}
-                {task.verifiedBy ? <span>✓ {task.verifiedBy}</span> : null}
+            </div>
+
+            {/* append-only log — each step: date · actor · status (user) */}
+            <div className="mt-2">
+                <CaseTimeline caseId={task.id} />
             </div>
 
             {actions.length > 0 ? (
