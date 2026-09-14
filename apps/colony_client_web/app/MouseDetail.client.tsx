@@ -1,9 +1,12 @@
 'use client';
 
-import type { MouseCell } from '@repo/types';
-import { signalIdClass, dateColorOf } from '@/lib/signal';
+import type { MouseCell, Role } from '@repo/types';
+import { useState } from 'react';
+import { signalIdClass } from '@/lib/signal';
 import { useTasks, useTaskLog } from '@/lib/mockStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
+import { RoleSwitch } from '@/components/task-status';
+import { CaseList } from './CaseList.client';
 import {
     Sheet,
     SheetContent,
@@ -32,6 +35,8 @@ export function MouseDetailDrawer({
 }) {
     const cases = useTasks();
     const taskLog = useTaskLog();
+    const [role, setRole] = useState<Role>('staff');
+    const [expandedCaseId, setExpandedCaseId] = useState<number | null>(null);
 
     const m = selected?.mouse;
     const metaId = m?.metaId ?? -1;
@@ -56,10 +61,15 @@ export function MouseDetailDrawer({
           )
         : '';
 
+    function handleClose() {
+        setExpandedCaseId(null);
+        onClose();
+    }
+
     return (
         <Sheet
             open={selected != null}
-            onOpenChange={(o) => !o && onClose()}
+            onOpenChange={(o) => !o && handleClose()}
         >
             <SheetContent>
                 {selected && m ? (
@@ -121,16 +131,16 @@ export function MouseDetailDrawer({
                                 <Section label="Parents">
                                     <ul className="space-y-1">
                                         {(['mother', 'father'] as const).map(
-                                            (role) => {
-                                                const p = m.parents?.[role];
+                                            (parentRole) => {
+                                                const p = m.parents?.[parentRole];
                                                 if (!p) return null;
                                                 return (
                                                     <li
-                                                        key={role}
+                                                        key={parentRole}
                                                         className="flex items-baseline gap-2 text-sm"
                                                     >
                                                         <span className="w-14 shrink-0 text-xs text-muted-foreground">
-                                                            {role}
+                                                            {parentRole}
                                                         </span>
                                                         <span className="font-mono">
                                                             {p.renderedId}
@@ -170,38 +180,22 @@ export function MouseDetailDrawer({
                             ) : null}
 
                             <Section label="Cases">
+                                <div className="pt-1 pb-2">
+                                    <RoleSwitch role={role} onChange={setRole} />
+                                </div>
                                 {mouseCases.length > 0 ? (
-                                    <ul className="space-y-1.5">
-                                        {mouseCases.map((c) => (
-                                            <li
-                                                key={c.id}
-                                                className="flex items-center gap-2 text-sm"
-                                            >
-                                                <span className="font-medium">
-                                                    {c.caseType}
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-[10px]"
-                                                >
-                                                    {c.status}
-                                                </Badge>
-                                                {c.dueDate ? (
-                                                    <span
-                                                        className={cn(
-                                                            'font-mono text-[11px]',
-                                                            dateColorOf(
-                                                                c.status,
-                                                                c.signal
-                                                            )
-                                                        )}
-                                                    >
-                                                        {c.dueDate}
-                                                    </span>
-                                                ) : null}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <div className="space-y-5">
+                                        <CaseList
+                                            cases={mouseCases}
+                                            role={role}
+                                            expandedCaseId={expandedCaseId}
+                                            onToggle={(id) =>
+                                                setExpandedCaseId((prev) =>
+                                                    prev === id ? null : id
+                                                )
+                                            }
+                                        />
+                                    </div>
                                 ) : (
                                     <Muted>no cases</Muted>
                                 )}
