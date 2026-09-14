@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 import { availableActions } from '@/lib/taskFlow';
 import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { useTasks, setTaskStatus } from '@/lib/mockStore';
-import type { ClientTaskCard } from '@/apis/getTasks.mock.api';
+import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,8 +40,9 @@ export function TasksView() {
     const [creating, setCreating] = useState(false);
     const today = localToday();
 
-    function act(task: ClientTaskCard, to: CaseTaskStatus) {
-        setTaskStatus(task.id, to, role);
+    // act uses the case id (c.id) — each card represents one case.
+    function act(c: ClientCaseCard, to: CaseTaskStatus) {
+        setTaskStatus(c.id, to, role);
     }
 
     return (
@@ -95,10 +96,10 @@ export function TasksView() {
                                         {col.hint}
                                     </p>
                                 ) : (
-                                    items.map((t) => (
+                                    items.map((c) => (
                                         <TaskItem
-                                            key={t.id}
-                                            task={t}
+                                            key={c.id}
+                                            task={c}
                                             role={role}
                                             today={today}
                                             onAct={act}
@@ -198,10 +199,10 @@ function TaskItem({
     today,
     onAct,
 }: {
-    task: ClientTaskCard;
+    task: ClientCaseCard;
     role: Role;
     today: string;
-    onAct: (t: ClientTaskCard, to: CaseTaskStatus) => void;
+    onAct: (c: ClientCaseCard, to: CaseTaskStatus) => void;
 }) {
     const actions = availableActions(role, task.status);
     const overdue = isOverdue(task, today);
@@ -229,7 +230,7 @@ function TaskItem({
                             cancelled && 'line-through'
                         )}
                     >
-                        {task.taskType}
+                        {task.caseType}
                     </span>
                     <span
                         className={cn(
@@ -254,7 +255,7 @@ function TaskItem({
                             variant="outline"
                             className="text-[10px] text-muted-foreground"
                         >
-                            room
+                            {task.subjectKind ?? 'slot'}
                         </Badge>
                     )}
                 </div>
