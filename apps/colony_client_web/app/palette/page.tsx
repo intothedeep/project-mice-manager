@@ -8,6 +8,7 @@ const CHANNEL_LABEL: Record<PaletteChannel, string> = {
     sex: 'Sex',
     'life-stage': 'Life-stage',
     overcrowding: 'Overcrowding',
+    overdue: 'Overdue',
     genotype: 'Genotype',
     mate: 'Mate',
     theme: 'Theme',
@@ -27,6 +28,37 @@ function groupByChannel(
         channel: ch,
         rows: map.get(ch)!,
     }));
+}
+
+// Render the swatch cell based on the kind discriminator.
+// hex/css-var → inline style backgroundColor (css-var strings resolve at runtime)
+// tw-class    → Tailwind className (class must exist verbatim in scanned source)
+// none        → no swatch, show a "no fill" note
+function Swatch({ entry }: { entry: PaletteEntry }) {
+    if (entry.kind === 'none') {
+        return (
+            <span className="text-[10px] italic text-muted-foreground">
+                no fill
+            </span>
+        );
+    }
+    if (entry.kind === 'tw-class') {
+        return (
+            <div
+                className={cn(
+                    'size-5 border border-border',
+                    entry.hex
+                )}
+            />
+        );
+    }
+    // kind:'hex' or kind:'css-var' — both work as inline style backgroundColor
+    return (
+        <div
+            className="size-5 border border-border"
+            style={{ backgroundColor: entry.hex }}
+        />
+    );
 }
 
 export default async function PalettePage() {
@@ -67,7 +99,13 @@ export default async function PalettePage() {
                                         Token
                                     </th>
                                     <th className="border-r px-2 py-1 font-medium">
-                                        Hex / Var
+                                        Kind
+                                    </th>
+                                    <th className="border-r px-2 py-1 font-medium">
+                                        Hex / Var / Class
+                                    </th>
+                                    <th className="border-r px-2 py-1 font-medium">
+                                        Source
                                     </th>
                                     <th className="px-2 py-1 font-medium">
                                         Usage
@@ -84,21 +122,29 @@ export default async function PalettePage() {
                                             {entry.id}
                                         </td>
                                         <td className="border-r px-2 py-1">
-                                            {/* border required: --background and light fills are invisible without hairline */}
-                                            <div
-                                                className={cn(
-                                                    'size-5 border border-border'
-                                                )}
-                                                style={{
-                                                    backgroundColor: entry.hex,
-                                                }}
-                                            />
+                                            <Swatch entry={entry} />
                                         </td>
                                         <td className="border-r px-2 py-1 font-mono">
                                             {entry.token}
                                         </td>
                                         <td className="border-r px-2 py-1 font-mono text-[10px] text-muted-foreground">
-                                            {entry.hex}
+                                            {entry.kind}
+                                        </td>
+                                        <td className="border-r px-2 py-1 font-mono text-[10px] text-muted-foreground">
+                                            {entry.hex || '—'}
+                                        </td>
+                                        <td className="border-r px-2 py-1">
+                                            {/* futureSource tags the mock→real swap target */}
+                                            <span
+                                                className={cn(
+                                                    'rounded px-1 py-0.5 text-[10px] font-medium',
+                                                    entry.futureSource === 'color_palette'
+                                                        ? 'bg-violet-100 text-violet-700'
+                                                        : 'bg-muted text-muted-foreground'
+                                                )}
+                                            >
+                                                {entry.futureSource}
+                                            </span>
                                         </td>
                                         <td className="px-2 py-1 text-muted-foreground">
                                             {entry.usage}
