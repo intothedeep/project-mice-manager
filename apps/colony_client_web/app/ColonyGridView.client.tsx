@@ -29,7 +29,7 @@ import {
 } from '@/lib/gridSelection';
 import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass, signalColorOf } from '@/lib/signal';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
-import { useTasks } from '@/lib/mockStore';
+import { useTasks, addTask } from '@/lib/mockStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -39,6 +39,7 @@ import { MoveMenu } from './MoveMenu.client';
 import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
 import { MouseCaseDrawer, type CaseDrawerTarget } from './MouseCaseDrawer.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
+import { MouseCaseTypeMenu } from './MouseCaseTypeMenu.client';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
 
@@ -96,6 +97,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     // Case drawer: opened by badge-click (focus) or tasks-label-click (list).
     // Only one of detail/caseDrawer is non-null at a time.
     const [caseDrawer, setCaseDrawer] = useState<CaseDrawerTarget | null>(null);
+    // Context menu: right-click a mouse cell → case-type picker.
+    const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; mouse: { metaId: number; renderedId: string } } | null>(null);
 
     // Badge index (T6): memoized Map<metaId, MouseTaskTag[]> over open cases.
     // Derived from the case store (useTasks) — never from MouseCell.activeTasks.
@@ -656,6 +659,10 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                         setDetail(null);
                                                                         setCaseDrawer(t);
                                                                     }}
+                                                                    onCtxMenu={(e) => {
+                                                                        e.preventDefault();
+                                                                        setCtxMenu({ x: e.clientX, y: e.clientY, mouse: { metaId: m.metaId, renderedId: m.renderedId } });
+                                                                    }}
                                                                 />
                                                             ))}
                                                         </div>
@@ -736,6 +743,27 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                 target={caseDrawer}
                 onClose={() => setCaseDrawer(null)}
             />
+
+            {ctxMenu ? (
+                <MouseCaseTypeMenu
+                    x={ctxMenu.x}
+                    y={ctxMenu.y}
+                    onPick={(def) => {
+                        addTask({
+                            def,
+                            values: {},
+                            signal: 'instruction',
+                            subjectLabel: ctxMenu.mouse.renderedId,
+                            detail: null,
+                            dueDate: null,
+                            assignee: null,
+                            mice: [{ metaId: ctxMenu.mouse.metaId, label: ctxMenu.mouse.renderedId }],
+                        });
+                        setCtxMenu(null);
+                    }}
+                    onClose={() => setCtxMenu(null)}
+                />
+            ) : null}
         </div>
     );
 }
@@ -1459,6 +1487,7 @@ function MouseRow({
     onGenotype,
     onMate,
     onOpenCases,
+    onCtxMenu,
 }: {
     id: string;
     mouse: MouseCell;
@@ -1478,6 +1507,7 @@ function MouseRow({
     onGenotype: () => void;
     onMate: (color: string) => void;
     onOpenCases: (target: CaseDrawerTarget) => void;
+    onCtxMenu: (e: React.MouseEvent) => void;
 }) {
     const dimmed = filterOn && !isMatch;
     const stage = lifeStage(mouse.dob, mouse.sex);
@@ -1504,6 +1534,7 @@ function MouseRow({
     return (
         <div
             id={id}
+            onContextMenu={onCtxMenu}
             className={cn(
                 // thin divider between mice (slot/cage/line blocks carry the heavier
                 // structural borders); zebra striping does the row separation
