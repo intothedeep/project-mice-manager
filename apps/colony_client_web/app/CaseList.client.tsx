@@ -1,7 +1,7 @@
 'use client';
 
 import type { Role, CaseTaskStatus } from '@repo/types';
-import { setTaskStatus } from '@/lib/mockStore';
+import { setTaskStatus, useTaskLog } from '@/lib/mockStore';
 import { availableActions } from '@/lib/taskFlow';
 import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { StatusBadge } from '@/components/task-status';
@@ -100,6 +100,55 @@ function CaseGroup({
     );
 }
 
+// Per-status accountability: WHO did each lifecycle step (from the append-only
+// task log) + the case assignee. Surfaces "assigned to A but B worked on it" —
+// the todo row shows creator → assignee; each later status shows its actor.
+const RESP_ORDER: CaseTaskStatus[] = [
+    'todo',
+    'doing',
+    'done',
+    'verified',
+    'cancelled',
+];
+function CaseResponsibility({
+    caseId,
+    assignee,
+}: {
+    caseId: number;
+    assignee: string | null;
+}) {
+    // Latest actor per status (last log row of that status wins).
+    const actor = new Map<CaseTaskStatus, string>();
+    useTaskLog()
+        .filter((t) => t.caseId === caseId)
+        .slice()
+        .sort((a, b) => a.id - b.id)
+        .forEach((t) => actor.set(t.status, t.actor));
+
+    const rows = RESP_ORDER.filter((s) => actor.has(s));
+    if (rows.length === 0) return null;
+
+    return (
+        <div className="space-y-0.5 text-[11px]">
+            {rows.map((s) => (
+                <div
+                    key={s}
+                    className="flex items-baseline gap-2"
+                >
+                    <span className="w-16 shrink-0 tracking-wide text-muted-foreground uppercase">
+                        {s}
+                    </span>
+                    <span className="font-medium">
+                        {s === 'todo' && assignee
+                            ? `${actor.get(s)} → ${assignee}`
+                            : actor.get(s)}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 function CaseItem({
     c,
     role,
@@ -151,6 +200,8 @@ function CaseItem({
                             {c.detail}
                         </p>
                     ) : null}
+
+                    <CaseResponsibility caseId={c.id} assignee={c.assignee} />
 
                     <CaseTimeline caseId={c.id} />
 
