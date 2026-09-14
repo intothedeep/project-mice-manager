@@ -11,7 +11,7 @@ import {
     type FormField,
     type TaskTypeDef,
 } from '@/lib/taskTypes';
-import { TODAY } from '@/lib/dueDates';
+import { TODAY, addDays } from '@/lib/dueDates';
 import {
     Dialog,
     DialogContent,
@@ -65,7 +65,9 @@ export function NewTaskDialog({
     const [typeName, setTypeName] = useState(TYPES[0]!.type);
     const [signal, setSignal] = useState<TaskSignal>('instruction');
     const [values, setValues] = useState<Values>({});
-    const [due, setDue] = useState(TODAY);
+    // Default due date is 1 week out (user directive) — a sensible lead time;
+    // the user can still change it, and cascade types override via dueFromField.
+    const [due, setDue] = useState(addDays(TODAY, 7));
     const [assignee, setAssignee] = useState('');
 
     const def = useMemo(
@@ -98,7 +100,7 @@ export function NewTaskDialog({
         setTypeName(TYPES[0]!.type);
         setSignal('instruction');
         setValues({});
-        setDue(TODAY);
+        setDue(addDays(TODAY, 7));
         setAssignee('');
     }
 

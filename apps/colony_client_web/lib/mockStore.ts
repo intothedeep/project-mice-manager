@@ -1,8 +1,8 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { Role, TaskCard, TaskSignal, TaskStatus } from '@repo/types';
-import { SEED_TASKS } from '@/apis/getTasks.mock.api';
+import type { Role, TaskSignal, CaseTaskStatus } from '@repo/types';
+import { SEED_TASKS, type ClientTaskCard } from '@/apis/getTasks.mock.api';
 import { SEED_UPCOMING, type UpcomingItem } from '@/apis/getUpcoming.mock.api';
 import { expectedDeliveryOn, plugCheckOn, TODAY } from '@/lib/dueDates';
 import type { TaskTypeDef } from '@/lib/taskTypes';
@@ -18,7 +18,7 @@ const ACTOR: Record<Role, string> = {
     admin: 'Admin',
 };
 
-let tasks: TaskCard[] = SEED_TASKS;
+let tasks: ClientTaskCard[] = SEED_TASKS;
 let upcoming: UpcomingItem[] = SEED_UPCOMING;
 let nextTaskId = Math.max(0, ...tasks.map((t) => t.id)) + 1;
 let nextUpId = Math.max(0, ...upcoming.map((u) => u.id)) + 1;
@@ -32,7 +32,7 @@ function subscribe(fn: () => void) {
     return () => listeners.delete(fn);
 }
 
-export function useTasks(): TaskCard[] {
+export function useTasks(): ClientTaskCard[] {
     return useSyncExternalStore(
         subscribe,
         () => tasks,
@@ -47,7 +47,7 @@ export function useUpcoming(): UpcomingItem[] {
     );
 }
 
-export function setTaskStatus(id: number, to: TaskStatus, role: Role): void {
+export function setTaskStatus(id: number, to: CaseTaskStatus, role: Role): void {
     tasks = tasks.map((t) =>
         t.id !== id
             ? t
@@ -58,7 +58,7 @@ export function setTaskStatus(id: number, to: TaskStatus, role: Role): void {
                   verifiedBy:
                       to === 'verified'
                           ? ACTOR[role]
-                          : to === 'open'
+                          : to === 'todo'
                             ? null
                             : t.verifiedBy,
               }
@@ -76,14 +76,14 @@ export interface NewTaskInput {
     assignee: string | null;
 }
 
-// Create a task (status=open) and, for a Mate, auto-enqueue its follow-ups
+// Create a task (status=todo) and, for a Mate, auto-enqueue its follow-ups
 // (plug check +10d, expected delivery +20d) into Upcoming.
 export function addTask(input: NewTaskInput): void {
-    const card: TaskCard = {
+    const card: ClientTaskCard = {
         id: nextTaskId++,
         taskType: input.def.type,
         signal: input.signal,
-        status: 'open',
+        status: 'todo',
         subjectKind: input.def.subjectKind,
         subjectLabel: input.subjectLabel,
         detail: input.detail,

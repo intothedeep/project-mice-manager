@@ -20,7 +20,7 @@ export interface FormField {
 export interface TaskTypeDef {
     type: string; // task_type value + display label
     subjectKind: TaskSubjectKind;
-    subjectFrom: string | null; // field key whose value is the subject label (null = room)
+    subjectFrom: string | null; // field key whose value is the subject label (null = no specific entity)
     fields: FormField[];
     cascade?: boolean; // mate → auto plug-check(+10) + delivery(+20)
     dueFromField?: string; // date field the due date defaults from (else today)
@@ -121,8 +121,10 @@ export const TASK_TYPES: TaskTypeDef[] = [
         ],
     },
     {
+        // 'room' subject kind was removed in 0023. 'slot' is the closest equivalent
+        // for rack/area-level tasks until a dedicated UI kind is added.
         type: 'Check food',
-        subjectKind: 'room',
+        subjectKind: 'slot',
         subjectFrom: null,
         fields: [{ key: 'area', label: 'Area', kind: 'text' }],
     },
