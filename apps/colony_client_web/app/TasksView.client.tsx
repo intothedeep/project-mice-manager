@@ -2,12 +2,13 @@
 
 import type { Role, CaseTaskStatus } from '@repo/types';
 import { isOverdue } from '@repo/types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { availableActions } from '@/lib/taskFlow';
 import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { useTasks, setTaskStatus } from '@/lib/mockStore';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
+import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,9 @@ export function TasksView() {
     const [role, setRole] = useState<Role>('staff');
     const [creating, setCreating] = useState(false);
     const today = localToday();
+
+    // Reclip index (T5): same helper as grid — one pass over all cases.
+    const reclipIndex = useMemo(() => buildReclipIndex(tasks), [tasks]);
 
     // act uses the case id (c.id) — each card represents one case.
     function act(c: ClientCaseCard, to: CaseTaskStatus) {
@@ -97,6 +101,7 @@ export function TasksView() {
                                             task={c}
                                             role={role}
                                             today={today}
+                                            reclipIndex={reclipIndex}
                                             onAct={act}
                                         />
                                     ))
@@ -114,16 +119,26 @@ function TaskItem({
     task,
     role,
     today,
+    reclipIndex,
     onAct,
 }: {
     task: ClientCaseCard;
     role: Role;
     today: string;
+    reclipIndex: Map<number, number>;
     onAct: (c: ClientCaseCard, to: CaseTaskStatus) => void;
 }) {
     const actions = availableActions(role, task.status);
     const overdue = isOverdue(task, today);
     const cancelled = task.status === 'cancelled';
+
+    // Compose the subject label with the reclip suffix when the case targets
+    // a single mouse (subjectKind='mouse'). Batch/litter/cage labels stay as-is.
+    const displaySubjectLabel = task.subjectLabel
+        ? task.subjectMouseId != null
+            ? composeMouseLabel(task.subjectLabel, reclipIndex.get(task.subjectMouseId) ?? 0)
+            : task.subjectLabel
+        : null;
 
     return (
         <div
@@ -160,12 +175,12 @@ function TaskItem({
                 </span>
                 <div className="flex shrink-0 items-center gap-1.5">
                     <StatusBadge status={task.status} />
-                    {task.subjectLabel ? (
+                    {displaySubjectLabel ? (
                         <Badge
                             variant="secondary"
                             className="font-mono text-[10px]"
                         >
-                            {task.subjectLabel}
+                            {displaySubjectLabel}
                         </Badge>
                     ) : (
                         <Badge

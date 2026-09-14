@@ -13,7 +13,8 @@ import type { ColonyGrid } from '@repo/types';
 //   - M4+10AZZ : the "+N" pooled notation nobody (incl. the professor) has defined
 //   - U3BCX    : an unsexed newborn pup (sex = U until genotyped/sexed)
 //   - F10BEVe  : ear-tag suffix "e"
-//   - M4BCW.2  : reclip / re-issue suffix ".2"
+//   - M4BCW    : reclip animal — ".2" label is READ-TIME derived from
+//                Tissue-collection done cases (Option C). No stored suffix.
 //
 // NOTE (T6): activeTasks removed from all MouseCell objects. Badges are now
 // derived from the case store (useTasks + signalColorOf) in ColonyGridView,
@@ -43,7 +44,7 @@ const geno = (g: string): string | null => GENO[g] ?? null;
 // Mate-group colours, keyed by the father-fanout group (color_assignments channel='mate').
 // A mouse carries one hex per group it belongs to; a female mated to two males → two hexes.
 const MATE = {
-    // group: father M4BCW.2 (metaId 401) × F5AYL (402)
+    // group: father M4BCW (metaId 101) × F5AYL (402)
     g401: '#9333ea',
     // two BEZ males (gA, gB) — F9AYL is mated to BOTH → carries two mate chips
     gA: '#c026d3',
@@ -75,10 +76,25 @@ const COLONY_GRID: ColonyGrid = {
                                     genotype: 'Nf1 f/+',
                                     signal: 'done',
                                     isAlive: true,
-                                    attention: null,
+                                    attention: 're-clip (.2) — re-genotype this week',
                                     dob: '2024-02-10',
                                     genotypeColor: geno('Nf1 f/+'),
-                                    mates: [],
+                                    // dates resolved from mates/tasks (plan §4). Migrated from
+                                    // former separate-mouse record (metaId 401) — same animal.
+                                    dates: {
+                                        lastMating: '2026-07-01',
+                                        plug: '2026-07-03',
+                                        deliv: '2026-07-21',
+                                        tissue: null,
+                                        genotyping: '2024-09-01',
+                                    },
+                                    mates: [
+                                        {
+                                            partnerId: 'F5AYL',
+                                            partnerMetaId: 402,
+                                            color: MATE.g401,
+                                        },
+                                    ],
                                 },
                                 {
                                     metaId: 102,
@@ -177,12 +193,16 @@ const COLONY_GRID: ColonyGrid = {
                                     genotypeColor: geno('?'),
                                     mates: [],
                                     parents: {
+                                        // Father is M4BCW (metaId 101) — the reclipped animal.
+                                        // renderedId stored as base; grid composes .N suffix at
+                                        // read time. ParentRow renders this field directly
+                                        // (secondary surface — known bare-label limitation).
                                         father: {
-                                            renderedId: 'M4BCW.2',
-                                            metaId: 401,
-                                            genotype: 'PlpCre;Ai14 +/-',
+                                            renderedId: 'M4BCW',
+                                            metaId: 101,
+                                            genotype: 'Nf1 f/+',
                                             genotypeColor:
-                                                geno('PlpCre;Ai14 +/-'),
+                                                geno('Nf1 f/+'),
                                         },
                                         mother: {
                                             renderedId: 'F5AYL',
@@ -327,40 +347,13 @@ const COLONY_GRID: ColonyGrid = {
                     location: 'Rack B / Row 1',
                     slots: [
                         {
+                            // Slot 41 (E8): formerly held M4BCW.2 (metaId 401).
+                            // M4BCW is the SAME animal (re-clip, not a new mouse) —
+                            // merged back onto metaId 101 in pNf1 cage 2413. Empty slot
+                            // left in place; the grid renders mice:[] as an empty slot row.
                             slotId: 41,
                             label: 'E8',
-                            mice: [
-                                {
-                                    metaId: 401,
-                                    renderedId: 'M4BCW.2',
-                                    sex: 'M',
-                                    genotype: 'PlpCre;Ai14 +/-',
-                                    signal: 'instruction',
-                                    isAlive: true,
-                                    attention:
-                                        're-clip (.2) — re-genotype this week',
-                                    dob: '2024-08-01',
-                                    genotypeColor: geno('PlpCre;Ai14 +/-'),
-                                    // `dates` is a VIEW field: the real server RESOLVES it from
-                                    // mates (occurred_at/expected_delivery_on) / litters /
-                                    // genotyping_results / tasks — NOT a `mice` column. Seeded
-                                    // flat here (plan §4 ratified 2026-09-12).
-                                    dates: {
-                                        lastMating: '2026-07-01',
-                                        plug: '2026-07-03',
-                                        deliv: '2026-07-21',
-                                        tissue: null,
-                                        genotyping: '2024-09-01',
-                                    },
-                                    mates: [
-                                        {
-                                            partnerId: 'F5AYL',
-                                            partnerMetaId: 402,
-                                            color: MATE.g401,
-                                        },
-                                    ],
-                                },
-                            ],
+                            mice: [],
                         },
                         {
                             slotId: 42,
@@ -373,7 +366,7 @@ const COLONY_GRID: ColonyGrid = {
                                     genotype: 'PlpCre;Ai14 +/+',
                                     signal: 'plan',
                                     isAlive: true,
-                                    attention: 'set up mating with M4BCW.2',
+                                    attention: 'set up mating with M4BCW',
                                     dob: '2025-06-15',
                                     genotypeColor: geno('PlpCre;Ai14 +/+'),
                                     dates: {
@@ -385,8 +378,8 @@ const COLONY_GRID: ColonyGrid = {
                                     },
                                     mates: [
                                         {
-                                            partnerId: 'M4BCW.2',
-                                            partnerMetaId: 401,
+                                            partnerId: 'M4BCW',
+                                            partnerMetaId: 101,
                                             color: MATE.g401,
                                         },
                                     ],

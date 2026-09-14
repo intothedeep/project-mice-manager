@@ -85,14 +85,17 @@ export type SeedCaseRow = Omit<ClientCaseCard, 'doneBy' | 'verifiedBy'>;
 
 export const SEED_CASES: SeedCaseRow[] = [
     {
+        // T3: reassigned from subjectMouseId 401 → 101 (M4BCW.2 was the same
+        // animal, not a second mouse). subjectLabel is the BASE — the derived
+        // ".N" suffix is composed at read time by composeMouseLabel().
         id: 1,
         caseType: 'Genotyping',            // was 'Genotype' — matches TASK_TYPES
         signal: 'instruction' as TaskSignal,
         status: 'todo' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
-        subjectLabel: 'M4BCW.2',
-        subjectMouseId: 401,               // metaId: M4BCW.2 in PlpCre;Ai14 cage 2502
-        detail: 're-clip (.2) — re-run PCR',
+        subjectLabel: 'M4BCW',
+        subjectMouseId: 101,               // metaId: M4BCW in pNf1 flox cage 2413 slot A8
+        detail: 're-clip — re-run PCR',
         dueDate: '2026-09-10',
         createdAt: '2026-09-03',
         assignee: 'Jia',
@@ -118,7 +121,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'F5AYL',
         subjectMouseId: 402,               // metaId: F5AYL in PlpCre;Ai14 cage 2502 slot B8
-        detail: 'pair with M4BCW.2',
+        detail: 'pair with M4BCW',
         dueDate: '2026-09-15',
         createdAt: '2026-09-03',
         assignee: 'Sam',
@@ -212,7 +215,7 @@ export const SEED_CASES: SeedCaseRow[] = [
     //   502  (F9AYL)     → plan case (Mate) → 'plan'
     //   602  (F3WT)      → note case → 'flag'
     //   603  (U5BFA)     → plan case (Genotyping) → 'plan'
-    // 202/203 already covered by case 9; 401/402 by cases 1/3; 101 by case 4.
+    // 202/203 already covered by case 9; 402 by case 3; 101 by case 4.
     {
         id: 10,
         caseType: 'Genes to check',
@@ -283,6 +286,7 @@ export const SEED_CASES: SeedCaseRow[] = [
     // instruction badge shows a COUNT (3 = case 4 Move + 15 + 16). The badge
     // renders the number only when count > 1 (ColonyGridView bySignal).
     {
+        // Still TODO — contributes 0 to reclipCount (only done/verified count).
         id: 15,
         caseType: 'Tissue collection',
         signal: 'instruction' as TaskSignal,
@@ -336,6 +340,53 @@ export const SEED_CASES: SeedCaseRow[] = [
         createdAt: '2026-09-03',
         assignee: null,
     },
+
+    // T3 — Two DONE Tissue collection cases for metaId 101 (M4BCW).
+    // reclipCount(101) = 2 → composeMouseLabel('M4BCW', 2) = 'M4BCW.2'.
+    // These are COMPLETED cases (done); case 15 stays todo and contributes 0.
+    {
+        id: 19,
+        caseType: 'Tissue collection',
+        signal: 'instruction' as TaskSignal,
+        status: 'done' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M4BCW',
+        subjectMouseId: 101,
+        detail: 'first tail clip — initial genotyping',
+        dueDate: '2024-09-01',
+        createdAt: '2024-08-28',
+        assignee: 'Jia',
+    },
+    {
+        id: 20,
+        caseType: 'Tissue collection',
+        signal: 'instruction' as TaskSignal,
+        status: 'done' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M4BCW',
+        subjectMouseId: 101,
+        detail: 're-clip — second tissue sample for PCR confirmation',
+        dueDate: '2026-09-03',
+        createdAt: '2026-09-01',
+        assignee: 'Jia',
+    },
+
+    // T3 — One DONE Tissue collection case for metaId 501 (M1BCW).
+    // reclipCount(501) = 1 → composeMouseLabel('M1BCW', 1) = 'M1BCW' (bare).
+    // Demonstrates N=1 → no suffix.
+    {
+        id: 21,
+        caseType: 'Tissue collection',
+        signal: 'instruction' as TaskSignal,
+        status: 'done' as CaseTaskStatus,
+        subjectKind: 'mouse' as TaskSubjectKind,
+        subjectLabel: 'M1BCW',
+        subjectMouseId: 501,
+        detail: 'initial tail clip',
+        dueDate: '2024-03-15',
+        createdAt: '2024-03-12',
+        assignee: 'Sam',
+    },
 ];
 
 // Append-only task log — each row = a status the case moved to.
@@ -345,6 +396,7 @@ export const SEED_CASES: SeedCaseRow[] = [
 //   case 7 → todo(system) + doing(Sam) + done(Sam) + verified(Dr. Lopez-Juarez) → both set
 //   case 8 → todo(system) + cancelled(system)         → both null
 //   cases 3,4 → todo(system) + doing(...)             → both null (no done/verified yet)
+//   cases 19,20,21 → todo(system) + done(...)         → doneBy set, verifiedBy=null
 export const SEED_TASK_LOG: ClientTask[] = [
     // case 1 — todo only
     { id: 101, caseId: 1, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
@@ -395,6 +447,17 @@ export const SEED_TASK_LOG: ClientTask[] = [
     { id: 1601, caseId: 16, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
     { id: 1701, caseId: 17, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
     { id: 1801, caseId: 18, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+
+    // T3 — Done Tissue collection log rows (todo→done) for cases 19, 20, 21.
+    // case 19 → doneBy='Jia'
+    { id: 1901, caseId: 19, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2024-08-28' },
+    { id: 1902, caseId: 19, status: 'done', actorRole: 'staff',     actor: 'Jia',              note: null, createdAt: '2024-09-01' },
+    // case 20 → doneBy='Jia'
+    { id: 2001, caseId: 20, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-01' },
+    { id: 2002, caseId: 20, status: 'done', actorRole: 'staff',     actor: 'Jia',              note: null, createdAt: '2026-09-03' },
+    // case 21 (M1BCW, metaId 501, N=1 → bare label) → doneBy='Sam'
+    { id: 2101, caseId: 21, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2024-03-12' },
+    { id: 2102, caseId: 21, status: 'done', actorRole: 'staff',     actor: 'Sam',              note: null, createdAt: '2024-03-15' },
 ];
 
 // Seed for the client store; the real fetcher will replace this.

@@ -30,6 +30,7 @@ import {
 import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass, signalColorOf } from '@/lib/signal';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { useTasks, addTask } from '@/lib/mockStore';
+import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -127,6 +128,12 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
         }
         return index;
     }, [allCases]);
+
+    // Reclip index (T3/T4): Map<metaId, done-Tissue-collection count> → drives .N suffix.
+    const reclipIndex = useMemo(() => buildReclipIndex(allCases), [allCases]);
+    // Helper: compose the display label for a mouse cell.
+    const composed = (m: MouseCell) =>
+        composeMouseLabel(m.renderedId, reclipIndex.get(m.metaId) ?? 0);
 
     const on = isFilterActive(filter);
     const match = useMemo(
@@ -258,6 +265,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                         (mt) => mt.color === selection.color
                                     );
                         if (inSel)
+                            // BASE label (not composed) — this feeds addTask; the
+                            // .N suffix stays a read-time projection, never stored.
                             out.push({ metaId: m.metaId, label: m.renderedId });
                     })
                 )
@@ -298,7 +307,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             selLine ? `line: ${selLine.lineName}` : undefined,
             selCage ? `cage: ${selCage.cageNumber}` : undefined,
             selSlot ? `slot ${selSlot.label}` : undefined,
-            selMouse ? `mouse: ${selMouse.renderedId}` : undefined,
+            selMouse ? `mouse: ${composeMouseLabel(selMouse.renderedId, reclipIndex.get(selMouse.metaId) ?? 0)}` : undefined,
         ].filter((s): s is string => !!s);
     }
 
@@ -329,7 +338,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
             c.slots.flatMap((s) =>
                 s.mice.map((m) => ({
                     id: m.metaId,
-                    label: m.renderedId,
+                    label: composed(m),
                     hint: m.genotype,
                 }))
             )
@@ -355,7 +364,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
         setSelected((prev) => {
             const next = { ...prev };
             if (next[m.metaId]) delete next[m.metaId];
-            else next[m.metaId] = m.renderedId;
+            else next[m.metaId] = m.renderedId; // base — feeds addTask; .N stays read-time
             return next;
         });
     }
@@ -564,6 +573,7 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                                                     }
                                                                     id={`mouse-${m.metaId}`}
                                                                     mouse={m}
+                                                                    composedLabel={composed(m)}
                                                                     tags={
                                                                         badgeIndex.get(
                                                                             m.metaId
@@ -1473,6 +1483,7 @@ const countSlotAdults = (mice: MouseCell[]): number =>
 function MouseRow({
     id,
     mouse,
+    composedLabel,
     tags,
     zebra,
     highlighted,
@@ -1491,6 +1502,8 @@ function MouseRow({
 }: {
     id: string;
     mouse: MouseCell;
+    // Derived composed label (renderedId + reclip suffix). Composed by parent.
+    composedLabel: string;
     // Derived badge tags from the case store (replaces mouse.activeTasks).
     // Passed as a prop so the parent controls derivation (useTasks + badgeIndex).
     tags: MouseTaskTag[];
@@ -1566,7 +1579,7 @@ function MouseRow({
                         checked={checked}
                         onChange={onToggle}
                         className="size-3.5 shrink-0 cursor-pointer accent-primary"
-                        aria-label={`select ${mouse.renderedId}`}
+                        aria-label={`select ${composedLabel}`}
                     />
                 </label>
 
@@ -1593,7 +1606,7 @@ function MouseRow({
                                     dead && 'text-neutral-400 line-through'
                                 )}
                             >
-                                {mouse.renderedId}
+                                {composedLabel}
                             </span>
                         </button>
 
@@ -1794,7 +1807,7 @@ function MouseRow({
                                             aria-label={`${g.count} ${g.signal} task(s): ${g.types.join(', ')} — click to view cases`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onOpenCases({ kind: 'focus', metaId: mouse.metaId, label: mouse.renderedId, signal: g.signal });
+                                                onOpenCases({ kind: 'focus', metaId: mouse.metaId, label: composedLabel, signal: g.signal });
                                             }}
                                             className={cn(
                                                 'flex size-3.5 items-center justify-center rounded-sm border text-[8px] leading-none font-bold cursor-pointer hover:ring-1 hover:ring-primary',

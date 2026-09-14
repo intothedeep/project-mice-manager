@@ -106,7 +106,7 @@ const ITEMS: UpcomingItem[] = [
         id: 8,
         kind: 'genotype',
         title: 'Genotype re-clip',
-        subjectLabel: 'M4BCW.2',
+        subjectLabel: 'M4BCW',
         subjectKind: 'mouse',
         // fixed date — re-clip scheduled after wean
         dueDate: '2026-09-10',
