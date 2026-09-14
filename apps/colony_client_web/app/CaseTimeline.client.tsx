@@ -4,8 +4,8 @@ import { useMemo } from 'react';
 import { useTaskLog } from '@/lib/mockStore';
 import type { ClientTask } from '@/apis/getTasks.mock.api';
 
-// Append-only task log timeline for one case, sorted chronologically by id.
-// Mirrors MouseDetail's History <ol> dot pattern.
+// Append-only task log for one case, as a compact TABLE (date · by · status),
+// chronological by id. Shared by the task board card, CaseList, and mouse detail.
 export function CaseTimeline({ caseId }: { caseId: number }) {
     const taskLog = useTaskLog();
     const rows = useMemo(
@@ -19,21 +19,36 @@ export function CaseTimeline({ caseId }: { caseId: number }) {
     if (rows.length === 0) return null;
 
     return (
-        <ol className="relative space-y-3 border-l border-border pl-4">
-            {rows.map((t) => (
-                <li key={t.id} className="relative">
-                    <span className="absolute top-1 -left-[21px] size-2 rounded-full border border-background bg-primary/70" />
-                    <div className="flex items-baseline gap-2">
-                        <span className="font-mono text-[11px] text-muted-foreground">
+        <table className="w-full border-collapse text-[11px]">
+            <thead>
+                <tr className="text-left text-muted-foreground">
+                    <th className="pr-2 pb-1 font-medium tracking-wide uppercase">
+                        date
+                    </th>
+                    <th className="pr-2 pb-1 font-medium tracking-wide uppercase">
+                        by
+                    </th>
+                    <th className="pb-1 font-medium tracking-wide uppercase">
+                        status
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map((t) => (
+                    <tr
+                        key={t.id}
+                        className="border-t border-border/40 align-baseline"
+                    >
+                        <td className="py-0.5 pr-2 font-mono whitespace-nowrap text-muted-foreground">
                             {t.createdAt}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
+                        </td>
+                        <td className="py-0.5 pr-2 text-muted-foreground">
                             {t.actor}
-                        </span>
-                    </div>
-                    <p className="text-[13px] font-medium">{t.status}</p>
-                </li>
-            ))}
-        </ol>
+                        </td>
+                        <td className="py-0.5 font-medium">{t.status}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
     );
 }
