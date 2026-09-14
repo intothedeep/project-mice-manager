@@ -844,7 +844,12 @@ function JumpMenu({
                     <div
                         className={cn(
                             'absolute z-50 mt-1 w-60 border border-border bg-card shadow-md',
-                            align === 'right' ? 'right-0' : 'left-0'
+                            // Mobile keeps the current alignment (right-align avoids
+                            // right-edge overflow on narrow screens); on sm+ all
+                            // jump dropdowns LEFT-align (user).
+                            align === 'right'
+                                ? 'right-0 sm:right-auto sm:left-0'
+                                : 'left-0'
                         )}
                     >
                         <div className="p-1.5">
