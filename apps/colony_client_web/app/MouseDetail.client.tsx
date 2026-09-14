@@ -1,9 +1,9 @@
 'use client';
 
-import type { MouseCell, MouseDetail as Detail } from '@repo/types';
-import { useEffect, useState } from 'react';
-import { getMouseDetail } from '@/apis/getMouseDetail.mock.api';
-import { signalIdClass } from '@/lib/signal';
+import type { MouseCell } from '@repo/types';
+import { signalIdClass, dateColorOf } from '@/lib/signal';
+import { useTasks, useTaskLog } from '@/lib/mockStore';
+import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import {
     Sheet,
     SheetContent,
@@ -20,6 +20,9 @@ export interface SelectedMouse {
     slotLabel: string;
 }
 
+// Store-driven: the drawer reflects the SAME live data as the dashboard grid —
+// identity from the MouseCell, cases + append-only history from the case store
+// (useTasks / useTaskLog). No separate getMouseDetail seed (which drifted).
 export function MouseDetailDrawer({
     selected,
     onClose,
@@ -27,22 +30,31 @@ export function MouseDetailDrawer({
     selected: SelectedMouse | null;
     onClose: () => void;
 }) {
-    const [detail, setDetail] = useState<Detail | null>(null);
-    const metaId = selected?.mouse.metaId;
-
-    useEffect(() => {
-        if (metaId == null) return;
-        let alive = true;
-        setDetail(null);
-        getMouseDetail(metaId).then((d) => {
-            if (alive) setDetail(d);
-        });
-        return () => {
-            alive = false;
-        };
-    }, [metaId]);
+    const cases = useTasks();
+    const taskLog = useTaskLog();
 
     const m = selected?.mouse;
+    const metaId = m?.metaId ?? -1;
+
+    // This mouse's cases (single-subject or batch membership).
+    const mouseCases = m
+        ? cases.filter(
+              (c) => c.subjectMouseId === metaId || c.mice?.includes(metaId)
+          )
+        : [];
+    // Append-only history = the task-log rows of this mouse's cases, chronological.
+    const caseIds = new Set(mouseCases.map((c) => c.id));
+    const history = taskLog
+        .filter((t) => caseIds.has(t.caseId))
+        .slice()
+        .sort((a, b) => a.id - b.id);
+    // .N re-clip label (read-time derived, same as the grid).
+    const label = m
+        ? composeMouseLabel(
+              m.renderedId,
+              buildReclipIndex(cases).get(metaId) ?? 0
+          )
+        : '';
 
     return (
         <Sheet
@@ -60,7 +72,7 @@ export function MouseDetailDrawer({
                                         signalIdClass(m.signal)
                                     )}
                                 >
-                                    {m.renderedId}
+                                    {label}
                                 </span>
                                 <Badge
                                     variant={
@@ -96,88 +108,136 @@ export function MouseDetailDrawer({
                                 />
                                 <Field
                                     k="dob"
-                                    v={detail?.dob ?? '—'}
+                                    v={m.dob ?? '—'}
                                 />
                                 <Field
-                                    k="litter"
-                                    v={detail?.litterCode ?? '—'}
+                                    k="sex"
+                                    v={m.isAlive ? m.sex : `${m.sex} (dead)`}
                                 />
                             </Section>
 
-                            <Section label="Genotype">
-                                {detail && detail.genes.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {detail.genes.map((g) => (
-                                            <Badge
-                                                key={g.code}
-                                                variant="outline"
-                                                className="font-mono text-[11px]"
-                                            >
-                                                {g.code} {g.allele}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <Muted>
-                                        {detail
-                                            ? 'no markers recorded (pending)'
-                                            : 'loading…'}
-                                    </Muted>
-                                )}
-                            </Section>
-
-                            <Section label="Parents">
-                                {detail && detail.parents.length > 0 ? (
+                            {m.parents &&
+                            (m.parents.father || m.parents.mother) ? (
+                                <Section label="Parents">
                                     <ul className="space-y-1">
-                                        {detail.parents.map((p) => (
+                                        {(['mother', 'father'] as const).map(
+                                            (role) => {
+                                                const p = m.parents?.[role];
+                                                if (!p) return null;
+                                                return (
+                                                    <li
+                                                        key={role}
+                                                        className="flex items-baseline gap-2 text-sm"
+                                                    >
+                                                        <span className="w-14 shrink-0 text-xs text-muted-foreground">
+                                                            {role}
+                                                        </span>
+                                                        <span className="font-mono">
+                                                            {p.renderedId}
+                                                        </span>
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                                            {p.genotype ?? ''}
+                                                        </span>
+                                                    </li>
+                                                );
+                                            }
+                                        )}
+                                    </ul>
+                                </Section>
+                            ) : null}
+
+                            {m.mates.length > 0 ? (
+                                <Section label="Mates">
+                                    <ul className="space-y-1">
+                                        {m.mates.map((mt, i) => (
                                             <li
-                                                key={p.role}
-                                                className="flex items-baseline gap-2 text-sm"
+                                                key={i}
+                                                className="flex items-center gap-2 text-sm"
                                             >
-                                                <span className="w-14 shrink-0 text-xs text-muted-foreground">
-                                                    {p.role}
-                                                </span>
+                                                <span
+                                                    className="inline-block size-2.5 rounded-sm"
+                                                    style={{
+                                                        background: mt.color,
+                                                    }}
+                                                />
                                                 <span className="font-mono">
-                                                    {p.label}
-                                                </span>
-                                                <span className="font-mono text-[11px] text-muted-foreground">
-                                                    {p.genotype}
+                                                    {mt.partnerId}
                                                 </span>
                                             </li>
                                         ))}
                                     </ul>
+                                </Section>
+                            ) : null}
+
+                            <Section label="Cases">
+                                {mouseCases.length > 0 ? (
+                                    <ul className="space-y-1.5">
+                                        {mouseCases.map((c) => (
+                                            <li
+                                                key={c.id}
+                                                className="flex items-center gap-2 text-sm"
+                                            >
+                                                <span className="font-medium">
+                                                    {c.caseType}
+                                                </span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px]"
+                                                >
+                                                    {c.status}
+                                                </Badge>
+                                                {c.dueDate ? (
+                                                    <span
+                                                        className={cn(
+                                                            'font-mono text-[11px]',
+                                                            dateColorOf(
+                                                                c.status,
+                                                                c.signal
+                                                            )
+                                                        )}
+                                                    >
+                                                        {c.dueDate}
+                                                    </span>
+                                                ) : null}
+                                            </li>
+                                        ))}
+                                    </ul>
                                 ) : (
-                                    <Muted>
-                                        {detail ? 'not recorded' : 'loading…'}
-                                    </Muted>
+                                    <Muted>no cases</Muted>
                                 )}
                             </Section>
 
                             <Section label="History — append-only">
-                                {detail ? (
+                                {history.length > 0 ? (
                                     <ol className="relative space-y-3 border-l border-border pl-4">
-                                        {detail.history.map((h, i) => (
-                                            <li
-                                                key={i}
-                                                className="relative"
-                                            >
-                                                <span className="absolute top-1 -left-[21px] size-2 rounded-full border border-background bg-primary/70" />
-                                                <div className="flex items-baseline gap-2">
-                                                    <span className="font-mono text-[11px] text-muted-foreground">
-                                                        {h.at}
-                                                    </span>
-                                                    <span className="text-[11px] text-muted-foreground">
-                                                        {h.actor}
-                                                    </span>
-                                                </div>
-                                                <p className="text-[13px]">
-                                                    {h.summary}
-                                                </p>
-                                            </li>
-                                        ))}
+                                        {history.map((h) => {
+                                            const c = mouseCases.find(
+                                                (x) => x.id === h.caseId
+                                            );
+                                            return (
+                                                <li
+                                                    key={h.id}
+                                                    className="relative"
+                                                >
+                                                    <span className="absolute top-1 -left-[21px] size-2 rounded-full border border-background bg-primary/70" />
+                                                    <div className="flex items-baseline gap-2">
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                                            {h.createdAt}
+                                                        </span>
+                                                        <span className="text-[11px] text-muted-foreground">
+                                                            {h.actor}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[13px]">
+                                                        {c?.caseType ?? 'case'} →{' '}
+                                                        {h.status}
+                                                    </p>
+                                                </li>
+                                            );
+                                        })}
                                     </ol>
                                 ) : (
-                                    <Muted>loading…</Muted>
+                                    <Muted>no activity</Muted>
                                 )}
                             </Section>
                         </div>
