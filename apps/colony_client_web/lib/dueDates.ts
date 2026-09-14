@@ -4,6 +4,13 @@
 
 export const TODAY = '2026-09-08';
 
+// Canonical date DISPLAY format — YYYY/MM/DD everywhere (project rule, see
+// rules/nexjts.md). Single source; do not hand-format dates elsewhere.
+// Stored/DTO dates stay ISO (YYYY-MM-DD); this is display-only.
+export function formatDate(iso: string | null | undefined): string {
+    return iso ? iso.replaceAll('-', '/') : '—';
+}
+
 export type DueStatus = 'overdue' | 'today' | 'soon' | 'later';
 
 // Add n calendar days to an ISO date string, returning ISO string.

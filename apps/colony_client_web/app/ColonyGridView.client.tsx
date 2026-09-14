@@ -29,6 +29,7 @@ import {
 } from '@/lib/gridSelection';
 import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass, signalColorOf, dateColorOf } from '@/lib/signal';
 import { buildDateCaseIndex, type DateColumn, type DateCaseHit } from '@/lib/dateSignal';
+import { formatDate } from '@/lib/dueDates';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { useTasks, useTaskLog, addTask } from '@/lib/mockStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
@@ -1475,8 +1476,7 @@ const MOUSE_COLS =
     'grid-cols-[6rem_minmax(10rem,1fr)_4.75rem_5.5rem_11rem_4.75rem_4.75rem_4.75rem_4.75rem_5rem]';
 
 // Dates render YYYY/MM/DD (from ISO); null → em dash.
-const fmtDate = (d: string | null | undefined) =>
-    d ? d.replaceAll('-', '/') : '—';
+const fmtDate = formatDate; // canonical YYYY/MM/DD (lib/dueDates)
 // Tasks sub-cell width = the id(sex) column (6rem) so tasks sit under ID/SEX and
 // the memo starts under GENOTYPE.
 const TASK_W = 'w-24';

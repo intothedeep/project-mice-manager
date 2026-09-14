@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 import { availableActions } from '@/lib/taskFlow';
 import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { useTasks, setTaskStatus } from '@/lib/mockStore';
+import { formatDate } from '@/lib/dueDates';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { CaseTimeline } from './CaseTimeline.client';
@@ -207,7 +208,7 @@ function TaskItem({
                             overdue && 'font-semibold text-signal-instruction'
                         )}
                     >
-                        due {task.dueDate}
+                        due {formatDate(task.dueDate)}
                         {overdue ? ' · overdue' : ''}
                     </span>
                 ) : null}

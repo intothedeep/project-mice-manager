@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { signalIdClass } from '@/lib/signal';
 import { useTasks, useTaskLog } from '@/lib/mockStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
+import { formatDate } from '@/lib/dueDates';
 import { RoleSwitch } from '@/components/task-status';
 import { CaseList } from './CaseList.client';
 import {
@@ -118,7 +119,7 @@ export function MouseDetailDrawer({
                                 />
                                 <Field
                                     k="dob"
-                                    v={m.dob ?? '—'}
+                                    v={formatDate(m.dob)}
                                 />
                                 <Field
                                     k="sex"

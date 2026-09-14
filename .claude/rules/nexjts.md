@@ -30,3 +30,7 @@ the normative conventions only.
 - Tailwind CSS v4 patterns; UI atoms follow the shadcn approach in `components/ui/` (Radix primitives + `lucide-react`).
 - Merge classes with the `cn` utility from `@/lib/utils`.
 - Rely on CSS variables in `@/styles/globals.css` for semantic themes, dark mode via `darkMode: 'class'`.
+
+## 4. Formatting
+
+- **Dates DISPLAY as `YYYY/MM/DD`** everywhere (user rule). Stored/DTO dates stay ISO (`YYYY-MM-DD`); format ONLY at display via the single shared helper `formatDate` in `lib/dueDates.ts` (`null`/empty → `—`). Never hand-format dates in a component.
