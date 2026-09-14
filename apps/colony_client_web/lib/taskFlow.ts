@@ -4,28 +4,22 @@ import type { Role, CaseTaskStatus } from '@repo/types';
 // @repo/domain once the SERVICE layer also enforces it (the DB does not — it
 // is a service rule). The service will call the SAME function shape.
 //
-// 5-value lifecycle matrix (0021):
-//   staff:     todo → doing ("Start") only — staff must NOT mark done
-//              (user directive 2026-09-13); done/verified/cancel are professor's.
-//   professor: doing → done | done → verified | reopen (→todo) any active/done
-//              | cancel (todo/doing/done)
-//   admin:     any → any
+// 5-value lifecycle matrix (user 2026-09-14 — REVISES 2026-09-13):
+//   staff:     todo→doing (Start), doing→done (complete)
+//   professor: todo→doing, doing→done, done→verified
+//   admin:     any→any — REOPEN (→todo) and CANCEL are ADMIN-ONLY
 const ALLOWED: Record<
     'staff' | 'professor',
     Array<[CaseTaskStatus, CaseTaskStatus]>
 > = {
     staff: [
-        ['todo', 'doing'],  // start work only — no doing→done for staff
+        ['todo', 'doing'], // start work
+        ['doing', 'done'], // complete
     ],
     professor: [
-        ['doing', 'done'],      // professor can also mark done directly
+        ['todo', 'doing'],
+        ['doing', 'done'],
         ['done', 'verified'],
-        ['doing', 'todo'],      // reopen back to todo
-        ['done', 'todo'],       // reopen
-        ['verified', 'todo'],   // reopen a verified task
-        ['todo', 'cancelled'],
-        ['doing', 'cancelled'],
-        ['done', 'cancelled'],
     ],
 };
 
