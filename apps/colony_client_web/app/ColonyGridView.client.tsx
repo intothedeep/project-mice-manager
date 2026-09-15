@@ -1,6 +1,7 @@
 'use client';
 
 import type {
+    GridCage,
     GridLine,
     MouseCell,
     MouseTaskTag,
@@ -511,6 +512,7 @@ export function ColonyGridView() {
                                 <LineLabel
                                     line={l}
                                     index={i + 1}
+                                    count={countLineMice(l)}
                                     highlighted={
                                         hl(1, { lineId: l.lineId }) ||
                                         (genoSets?.lines.has(l.lineId) ??
@@ -530,6 +532,7 @@ export function ColonyGridView() {
                                         >
                                             <CageLabel
                                                 number={c.cageNumber}
+                                                count={countCageMice(c)}
                                                 highlighted={
                                                     hl(2, {
                                                         lineId: l.lineId,
@@ -560,6 +563,9 @@ export function ColonyGridView() {
                                                     >
                                                         <SlotLabel
                                                             label={s.label}
+                                                            count={countSlotMice(
+                                                                s.mice
+                                                            )}
                                                             adults={countSlotAdults(
                                                                 s.mice
                                                             )}
@@ -1295,11 +1301,13 @@ function HlOverlay() {
 function LineLabel({
     line,
     index,
+    count,
     highlighted,
     onClick,
 }: {
     line: GridLine;
     index: number;
+    count: number;
     highlighted: boolean;
     onClick: () => void;
 }) {
@@ -1331,16 +1339,33 @@ function LineLabel({
             <span className="font-mono text-[11px] font-semibold whitespace-nowrap text-foreground [writing-mode:vertical-rl]">
                 {line.lineName}
             </span>
+            <CountBadge count={count} title="live mice in line" />
         </button>
+    );
+}
+
+// Total live-mouse count on a node header. Muted, compact; hidden at 0 so
+// empty nodes stay calm. Read-time derived — never a stored column.
+function CountBadge({ count, title }: { count: number; title: string }) {
+    if (count <= 0) return null;
+    return (
+        <span
+            title={title}
+            className="rounded-sm bg-foreground/10 px-1 font-mono text-[9px] leading-tight font-semibold text-muted-foreground"
+        >
+            {count}
+        </span>
     );
 }
 
 function CageLabel({
     number,
+    count,
     highlighted,
     onClick,
 }: {
     number: string;
+    count: number;
     highlighted: boolean;
     onClick: () => void;
 }) {
@@ -1350,19 +1375,21 @@ function CageLabel({
             onClick={onClick}
             className={cn(
                 RAIL_BASE,
-                'relative w-16 bg-muted/40 px-2 py-2 hover:bg-accent'
+                'relative w-16 gap-1 bg-muted/40 px-2 py-2 hover:bg-accent'
             )}
         >
             {highlighted ? <HlOverlay /> : null}
             <span className="font-mono text-[13px] font-bold text-foreground">
                 {number}
             </span>
+            <CountBadge count={count} title="live mice in cage" />
         </button>
     );
 }
 
 function SlotLabel({
     label,
+    count,
     highlighted,
     over,
     adults,
@@ -1370,6 +1397,7 @@ function SlotLabel({
     onClick,
 }: {
     label: string;
+    count: number;
     highlighted: boolean;
     // Overcrowding: live adults exceed the slot's adult capacity. A STATE colour
     // (red = action required: split the slot), fill on the rail itself so it reads
@@ -1407,6 +1435,7 @@ function SlotLabel({
             >
                 {label}
             </span>
+            <CountBadge count={count} title="live mice in slot" />
             {over ? (
                 <span className="rounded-sm bg-red-600 px-1 text-[8px] leading-tight font-bold text-white">
                     {adults}/{cap}
@@ -1511,13 +1540,23 @@ const RAIL_W = { line: 'w-8', cage: 'w-16', slot: 'w-9' } as const;
 // pups don't. Over this → overcrowding warning on the slot rail. User-specified
 // (5 per slot); professor-confirm later (plan Q33/Q34: value + per-slot vs cage).
 const SLOT_ADULT_CAP = 5;
+
+// A mouse is live unless flagged dead. Read-time only (no stored count) —
+// same compute-at-read discipline as reclip / overcrowding.
+const isLiveMouse = (m: MouseCell): boolean =>
+    m.isAlive !== false && m.signal !== 'dead';
+
 const countSlotAdults = (mice: MouseCell[]): number =>
     mice.filter(
-        (m) =>
-            m.isAlive !== false &&
-            m.signal !== 'dead' &&
-            lifeStage(m.dob, m.sex) !== 'baby'
+        (m) => isLiveMouse(m) && lifeStage(m.dob, m.sex) !== 'baby'
     ).length;
+
+// Total LIVE mice (pups included) under each node — summed bottom-up.
+const countSlotMice = (mice: MouseCell[]): number => mice.filter(isLiveMouse).length;
+const countCageMice = (c: GridCage): number =>
+    c.slots.reduce((n, s) => n + countSlotMice(s.mice), 0);
+const countLineMice = (l: GridLine): number =>
+    l.cages.reduce((n, c) => n + countCageMice(c), 0);
 
 function MouseRow({
     id,
