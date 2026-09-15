@@ -1,16 +1,14 @@
-import { getColonyGrid } from '@/apis/getColonyGrid.mock.api';
 import { ColonyGridView } from './ColonyGridView.client';
 
-// Server Component: fetch the colony (mock now, colony_server later) and hand
-// the resolved current-state tree to the interactive view. The fetch sits
-// exactly where the real API call will go.
+// Colony data is now owned by the mock colony store (lib/mockColonyStore.ts),
+// seeded from SEED_COLONY at module init. This page no longer fetches — it just
+// mounts the client view. When the real server lands, getColonyGrid() in the
+// mock api file is the swap seam (replace store seed with a fetch there).
 
-export default async function HomePage() {
-    const colony = await getColonyGrid(1);
-
+export default function HomePage() {
     return (
         <main className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 flex-col px-6 py-3">
-            <ColonyGridView initial={colony} />
+            <ColonyGridView />
         </main>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import type {
-    ColonyGrid,
     GridLine,
     MouseCell,
     MouseTaskTag,
@@ -11,7 +10,7 @@ import type {
 } from '@repo/types';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, ListPlus, ChevronDown } from 'lucide-react';
+import { Search, X, ListPlus, ChevronDown, Plus } from 'lucide-react';
 import {
     EMPTY_FILTER,
     isFilterActive,
@@ -19,7 +18,7 @@ import {
     toggleIn,
     type GridFilter,
 } from '@/lib/gridFilter';
-import { moveMouse, type MoveTarget } from '@/lib/gridMove';
+import { type MoveTarget } from '@/lib/gridMove';
 import {
     resolvePath,
     isOnSelection,
@@ -32,6 +31,7 @@ import { buildDateCaseIndex, type DateColumn, type DateCaseHit } from '@/lib/dat
 import { formatDate } from '@/lib/dueDates';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { useTasks, useTaskLog, addTask } from '@/lib/mockStore';
+import { useColonyGrid, applyColonyMove } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,7 @@ import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
 import { MouseCaseDrawer, type CaseDrawerTarget } from './MouseCaseDrawer.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { MouseCaseTypeMenu } from './MouseCaseTypeMenu.client';
+import { AddMouseDialog } from './AddMouseDialog.client';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
 
@@ -63,8 +64,11 @@ function scrollToNode(level: SelLevel, id: number) {
         ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
-    const [colony, setColony] = useState(initial);
+export function ColonyGridView() {
+    // Colony state is now owned by the mock colony store — not local useState.
+    // This lets addMouse (and future server writes) update the grid immediately
+    // without prop-drilling or a page reload.
+    const colony = useColonyGrid();
     const [filter, setFilter] = useState<GridFilter>(EMPTY_FILTER);
     // Search+filter now lives in the NavBar (portal slot) to free the toolbar row.
     // Collapsed by default; ⌘K / click opens it (state owned here — see NavSearch).
@@ -102,6 +106,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     const [caseDrawer, setCaseDrawer] = useState<CaseDrawerTarget | null>(null);
     // Context menu: right-click a mouse cell → case-type picker.
     const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; mouse: { metaId: number; renderedId: string } } | null>(null);
+    // Add mouse dialog.
+    const [addMouseOpen, setAddMouseOpen] = useState(false);
 
     // Badge index (T6): memoized Map<metaId, MouseTaskTag[]> over open cases.
     // Derived from the case store (useTasks) — never from MouseCell.activeTasks.
@@ -380,7 +386,8 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
     }
     function applyMove(target: MoveTarget) {
         if (!moving) return;
-        setColony((c) => moveMouse(c, moving.mouse.metaId, target));
+        // Delegate to the store — keeps the colony tree in one place.
+        applyColonyMove(moving.mouse.metaId, target);
         setMoving(null);
     }
 
@@ -477,7 +484,17 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                                     <X className="size-2.5" /> clear
                                 </Button>
                             </div>
-                        ) : null}
+                        ) : (
+                            /* "Add mouse" toolbar button — opens AddMouseDialog */
+                            <Button
+                                size="xs"
+                                variant="outline"
+                                className="h-5 gap-1 px-1.5 text-[10px]"
+                                onClick={() => setAddMouseOpen(true)}
+                            >
+                                <Plus className="size-2.5" /> Add mouse
+                            </Button>
+                        )}
                     </div>
                 </div>
                 {/* one scroll container for BOTH axes; the column header sticks on
@@ -783,6 +800,13 @@ export function ColonyGridView({ initial }: { initial: ColonyGrid }) {
                         setCtxMenu(null);
                     }}
                     onClose={() => setCtxMenu(null)}
+                />
+            ) : null}
+
+            {addMouseOpen ? (
+                <AddMouseDialog
+                    open
+                    onClose={() => setAddMouseOpen(false)}
                 />
             ) : null}
         </div>
