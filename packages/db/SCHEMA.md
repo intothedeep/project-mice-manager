@@ -43,6 +43,59 @@ CREATE UNIQUE INDEX cages_cage_number_key ON public.cages USING btree (cage_numb
 CREATE UNIQUE INDEX cages_pkey ON public.cages USING btree (id)
 ```
 
+## `case_mice`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `case_id` | bigint | NOT NULL |  | → `cases` |
+| `mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE INDEX case_mice_case_idx ON public.case_mice USING btree (case_id) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX case_mice_member_key ON public.case_mice USING btree (case_id, mouse_id) WHERE (deleted_at IS NULL)
+CREATE INDEX case_mice_mouse_idx ON public.case_mice USING btree (mouse_id) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX case_mice_pkey ON public.case_mice USING btree (id)
+```
+
+## `cases`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `case_type` | text | NOT NULL |  |  |
+| `signal_id` | bigint | NOT NULL |  | → `signals` |
+| `subject_kind` | text | NOT NULL |  |  |
+| `subject_mouse_id` | bigint |  |  | → `mouse_meta` |
+| `subject_cage_id` | bigint |  |  | → `cages` |
+| `litter_id` | bigint |  |  | → `litters` |
+| `subject_mate_id` | bigint |  |  | → `mates` |
+| `gen_key` | text |  |  |  |
+| `current_status` | task_status | NOT NULL | `'todo'::task_status` |  |
+| `due_date` | date |  |  |  |
+| `created_by` | bigint | NOT NULL |  | → `users` |
+| `actor_role` | text | NOT NULL |  |  |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+| `subject_slot_id` | bigint |  |  | → `slots` |
+| `subject_line_id` | bigint |  |  | → `mouse_lines` |
+| `version` | integer | NOT NULL | `1` |  |
+
+```sql
+CREATE UNIQUE INDEX cases_gen_key_key ON public.cases USING btree (gen_key) WHERE ((gen_key IS NOT NULL) AND (deleted_at IS NULL))
+CREATE UNIQUE INDEX cases_pkey ON public.cases USING btree (id)
+CREATE INDEX cases_subject_cage_idx ON public.cases USING btree (subject_cage_id) WHERE ((subject_cage_id IS NOT NULL) AND (deleted_at IS NULL))
+CREATE INDEX cases_subject_line_idx ON public.cases USING btree (subject_line_id) WHERE ((subject_line_id IS NOT NULL) AND (deleted_at IS NULL))
+CREATE INDEX cases_subject_mate_idx ON public.cases USING btree (subject_mate_id) WHERE ((subject_mate_id IS NOT NULL) AND (deleted_at IS NULL))
+CREATE INDEX cases_subject_mouse_idx ON public.cases USING btree (subject_mouse_id) WHERE ((subject_mouse_id IS NOT NULL) AND (deleted_at IS NULL))
+CREATE INDEX cases_subject_slot_idx ON public.cases USING btree (subject_slot_id) WHERE ((subject_slot_id IS NOT NULL) AND (deleted_at IS NULL))
+CREATE INDEX cases_upcoming_idx ON public.cases USING btree (current_status, due_date) WHERE ((current_status = ANY (ARRAY['todo'::task_status, 'doing'::task_status])) AND (deleted_at IS NULL))
+```
+
 ## `colonies`
 
 | column | type | null | default | references |
@@ -319,36 +372,18 @@ CREATE UNIQUE INDEX slots_pkey ON public.slots USING btree (id)
 
 | column | type | null | default | references |
 |---|---|---|---|---|
-| `id` | bigint | NOT NULL | `nextval('tasks_id_seq'::regclass)` |  |
-| `origin_task_id` | bigint | NOT NULL |  | → `tasks` |
-| `subject_mouse_id` | bigint |  |  | → `mouse_meta` |
-| `subject_cage_id` | bigint |  |  | → `cages` |
-| `task_type` | text | NOT NULL |  |  |
-| `due_date` | date |  |  |  |
+| `id` | bigint | NOT NULL |  |  |
+| `case_id` | bigint | NOT NULL |  | → `cases` |
 | `status` | task_status | NOT NULL |  |  |
-| `from_status` | task_status |  |  |  |
+| `actor_id` | bigint | NOT NULL |  | → `users` |
 | `actor_role` | text | NOT NULL |  |  |
-| `created_by` | bigint | NOT NULL |  | → `users` |
-| `done_by` | bigint |  |  | → `users` |
-| `verified_by` | bigint |  |  | → `users` |
+| `note` | text |  |  |  |
 | `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
-| `done_at` | timestamp with time zone |  |  |  |
-| `verified_at` | timestamp with time zone |  |  |  |
-| `deleted_at` | timestamp with time zone |  |  |  |
-| `litter_id` | bigint |  |  | → `litters` |
-| `assigned_to` | bigint |  |  | → `users` |
-| `direction` | jsonb | NOT NULL | `'{}'::jsonb` |  |
-| `prev_id` | bigint |  |  | → `tasks` |
 
 ```sql
-CREATE INDEX tasks_assigned_to_idx ON public.tasks USING btree (assigned_to, status) WHERE ((assigned_to IS NOT NULL) AND (deleted_at IS NULL))
-CREATE INDEX tasks_litter_idx ON public.tasks USING btree (litter_id) WHERE ((litter_id IS NOT NULL) AND (deleted_at IS NULL))
-CREATE INDEX tasks_origin_idx ON public.tasks USING btree (origin_task_id, id DESC)
-CREATE UNIQUE INDEX tasks_pkey ON public.tasks USING btree (id)
-CREATE UNIQUE INDEX tasks_prev_cas_key ON public.tasks USING btree (origin_task_id, prev_id) WHERE (deleted_at IS NULL)
-CREATE INDEX tasks_subject_mouse_idx ON public.tasks USING btree (subject_mouse_id) WHERE (deleted_at IS NULL)
-CREATE INDEX tasks_upcoming_idx ON public.tasks USING btree (status, due_date) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX task_events_pkey ON public.tasks USING btree (id)
+CREATE INDEX tasks_actor_idx ON public.tasks USING btree (actor_id, created_at DESC)
+CREATE INDEX tasks_case_idx ON public.tasks USING btree (case_id, id)
 ```
 
 ## `users`
