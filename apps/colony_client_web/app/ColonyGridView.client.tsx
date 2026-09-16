@@ -23,6 +23,7 @@ import { type MoveTarget } from '@/lib/gridMove';
 import {
     resolvePath,
     isOnSelection,
+    LEVEL_RANK,
     type Selection,
     type SelLevel,
     type SelPath,
@@ -32,7 +33,7 @@ import { buildDateCaseIndex, type DateColumn, type DateCaseHit } from '@/lib/dat
 import { formatDate } from '@/lib/dueDates';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { useTasks, useTaskLog, addTask } from '@/lib/mockStore';
-import { useColonyGrid, applyColonyMove } from '@/lib/mockColonyStore';
+import { useColonyGrid, applyColonyMove, updateMouse, type UpdateMousePatch } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,8 @@ import { MouseCaseDrawer, type CaseDrawerTarget } from './MouseCaseDrawer.client
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { MouseCaseTypeMenu } from './MouseCaseTypeMenu.client';
 import { AddMouseDialog } from './AddMouseDialog.client';
+import { AddLineDialog } from './AddLineDialog.client';
+import { EditableCell } from '@/components/ui/editable-cell';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
 
@@ -65,23 +68,22 @@ function scrollToNode(level: SelLevel, id: number) {
         ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// AddMouseTarget: carries optional prefill IDs for the dialog. Empty object = no prefill.
+interface AddMouseTarget {
+    lineId?: number;
+    cageId?: number;
+    slotId?: number;
+}
+
 export function ColonyGridView() {
-    // Colony state is now owned by the mock colony store — not local useState.
-    // This lets addMouse (and future server writes) update the grid immediately
-    // without prop-drilling or a page reload.
     const colony = useColonyGrid();
     const [filter, setFilter] = useState<GridFilter>(EMPTY_FILTER);
-    // Search+filter now lives in the NavBar (portal slot) to free the toolbar row.
-    // Collapsed by default; ⌘K / click opens it (state owned here — see NavSearch).
     const navNode = useNavSlotNode();
     const [searchOpen, setSearchOpen] = useState(false);
-    // ⌘K / Ctrl+K opens the search (preventDefault — Firefox binds Ctrl+K
-    // natively); Esc closes it. Both are GLOBAL so they work regardless of where
-    // focus currently sits (clicking a cell moves focus out of the overlay).
     useEffect(() => {
         function onKey(e: KeyboardEvent) {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                e.preventDefault();
+                e.preventDefault(); // WHY: Firefox binds Ctrl+K natively (address-bar focus).
                 setSearchOpen(true);
             } else if (e.key === 'Escape') {
                 setSearchOpen(false);
@@ -90,31 +92,18 @@ export function ColonyGridView() {
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, []);
-    // The ONE current selection — a tree node, a genotype, or a mate group (see the
-    // Selection union). All three highlight their targets AND feed the breadcrumb +
-    // action bar identically, so genotype/mate behave exactly like a node click.
-    // Null = nothing selected.
     const [selection, setSelection] = useState<Selection | null>(null);
     const [moving, setMoving] = useState<Moving | null>(null);
     const [detail, setDetail] = useState<SelectedMouse | null>(null);
     const [selected, setSelected] = useState<Record<number, string>>({});
     const [taskOpen, setTaskOpen] = useState(false);
-    // Mice fed to the New-task dialog (batch mode): {metaId, label} pairs so
-    // addTask can create a subjectKind='mice' case keyed by metaId (not label).
     const [taskMice, setTaskMice] = useState<{ metaId: number; label: string }[]>([]);
-    // Case drawer: opened by badge-click (focus) or tasks-label-click (list).
-    // Only one of detail/caseDrawer is non-null at a time.
     const [caseDrawer, setCaseDrawer] = useState<CaseDrawerTarget | null>(null);
-    // Context menu: right-click a mouse cell → case-type picker.
     const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; mouse: { metaId: number; renderedId: string } } | null>(null);
-    // Add mouse dialog.
-    const [addMouseOpen, setAddMouseOpen] = useState(false);
+    // null = closed; {} = no prefill; {cageId,...} = prefilled
+    const [addMouseTarget, setAddMouseTarget] = useState<AddMouseTarget | null>(null);
+    const [addLineOpen, setAddLineOpen] = useState(false);
 
-    // Badge index (T6): memoized Map<metaId, MouseTaskTag[]> over open cases.
-    // Derived from the case store (useTasks) — never from MouseCell.activeTasks.
-    //   subjectKind='mouse' → push tag at subjectMouseId
-    //   subjectKind='mice'  → expand mice[], push tag at each metaId
-    // Only open cases (status ∈ {todo, doing}) produce badges.
     const allCases = useTasks();
     const badgeIndex = useMemo(() => {
         const index = new Map<number, MouseTaskTag[]>();
@@ -138,17 +127,13 @@ export function ColonyGridView() {
         return index;
     }, [allCases]);
 
-    // Reclip index (T3/T4): Map<metaId, done-Tissue-collection count> → drives .N suffix.
     const reclipIndex = useMemo(() => buildReclipIndex(allCases), [allCases]);
 
-    // Date-cell colour index: Map<metaId, {plug|deliv|tissue|genotyping: hit}>.
-    // Read-time join of colony date cells ⟺ the case store (status/signal → colour).
     const taskLog = useTaskLog();
     const dateIndex = useMemo(
         () => buildDateCaseIndex(allCases, taskLog),
         [allCases, taskLog]
     );
-    // Helper: compose the display label for a mouse cell.
     const composed = (m: MouseCell) =>
         composeMouseLabel(m.renderedId, reclipIndex.get(m.metaId) ?? 0);
 
@@ -167,7 +152,6 @@ export function ColonyGridView() {
     );
     const totalMice = colony.lines.reduce((n, l) => n + lineMice(l).length, 0);
 
-    // Resolve the selection to full coords once; every rail/row compares its own ids.
     const path = useMemo(
         () => resolvePath(colony, selection?.kind === 'node' ? selection : null),
         [colony, selection]
@@ -176,10 +160,17 @@ export function ColonyGridView() {
         selection?.kind === 'node' &&
         isOnSelection(path, selection.level, elemLevel, ids);
 
+    // tail(): lights ONLY the selected node + ancestor chain — never the subtree,
+    // never genotype/mate washes. Gate for the structural [+] overlays.
+    // L = the structural level of the element holding the [+] (1=line, 2=cage, 3=slot).
+    const tail = (L: number, ids: SelPath) =>
+        selection?.kind === 'node' &&
+        L <= LEVEL_RANK[selection.level] &&
+        hl(L, ids);
+
     const hlGenotype = selection?.kind === 'genotype' ? selection.value : null;
     const hlMate = selection?.kind === 'mate' ? selection.color : null;
 
-    // Line/cage/slot ids that CONTAIN a mouse of the highlighted genotype.
     const genoSets = useMemo(() => {
         if (!hlGenotype) return null;
         const lines = new Set<number>();
@@ -202,7 +193,6 @@ export function ColonyGridView() {
     }, [colony, hlGenotype]);
     const genoMouse = (g: string) => hlGenotype != null && g === hlGenotype;
 
-    // Line/cage/slot ids that CONTAIN a mouse in the highlighted mate group (colour).
     const mateSets = useMemo(() => {
         if (!hlMate) return null;
         const lines = new Set<number>();
@@ -226,7 +216,6 @@ export function ColonyGridView() {
     const mateMouse = (m: MouseCell) =>
         hlMate != null && m.mates.some((mt) => mt.color === hlMate);
 
-    // Global running index per mouse → zebra striping so each row reads distinctly.
     const rowIndex = useMemo(() => {
         const map = new Map<number, number>();
         let i = 0;
@@ -240,8 +229,6 @@ export function ColonyGridView() {
         return map;
     }, [colony]);
 
-    // Click a genotype cell → select that genotype (toggle off if already selected).
-    // Same selection concept as a node click, so breadcrumb + action bar follow.
     function pickGenotype(g: string) {
         setSelection((prev) =>
             prev?.kind === 'genotype' && prev.value === g
@@ -249,7 +236,6 @@ export function ColonyGridView() {
                 : { kind: 'genotype', value: g }
         );
     }
-    // Click a mate badge → select that mate group (toggle off if already selected).
     function pickMate(color: string) {
         setSelection((prev) =>
             prev?.kind === 'mate' && prev.color === color
@@ -258,9 +244,6 @@ export function ColonyGridView() {
         );
     }
 
-    // All mice under the current selection — node (line→all its mice, cage/slot→its
-    // mice, mouse→itself), genotype (every mouse of it), or mate (every mouse in the
-    // group). Returns {metaId, label} pairs so the dialog can create a keyed batch case.
     const selectionMice = useMemo(() => {
         if (!selection) return [];
         const out: { metaId: number; label: string }[] = [];
@@ -282,9 +265,8 @@ export function ColonyGridView() {
                                         (mt) => mt.color === selection.color
                                     );
                         if (inSel)
-                            // BASE label (not composed) — this feeds addTask; the
-                            // .N suffix stays a read-time projection, never stored.
-                            out.push({ metaId: m.metaId, label: m.renderedId });
+                            // WHY renderedId (not composedLabel): addTask uses the BASE label; .N suffix is a read-time projection.
+            out.push({ metaId: m.metaId, label: m.renderedId });
                     })
                 )
             )
@@ -292,9 +274,6 @@ export function ColonyGridView() {
         return out;
     }, [colony, selection, path]);
 
-    // Breadcrumb — the selection rendered as a path/label. Node → line›cage›slot›
-    // mouse (descends to whatever level was clicked); genotype → the genotype;
-    // mate → the partner names in the group (no human name exists for the colour).
     const selLine = colony.lines.find((l) => l.lineId === path.lineId);
     const selCage = selLine?.cages.find((c) => c.cageId === path.cageId);
     const selSlot = selCage?.slots.find((s) => s.slotId === path.slotId);
@@ -328,7 +307,6 @@ export function ColonyGridView() {
         ].filter((s): s is string => !!s);
     }
 
-    // Jump-menu item lists (header dropdowns). Search-friendly for scale.
     const lineItems = colony.lines.map((l) => ({
         id: l.lineId,
         label: l.lineName,
@@ -362,7 +340,6 @@ export function ColonyGridView() {
         )
     );
 
-    // Click a node → toggle its selection (click again clears) + scroll to it.
     function goTo(node: { level: SelLevel; id: number }) {
         setSelection((prev) =>
             prev?.kind === 'node' &&
@@ -381,22 +358,18 @@ export function ColonyGridView() {
         setSelected((prev) => {
             const next = { ...prev };
             if (next[m.metaId]) delete next[m.metaId];
-            else next[m.metaId] = m.renderedId; // base — feeds addTask; .N stays read-time
+            else next[m.metaId] = m.renderedId;
             return next;
         });
     }
     function applyMove(target: MoveTarget) {
         if (!moving) return;
-        // Delegate to the store — keeps the colony tree in one place.
         applyColonyMove(moving.mouse.metaId, target);
         setMoving(null);
     }
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-2">
-            {/* Search+filter is portaled into the NavBar slot (frees the toolbar
-                row); breadcrumb rides the jump-to header (below). Renders only
-                once the NavBar anchor has mounted. */}
             {navNode
                 ? createPortal(
                       <NavSearch
@@ -412,13 +385,7 @@ export function ColonyGridView() {
 
             {/* ── Unified body: line | cage | slot | mice, all as nested columns ── */}
             <Card className="flex min-h-0 flex-1 flex-col py-0">
-                {/* body header — jump-to dropdowns (navigate to any line / cage / mouse) */}
-                {/* sm+: fixed height so selecting (breadcrumb + action buttons)
-                    never changes the header size. mobile keeps auto height for the
-                    2×2 jump grid. */}
                 <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-1.5 sm:h-9 sm:flex-nowrap sm:py-0">
-                    {/* label hidden on mobile; the 4 jump menus tile 2×2 on mobile,
-                        inline row on sm+ */}
                     <span className="hidden text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:inline">
                         jump to
                     </span>
@@ -454,9 +421,6 @@ export function ColonyGridView() {
                             align="right"
                         />
                     </div>
-                    {/* right rail: breadcrumb (top) + selection actions (bottom)
-                        stacked into two compact lines whose combined height ≈ the
-                        jump-to dropdown row. Breadcrumb hidden on mobile. */}
                     <div className="ml-auto flex flex-col items-end gap-0.5">
                         <div className="hidden sm:block">
                             <Breadcrumb items={crumbs} />
@@ -486,238 +450,215 @@ export function ColonyGridView() {
                                 </Button>
                             </div>
                         ) : (
-                            /* "Add mouse" toolbar button — opens AddMouseDialog */
                             <Button
                                 size="xs"
                                 variant="outline"
                                 className="h-5 gap-1 px-1.5 text-[10px]"
-                                onClick={() => setAddMouseOpen(true)}
+                                onClick={() => setAddMouseTarget({})}
                             >
                                 <Plus className="size-2.5" /> Add mouse
                             </Button>
                         )}
                     </div>
                 </div>
-                {/* one scroll container for BOTH axes; the column header sticks on
-                    Y-scroll and moves with the body on X-scroll (kept in flow). */}
+                {/* one scroll container for BOTH axes */}
                 <div className="thin-scroll min-h-0 flex-1 overflow-auto">
-                    <div className="min-w-[78rem]">
+                    {/* pb-10: ensures the last-row tail [+] is never clipped by the
+                        scroll container. Padding on the scrolled content renders
+                        past the last child; padding on the overflow element does not. */}
+                    <div className="relative min-w-[78rem] pb-10">
                         <ColumnHeader />
-                        {colony.lines.map((l, i) => (
-                            <div
-                                key={l.lineId}
-                                id={`line-${l.lineId}`}
-                                className="flex border-b border-border last:border-b-0"
-                            >
-                                <LineLabel
-                                    line={l}
-                                    index={i + 1}
-                                    count={countLineMice(l)}
-                                    highlighted={
-                                        hl(1, { lineId: l.lineId }) ||
-                                        (genoSets?.lines.has(l.lineId) ??
-                                            false) ||
-                                        (mateSets?.lines.has(l.lineId) ?? false)
-                                    }
-                                    onClick={() =>
-                                        goTo({ level: 'line', id: l.lineId })
-                                    }
-                                />
-                                <div className="min-w-0 flex-1">
-                                    {l.cages.map((c) => (
-                                        <div
-                                            key={c.cageId}
-                                            id={`cage-${c.cageId}`}
-                                            className="flex border-t border-border/60 first:border-t-0"
-                                        >
-                                            <CageLabel
-                                                number={c.cageNumber}
-                                                count={countCageMice(c)}
-                                                highlighted={
-                                                    hl(2, {
-                                                        lineId: l.lineId,
-                                                        cageId: c.cageId,
-                                                    }) ||
-                                                    (genoSets?.cages.has(
-                                                        c.cageId
-                                                    ) ??
-                                                        false) ||
-                                                    (mateSets?.cages.has(
-                                                        c.cageId
-                                                    ) ??
-                                                        false)
-                                                }
-                                                onClick={() =>
-                                                    goTo({
-                                                        level: 'cage',
-                                                        id: c.cageId,
-                                                    })
-                                                }
-                                            />
-                                            <div className="min-w-0 flex-1">
-                                                {c.slots.map((s) => (
-                                                    <div
-                                                        key={s.slotId}
-                                                        id={`slot-${s.slotId}`}
-                                                        className="flex border-t border-border/40 first:border-t-0"
-                                                    >
-                                                        <SlotLabel
-                                                            label={s.label}
-                                                            count={countSlotMice(
-                                                                s.mice
-                                                            )}
-                                                            adults={countSlotAdults(
-                                                                s.mice
-                                                            )}
-                                                            cap={SLOT_ADULT_CAP}
-                                                            over={
-                                                                countSlotAdults(
-                                                                    s.mice
-                                                                ) >
-                                                                SLOT_ADULT_CAP
-                                                            }
-                                                            highlighted={
-                                                                hl(3, {
-                                                                    lineId: l.lineId,
-                                                                    cageId: c.cageId,
-                                                                    slotId: s.slotId,
-                                                                }) ||
-                                                                (genoSets?.slots.has(
-                                                                    s.slotId
-                                                                ) ??
-                                                                    false) ||
-                                                                (mateSets?.slots.has(
-                                                                    s.slotId
-                                                                ) ??
-                                                                    false)
-                                                            }
-                                                            onClick={() =>
-                                                                goTo({
-                                                                    level: 'slot',
-                                                                    id: s.slotId,
-                                                                })
-                                                            }
-                                                        />
-                                                        <div className="min-w-0 flex-1">
-                                                            {s.mice.map((m) => (
-                                                                <MouseRow
-                                                                    key={
-                                                                        m.metaId
-                                                                    }
-                                                                    id={`mouse-${m.metaId}`}
-                                                                    mouse={m}
-                                                                    composedLabel={composed(m)}
-                                                                    dateHits={dateIndex.get(m.metaId)}
-                                                                    tags={
-                                                                        badgeIndex.get(
-                                                                            m.metaId
-                                                                        ) ?? []
-                                                                    }
-                                                                    zebra={
-                                                                        (rowIndex.get(
-                                                                            m.metaId
-                                                                        ) ??
-                                                                            0) %
-                                                                            2 ===
-                                                                        1
-                                                                    }
-                                                                    highlighted={
-                                                                        hl(4, {
-                                                                            lineId: l.lineId,
-                                                                            cageId: c.cageId,
-                                                                            slotId: s.slotId,
-                                                                            mouseId:
-                                                                                m.metaId,
-                                                                        }) ||
-                                                                        genoMouse(
-                                                                            m.genotype
-                                                                        ) ||
-                                                                        mateMouse(
-                                                                            m
-                                                                        )
-                                                                    }
-                                                                    filterOn={
-                                                                        on
-                                                                    }
-                                                                    isMatch={match(
-                                                                        m
-                                                                    )}
-                                                                    checked={
-                                                                        !!selected[
-                                                                            m
-                                                                                .metaId
-                                                                        ]
-                                                                    }
-                                                                    onToggle={() =>
-                                                                        toggleSelect(
-                                                                            m
-                                                                        )
-                                                                    }
-                                                                    onSelect={() =>
-                                                                        goTo({
-                                                                            level: 'mouse',
-                                                                            id: m.metaId,
-                                                                        })
-                                                                    }
-                                                                    onJumpMouse={(
-                                                                        mid
-                                                                    ) =>
-                                                                        jump(
-                                                                            'mouse',
-                                                                            mid
-                                                                        )
-                                                                    }
-                                                                    onOpen={() => {
-                                                                        setCaseDrawer(null);
-                                                                        setDetail(
-                                                                            {
+                        {/* space-y-3: real gap between lines so the line-tail [+]
+                            sits in the gap rather than on top of the next line. */}
+                        <div className="space-y-3">
+                            {colony.lines.map((l, i) => (
+                                <div
+                                    key={l.lineId}
+                                    id={`line-${l.lineId}`}
+                                    className="relative flex border-b border-border"
+                                >
+                                    <LineLabel
+                                        line={l}
+                                        index={i + 1}
+                                        count={countLineMice(l)}
+                                        highlighted={
+                                            hl(1, { lineId: l.lineId }) ||
+                                            (genoSets?.lines.has(l.lineId) ?? false) ||
+                                            (mateSets?.lines.has(l.lineId) ?? false)
+                                        }
+                                        onClick={() => goTo({ level: 'line', id: l.lineId })}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        {l.cages.map((c) => (
+                                            <div
+                                                key={c.cageId}
+                                                id={`cage-${c.cageId}`}
+                                                className="relative flex border-t border-border/60 first:border-t-0"
+                                            >
+                                                <CageLabel
+                                                    number={c.cageNumber}
+                                                    count={countCageMice(c)}
+                                                    highlighted={
+                                                        hl(2, { lineId: l.lineId, cageId: c.cageId }) ||
+                                                        (genoSets?.cages.has(c.cageId) ?? false) ||
+                                                        (mateSets?.cages.has(c.cageId) ?? false)
+                                                    }
+                                                    onClick={() => goTo({ level: 'cage', id: c.cageId })}
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    {c.slots.map((s) => (
+                                                        <div
+                                                            key={s.slotId}
+                                                            id={`slot-${s.slotId}`}
+                                                            className="relative flex border-t border-border/40 first:border-t-0"
+                                                        >
+                                                            <SlotLabel
+                                                                label={s.label}
+                                                                count={countSlotMice(s.mice)}
+                                                                adults={countSlotAdults(s.mice)}
+                                                                cap={SLOT_ADULT_CAP}
+                                                                over={countSlotAdults(s.mice) > SLOT_ADULT_CAP}
+                                                                highlighted={
+                                                                    hl(3, {
+                                                                        lineId: l.lineId,
+                                                                        cageId: c.cageId,
+                                                                        slotId: s.slotId,
+                                                                    }) ||
+                                                                    (genoSets?.slots.has(s.slotId) ?? false) ||
+                                                                    (mateSets?.slots.has(s.slotId) ?? false)
+                                                                }
+                                                                onClick={() => goTo({ level: 'slot', id: s.slotId })}
+                                                            />
+                                                            <div className="min-w-0 flex-1">
+                                                                {s.mice.map((m) => (
+                                                                    <MouseRow
+                                                                        key={m.metaId}
+                                                                        id={`mouse-${m.metaId}`}
+                                                                        mouse={m}
+                                                                        composedLabel={composed(m)}
+                                                                        dateHits={dateIndex.get(m.metaId)}
+                                                                        tags={badgeIndex.get(m.metaId) ?? []}
+                                                                        zebra={(rowIndex.get(m.metaId) ?? 0) % 2 === 1}
+                                                                        highlighted={
+                                                                            hl(4, {
+                                                                                lineId: l.lineId,
+                                                                                cageId: c.cageId,
+                                                                                slotId: s.slotId,
+                                                                                mouseId: m.metaId,
+                                                                            }) ||
+                                                                            genoMouse(m.genotype) ||
+                                                                            mateMouse(m)
+                                                                        }
+                                                                        filterOn={on}
+                                                                        isMatch={match(m)}
+                                                                        checked={!!selected[m.metaId]}
+                                                                        onToggle={() => toggleSelect(m)}
+                                                                        onSelect={() => goTo({ level: 'mouse', id: m.metaId })}
+                                                                        onJumpMouse={(mid) => jump('mouse', mid)}
+                                                                        onOpen={() => {
+                                                                            setCaseDrawer(null);
+                                                                            setDetail({
                                                                                 mouse: m,
-                                                                                lineName:
-                                                                                    l.lineName,
-                                                                                cageNumber:
-                                                                                    c.cageNumber,
-                                                                                slotLabel:
-                                                                                    s.label,
-                                                                            }
-                                                                        );
-                                                                    }}
-                                                                    onMove={() =>
-                                                                        setMoving(
-                                                                            {
+                                                                                lineName: l.lineName,
+                                                                                cageNumber: c.cageNumber,
+                                                                                slotLabel: s.label,
+                                                                            });
+                                                                        }}
+                                                                        onMove={() =>
+                                                                            setMoving({
                                                                                 mouse: m,
                                                                                 lineId: l.lineId,
                                                                                 cageId: c.cageId,
                                                                                 slotId: s.slotId,
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                    onGenotype={() =>
-                                                                        pickGenotype(
-                                                                            m.genotype
-                                                                        )
-                                                                    }
-                                                                    onMate={
-                                                                        pickMate
-                                                                    }
-                                                                    onOpenCases={(t) => {
-                                                                        setDetail(null);
-                                                                        setCaseDrawer(t);
+                                                                            })
+                                                                        }
+                                                                        onGenotype={() => pickGenotype(m.genotype)}
+                                                                        onMate={pickMate}
+                                                                        onOpenCases={(t) => {
+                                                                            setDetail(null);
+                                                                            setCaseDrawer(t);
+                                                                        }}
+                                                                        onCtxMenu={(e) => {
+                                                                            e.preventDefault();
+                                                                            setCtxMenu({ x: e.clientX, y: e.clientY, mouse: { metaId: m.metaId, renderedId: m.renderedId } });
+                                                                        }}
+                                                                        onUpdate={(patch) => {
+                                                                            const result = updateMouse(m.metaId, patch);
+                                                                            return result.ok ? null : result.error;
+                                                                        }}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                            {/* slot-tail [+]: opens AddMouseDialog prefilled with cageId+slotId.
+                                                                Gated by tail(3,…) so it only shows on the selected slot (or ancestor).
+                                                                stopPropagation: the slot div has no goTo handler but ancestors do. */}
+                                                            {tail(3, { lineId: l.lineId, cageId: c.cageId, slotId: s.slotId }) ? (
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Add mouse to slot"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setAddMouseTarget({ cageId: c.cageId, slotId: s.slotId });
                                                                     }}
-                                                                    onCtxMenu={(e) => {
-                                                                        e.preventDefault();
-                                                                        setCtxMenu({ x: e.clientX, y: e.clientY, mouse: { metaId: m.metaId, renderedId: m.renderedId } });
-                                                                    }}
-                                                                />
-                                                            ))}
+                                                                    className="pointer-events-auto absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
+                                                                >
+                                                                    + mouse
+                                                                </button>
+                                                            ) : null}
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                                </div>
+                                                {/* cage-tail [+]: opens AddMouseDialog in new-slot mode (user types slot label).
+                                                    Gated by tail(2,…) → only on selected cage or ancestor. */}
+                                                {tail(2, { lineId: l.lineId, cageId: c.cageId }) ? (
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Add slot to cage"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setAddMouseTarget({ cageId: c.cageId });
+                                                        }}
+                                                        className="pointer-events-auto absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
+                                                    >
+                                                        + slot
+                                                    </button>
+                                                ) : null}
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
+                                    {/* line-tail [+]: opens AddMouseDialog in new-cage mode (user types cage # + slot label).
+                                        Gated by tail(1,…) → only on selected line. */}
+                                    {tail(1, { lineId: l.lineId }) ? (
+                                        <button
+                                            type="button"
+                                            aria-label="Add cage to line"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setAddMouseTarget({ lineId: l.lineId });
+                                            }}
+                                            className="pointer-events-auto absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
+                                        >
+                                            + cage
+                                        </button>
+                                    ) : null}
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+                        {/* grid-bottom [+]: always visible when a node is selected.
+                            Gated by selection?.kind === 'node' per spec. */}
+                        {selection?.kind === 'node' ? (
+                            <button
+                                type="button"
+                                aria-label="Add new line"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAddLineOpen(true);
+                                }}
+                                className="pointer-events-auto absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
+                            >
+                                + line
+                            </button>
+                        ) : null}
                     </div>
                 </div>
             </Card>
@@ -731,7 +672,6 @@ export function ColonyGridView() {
                     <Button
                         size="sm"
                         onClick={() => {
-                            // Build {metaId, label} pairs from the selected map.
                             const mice = Object.entries(selected).map(
                                 ([id, label]) => ({
                                     metaId: Number(id),
@@ -805,16 +745,31 @@ export function ColonyGridView() {
                         });
                         setCtxMenu(null);
                     }}
+                    onSac={() => {
+                        updateMouse(ctxMenu.mouse.metaId, { signal: 'dead', isAlive: false });
+                        setCtxMenu(null);
+                    }}
                     onClose={() => setCtxMenu(null)}
                 />
             ) : null}
 
-            {addMouseOpen ? (
+            {/* AddMouseDialog: keyed by target so each open is a fresh mount with
+                correct prefill. null target = closed. */}
+            {addMouseTarget !== null ? (
                 <AddMouseDialog
+                    key={`${addMouseTarget.lineId ?? ''}-${addMouseTarget.cageId ?? ''}-${addMouseTarget.slotId ?? ''}`}
                     open
-                    onClose={() => setAddMouseOpen(false)}
+                    onClose={() => setAddMouseTarget(null)}
+                    initialLineId={addMouseTarget.lineId}
+                    initialCageId={addMouseTarget.cageId}
+                    initialSlotId={addMouseTarget.slotId}
                 />
             ) : null}
+
+            <AddLineDialog
+                open={addLineOpen}
+                onClose={() => setAddLineOpen(false)}
+            />
         </div>
     );
 }
@@ -840,7 +795,7 @@ function JumpMenu({
     items: JumpItem[];
     onPick: (id: number) => void;
     className?: string;
-    align?: 'left' | 'right'; // which button edge the dropdown anchors to (right = opens leftward, avoids right-overflow)
+    align?: 'left' | 'right';
 }) {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState('');
@@ -875,9 +830,6 @@ function JumpMenu({
                     <div
                         className={cn(
                             'absolute z-50 mt-1 w-60 border border-border bg-card shadow-md',
-                            // Mobile keeps the current alignment (right-align avoids
-                            // right-edge overflow on narrow screens); on sm+ all
-                            // jump dropdowns LEFT-align (user).
                             align === 'right'
                                 ? 'right-0 sm:right-auto sm:left-0'
                                 : 'left-0'
@@ -930,10 +882,6 @@ function JumpMenu({
 
 /* ---------- nav search + filter ---------- */
 
-// Lives in the NavBar slot (portaled). Collapsed = a search trigger (icon + ⌘K
-// hint, with an active dot when any filter is on, so filter state is never
-// hidden). Expanded = the full search field + sex/signal chips: inline in the
-// nav row on sm+, an absolute drop-panel under the sticky header on mobile.
 function NavSearch({
     filter,
     active,
@@ -948,7 +896,6 @@ function NavSearch({
     onOpenChange: (v: boolean) => void;
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
-    // Focus the field once the expanded UI has rendered.
     useEffect(() => {
         if (open) inputRef.current?.focus();
     }, [open]);
@@ -977,12 +924,8 @@ function NavSearch({
     }
 
     return (
-        <div
-            // full overlay over the whole nav row (all sizes); Esc (global) / × closes.
-            className="absolute inset-0 z-40 flex items-center bg-background"
-        >
+        <div className="absolute inset-0 z-40 flex items-center bg-background">
             <div className="mx-auto flex w-full max-w-[1400px] flex-nowrap items-center gap-3 px-4">
-                {/* search field: active sex/signal filters show as in-field badges */}
                 <div className="flex min-h-7 min-w-0 flex-1 flex-wrap items-center gap-1 border border-input bg-background px-2 py-0.5">
                     <Search className="size-3.5 shrink-0 text-muted-foreground" />
                     {filter.sexes.map((s) => (
@@ -1033,7 +976,6 @@ function NavSearch({
                     ) : null}
                 </div>
 
-                {/* sex + signal ALWAYS one row; scrolls horizontally when tight */}
                 <div className="thin-scroll flex min-w-0 shrink flex-nowrap items-center gap-x-3 overflow-x-auto">
                     <FilterGroup label="sex">
                         {SEXES.map((s) => (
@@ -1071,7 +1013,6 @@ function NavSearch({
                     </FilterGroup>
                 </div>
 
-                {/* collapse back to the trigger */}
                 <button
                     type="button"
                     onClick={() => onOpenChange(false)}
@@ -1085,7 +1026,6 @@ function NavSearch({
     );
 }
 
-// Removable filter token shown INSIDE the search field.
 function FieldBadge({
     signal,
     onRemove,
@@ -1177,8 +1117,6 @@ function Chip({
 
 /* ---------- breadcrumb ---------- */
 
-// Reflects the current selection path (line › cage › slot › mouse), derived from
-// the resolved selection. Empty when nothing is selected (colony name dropped).
 function Breadcrumb({ items }: { items: string[] }) {
     return (
         <nav
@@ -1200,13 +1138,10 @@ function Breadcrumb({ items }: { items: string[] }) {
     );
 }
 
-// Signal colour key — meaning of the task-badge colours (Excel semantics).
-// Column-label row under the body header — aligns to the same grid as the mouse
-// rows (rail spacers offset past line/cage/slot so the labels sit over their cells).
 function ColumnHeader() {
     const cell = 'truncate border-r border-border/40 px-2 py-1';
     return (
-        <div className="sticky top-0 z-20 flex border-b border-border bg-muted text-[9px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+        <div className="sticky top-0 z-30 flex border-b border-border bg-muted text-[9px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
             <div
                 className={cn(
                     RAIL_W.line,
@@ -1231,7 +1166,6 @@ function ColumnHeader() {
             >
                 slot
             </div>
-            {/* SEL — full-height cell spanning both header sub-rows (matches body) */}
             <div
                 className={cn(
                     SEL_W,
@@ -1241,7 +1175,6 @@ function ColumnHeader() {
                 sel
             </div>
             <div className="flex flex-1 flex-col">
-                {/* main column labels (id → actions; actions track left unlabeled) */}
                 <div className={cn('grid', MOUSE_COLS)}>
                     <span className={cell}>id / sex</span>
                     <span className={cell}>genotype</span>
@@ -1258,7 +1191,6 @@ function ColumnHeader() {
                     <span className={cell}>TISSUE</span>
                     <span className={cell}>GENOTYPING</span>
                 </div>
-                {/* sub-row labels: tasks | memos */}
                 <div className="flex border-t border-border/40">
                     <div
                         className={cn(
@@ -1277,15 +1209,11 @@ function ColumnHeader() {
 
 /* ---------- left-rail labels (COLUMN-based hierarchy) ---------- */
 
-// The three hierarchy levels are left-rail columns; clicking one selects it
-// (highlight path + subtree). Highlight = tint (never opacity — that is the filter).
 const RAIL_BASE =
     'flex shrink-0 flex-col justify-center gap-0.5 border-r border-border/40 text-left transition-colors';
 
-// Whole-element highlight: a translucent primary overlay + full ring, laid OVER
-// the element so it reads uniformly across every cell regardless of the per-cell
-// backgrounds (user prefers this "dimmed" wash over a ring-only outline).
-// pointer-events-none keeps the checkbox / id / Move click-through intact.
+// Whole-element highlight overlay. pointer-events-none keeps click-through intact.
+// WHY dimmed wash + ring: user prefers this over ring-only (less jarring on large grids).
 function HlOverlay() {
     return (
         <span
@@ -1295,9 +1223,6 @@ function HlOverlay() {
     );
 }
 
-// Line rail: narrow VERTICAL column. Background = the line's nominal genotype
-// colour (so the whole line block reads as its genotype); left accent = line
-// identity colour. Name (the genotype label) is written vertically to stay thin.
 function LineLabel({
     line,
     index,
@@ -1316,12 +1241,6 @@ function LineLabel({
             type="button"
             onClick={onClick}
             title={`${index}. ${line.lineName}`}
-            // Genotype-only rail: the line's nominal genotype colour is the SOLE
-            // rail hue (headline "this line = genotype X", a touch stronger — 33 —
-            // than the per-mouse 22 cells so the whole-line summary reads first).
-            // The separate lineColor identity accent was dropped (line ≈ genotype
-            // 1:1). WT lines (null genotype) stay neutral — the index badge + name
-            // still identify them.
             style={{
                 backgroundColor: line.nominalGenotypeColor
                     ? `${line.nominalGenotypeColor}33`
@@ -1344,8 +1263,6 @@ function LineLabel({
     );
 }
 
-// Total live-mouse count on a node header. Muted, compact; hidden at 0 so
-// empty nodes stay calm. Read-time derived — never a stored column.
 function CountBadge({ count, title }: { count: number; title: string }) {
     if (count <= 0) return null;
     return (
@@ -1399,11 +1316,6 @@ function SlotLabel({
     label: string;
     count: number;
     highlighted: boolean;
-    // Overcrowding: live adults exceed the slot's adult capacity. A STATE colour
-    // (red = action required: split the slot), fill on the rail itself so it reads
-    // at a glance; the count badge makes it actionable. Kept distinct from the
-    // amber "old" DOB tint and orthogonal to the selection overlay (which layers on
-    // top via HlOverlay when the slot is also selected).
     over: boolean;
     adults: number;
     cap: number;
@@ -1445,9 +1357,6 @@ function SlotLabel({
     );
 }
 
-// One parent row in the parents column, split HORIZONTALLY into two bordered
-// sub-cells: [id | genotype]. id keeps the sex tint (♂ blue / ♀ pink) and is
-// clickable → jump to that parent's row when it is shown here (metaId set).
 function ParentRow({
     tint,
     parent,
@@ -1515,34 +1424,19 @@ function ParentRow({
 
 /* ---------- mouse row (Excel-style colour cells) ---------- */
 
-// Fixed columns so the professor scans a channel down its column: tasks · check ·
-// id(sex) · genotype · DOB(age) · mate · actions. Selection = left-accent + tint;
-// filter = opacity — the two axes stay on separate CSS channels.
 const CELL = 'flex items-center border-r border-border/40 px-2 py-1.5';
 
-// The SELECT (checkbox) cell spans the WHOLE mouse height (main row + tasks/memo
-// sub-row), sitting to the LEFT of the 2-row content block. So the main-row grid
-// below has NO sel column — it starts at id(sex).
 const SEL_W = 'w-8';
-// id(sex) · genotype(wide) · DOB · mate · parents · PLUG · ~DELIV · TISSUE · GENOTYPING · actions
 const MOUSE_COLS =
     'grid-cols-[6rem_minmax(10rem,1fr)_4.75rem_5.5rem_11rem_4.75rem_4.75rem_4.75rem_4.75rem_5rem]';
 
-// Dates render YYYY/MM/DD (from ISO); null → em dash.
-const fmtDate = formatDate; // canonical YYYY/MM/DD (lib/dueDates)
-// Tasks sub-cell width = the id(sex) column (6rem) so tasks sit under ID/SEX and
-// the memo starts under GENOTYPE.
+const fmtDate = formatDate;
 const TASK_W = 'w-24';
-// Left-rail widths (line · cage · slot) the header must offset past to align.
 const RAIL_W = { line: 'w-8', cage: 'w-16', slot: 'w-9' } as const;
 
-// Slot adult capacity — a live mouse past weaning (lifeStage !== 'baby') counts;
-// pups don't. Over this → overcrowding warning on the slot rail. User-specified
-// (5 per slot); professor-confirm later (plan Q33/Q34: value + per-slot vs cage).
+// WHY 5: user-specified; professor to confirm final cap (Q33/Q34).
 const SLOT_ADULT_CAP = 5;
 
-// A mouse is live unless flagged dead. Read-time only (no stored count) —
-// same compute-at-read discipline as reclip / overcrowding.
 const isLiveMouse = (m: MouseCell): boolean =>
     m.isAlive !== false && m.signal !== 'dead';
 
@@ -1551,7 +1445,6 @@ const countSlotAdults = (mice: MouseCell[]): number =>
         (m) => isLiveMouse(m) && lifeStage(m.dob, m.sex) !== 'baby'
     ).length;
 
-// Total LIVE mice (pups included) under each node — summed bottom-up.
 const countSlotMice = (mice: MouseCell[]): number => mice.filter(isLiveMouse).length;
 const countCageMice = (c: GridCage): number =>
     c.slots.reduce((n, s) => n + countSlotMice(s.mice), 0);
@@ -1578,15 +1471,12 @@ function MouseRow({
     onMate,
     onOpenCases,
     onCtxMenu,
+    onUpdate,
 }: {
     id: string;
     mouse: MouseCell;
-    // Derived composed label (renderedId + reclip suffix). Composed by parent.
     composedLabel: string;
-    // Derived badge tags from the case store (replaces mouse.activeTasks).
-    // Passed as a prop so the parent controls derivation (useTasks + badgeIndex).
     tags: MouseTaskTag[];
-    // Per-column date hit (date + status/signal) for the breeding/genotyping cells.
     dateHits: Partial<Record<DateColumn, DateCaseHit>> | undefined;
     zebra: boolean;
     highlighted: boolean;
@@ -1602,15 +1492,11 @@ function MouseRow({
     onMate: (color: string) => void;
     onOpenCases: (target: CaseDrawerTarget) => void;
     onCtxMenu: (e: React.MouseEvent) => void;
+    onUpdate: (patch: UpdateMousePatch) => string | null;
 }) {
     const dimmed = filterOn && !isMatch;
     const stage = lifeStage(mouse.dob, mouse.sex);
-    // Dead → the WHOLE row goes dark; identity colours (sex/genotype/age) are moot
-    // for a sac'd mouse, so their cell tints are suppressed and the dark row + id
-    // strikethrough carry the state (mirrors the sheet's gray-fill dead cell).
     const dead = mouse.signal === 'dead';
-    // Active tasks collapsed by SIGNAL (colour) → one badge per signal, count when
-    // repeated (two plan tasks = one blue badge showing "2"); tooltip lists types.
     const bySignal = tags.reduce((m, t) => {
         const g = m.get(t.signal);
         if (g) {
@@ -1625,29 +1511,26 @@ function MouseRow({
         bySignal.get(s)!
     );
     const hasSubRow = taskGroups.length > 0 || mouse.attention;
+    // A4 id-cell: single-click opens drawer (200ms delay), dblclick enters edit.
+    const idClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     return (
         <div
             id={id}
             onContextMenu={onCtxMenu}
             className={cn(
-                // thin divider between mice (slot/cage/line blocks carry the heavier
-                // structural borders); zebra striping does the row separation
                 'group relative border-b border-border/40 transition-opacity last:border-b-0',
-                // zebra base bg (alternating) so each mouse row reads distinctly
                 !dead && (zebra ? 'bg-muted/40' : 'bg-background'),
                 dead && 'bg-neutral-700 text-neutral-300',
                 dimmed ? 'opacity-25' : 'opacity-100'
             )}
         >
             {highlighted ? <HlOverlay /> : null}
-            {/* click the row (empty area) to select this mouse (highlight path) */}
             <div
                 role="button"
                 tabIndex={-1}
                 onClick={onSelect}
                 className="flex cursor-pointer"
             >
-                {/* select cell — spans the whole mouse (main row + sub-row) */}
                 <label
                     className={cn(
                         SEL_W,
@@ -1664,61 +1547,82 @@ function MouseRow({
                     />
                 </label>
 
-                {/* right block: main row (id…actions) then tasks|memo sub-row */}
                 <div className="min-w-0 flex-1">
                     <div className={cn('grid items-stretch', MOUSE_COLS)}>
-                        {/* id cell — sex background (M sky / F pink / U none); dead = dark row */}
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onOpen();
-                            }}
-                            title={`sex: ${mouse.sex}`}
+                        {/* id cell — A4: single-click opens drawer (200ms), dblclick edits */}
+                        <EditableCell
+                            value={mouse.renderedId}
+                            onCommit={(next) => onUpdate({ renderedId: next })}
                             className={cn(
                                 CELL,
                                 !dead && SEX_TINT[mouse.sex],
-                                'text-left hover:underline'
+                                'text-left'
                             )}
                         >
-                            <span
-                                className={cn(
-                                    'truncate font-mono text-[11px] font-semibold',
-                                    dead && 'text-neutral-400 line-through'
-                                )}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (idClickTimerRef.current) clearTimeout(idClickTimerRef.current);
+                                    idClickTimerRef.current = setTimeout(() => {
+                                        idClickTimerRef.current = null;
+                                        onOpen();
+                                    }, 200);
+                                }}
+                                onDoubleClick={(e) => {
+                                    if (idClickTimerRef.current) {
+                                        clearTimeout(idClickTimerRef.current);
+                                        idClickTimerRef.current = null;
+                                    }
+                                    // Must bubble to EditableCell — do NOT stopPropagation.
+                                }}
+                                title={`sex: ${mouse.sex} — double-click to edit id`}
+                                className="w-full text-left hover:underline"
                             >
-                                {composedLabel}
-                            </span>
-                        </button>
+                                <span
+                                    className={cn(
+                                        'truncate font-mono text-[11px] font-semibold',
+                                        dead && 'text-neutral-400 line-through'
+                                    )}
+                                >
+                                    {composedLabel}
+                                </span>
+                            </button>
+                        </EditableCell>
 
-                        {/* genotype cell — own genotype colour; click → highlight all mice
-                    (and their line/cage) sharing this genotype */}
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onGenotype();
-                            }}
+                        <div
+                            className={cn(CELL, 'min-w-0')}
                             style={
                                 !dead && mouse.genotypeColor
-                                    ? {
-                                          backgroundColor: `${mouse.genotypeColor}22`,
-                                      }
+                                    ? { backgroundColor: `${mouse.genotypeColor}22` }
                                     : undefined
                             }
-                            title={`highlight genotype: ${mouse.genotype}`}
-                            className={cn(
-                                CELL,
-                                'min-w-0 text-left hover:underline'
-                            )}
                         >
-                            <span className="truncate font-mono text-[11px]">
-                                {mouse.genotype}
-                            </span>
-                        </button>
+                            <EditableCell
+                                value={mouse.genotype}
+                                onCommit={(next) => onUpdate({ genotype: next })}
+                                className="w-full"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onGenotype();
+                                    }}
+                                    title={`highlight genotype: ${mouse.genotype} — double-click to edit`}
+                                    className="w-full text-left hover:underline"
+                                >
+                                    <span className="truncate font-mono text-[11px]">
+                                        {mouse.genotype}
+                                    </span>
+                                </button>
+                            </EditableCell>
+                        </div>
 
-                        {/* DOB cell — life-stage tint: baby green / adult blank / old amber */}
-                        <div
+                        <EditableCell
+                            value={mouse.dob ?? ''}
+                            type="date"
+                            onCommit={(next) => onUpdate({ dob: next })}
                             className={cn(
                                 CELL,
                                 'px-1.5 font-mono text-[10px]',
@@ -1726,16 +1630,15 @@ function MouseRow({
                             )}
                             title={
                                 stage === 'baby'
-                                    ? 'baby (pre-weaning)'
+                                    ? 'baby (pre-weaning) — double-click to edit'
                                     : stage === 'old'
-                                      ? 'old (age threshold reached)'
-                                      : 'DOB'
+                                      ? 'old (age threshold reached) — double-click to edit'
+                                      : 'DOB — double-click to edit'
                             }
                         >
                             {fmtDate(mouse.dob)}
-                        </div>
+                        </EditableCell>
 
-                        {/* mate cell — split top = current mate id(s), bottom = group badge(s) */}
                         <div className="flex flex-col justify-center border-r border-border/40">
                             {mouse.mates.length > 0 ? (
                                 <>
@@ -1750,13 +1653,8 @@ function MouseRow({
                                                     disabled={!clickable}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (
-                                                            mt.partnerMetaId !=
-                                                            null
-                                                        )
-                                                            onJumpMouse(
-                                                                mt.partnerMetaId
-                                                            );
+                                                        if (mt.partnerMetaId != null)
+                                                            onJumpMouse(mt.partnerMetaId);
                                                     }}
                                                     title={
                                                         clickable
@@ -1799,8 +1697,6 @@ function MouseRow({
                             )}
                         </div>
 
-                        {/* parents cell — ♂ father (blue) / ♀ mother (pink), each split
-                    into [id | genotype]; click id → jump to that parent's row */}
                         <div className="flex flex-col border-r border-border/40">
                             <ParentRow
                                 tint="bg-sky-100"
@@ -1815,14 +1711,8 @@ function MouseRow({
                             />
                         </div>
 
-                        {/* breeding dates — PLUG · ~DELIV · TISSUE · GENOTYPING.
-                           Date + colour come from the backing case (read-time join):
-                           open+instruction→red, open+plan→blue, done→normal ink;
-                           no case → the muted MouseDates seed fallback. */}
                         {(['plug', 'deliv', 'tissue', 'genotyping'] as const).map(
                             (col) => {
-                                // PLUG/DELIV are breeding events on the DAM → female-only.
-                                // Males/undecided show a blank cell for these two columns.
                                 const na =
                                     (col === 'plug' || col === 'deliv') &&
                                     mouse.sex !== 'F';
@@ -1848,7 +1738,6 @@ function MouseRow({
                             }
                         )}
 
-                        {/* actions */}
                         <div className="flex items-center px-2">
                             <Button
                                 variant="outline"
@@ -1864,7 +1753,7 @@ function MouseRow({
                         </div>
                     </div>
 
-                    {/* sub-row: [ tasks (=id width) | memo ] */}
+                    {/* WHY no label text in sub-row: user removed the "tasks" affordance label; signal badges speak for themselves. */}
                     {hasSubRow ? (
                         <div className="flex items-stretch border-t border-border/40 text-[11px]">
                             <div
@@ -1873,8 +1762,6 @@ function MouseRow({
                                     'flex shrink-0 flex-wrap items-center gap-1 border-r border-border/40 px-2 py-0.5'
                                 )}
                             >
-                                {/* 'tasks' text affordance removed (user) — badges below
-                                   open the drawer directly (list of the mouse's cases). */}
                                 {taskGroups.map((g) => {
                                     const lightFill =
                                         g.signal === 'flag' ||

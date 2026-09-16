@@ -13,15 +13,19 @@ interface Props {
     x: number;
     y: number;
     onPick: (def: TaskTypeDef) => void;
+    /** A5: Sac the mouse directly (sets signal=dead, isAlive=false). */
+    onSac?: () => void;
     onClose: () => void;
 }
 
 // Viewport-clamp constants (approximate panel dimensions).
 const PANEL_W = 176; // ~w-44
 const ITEM_H = 32;
-const PANEL_H = MOUSE_TYPES.length * ITEM_H + 8; // 8px padding
+// +1 for the Sac item when onSac is provided (computed at render).
+const PANEL_H_BASE = MOUSE_TYPES.length * ITEM_H + 8; // 8px padding
 
-export function MouseCaseTypeMenu({ x, y, onPick, onClose }: Props) {
+export function MouseCaseTypeMenu({ x, y, onPick, onSac, onClose }: Props) {
+    const PANEL_H = PANEL_H_BASE + (onSac ? ITEM_H : 0);
     const firstRef = useRef<HTMLButtonElement>(null);
 
     // Clamp so the panel never overflows the viewport edge.
@@ -84,6 +88,22 @@ export function MouseCaseTypeMenu({ x, y, onPick, onClose }: Props) {
                         {def.type}
                     </button>
                 ))}
+                {onSac ? (
+                    <>
+                        <div className="my-0.5 border-t border-border/40" />
+                        <button
+                            role="menuitem"
+                            type="button"
+                            onClick={() => {
+                                onSac();
+                                onClose();
+                            }}
+                            className="flex w-full items-center px-3 py-1.5 text-left font-mono text-[11px] text-destructive transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
+                        >
+                            Sac
+                        </button>
+                    </>
+                ) : null}
             </div>
         </>
     );

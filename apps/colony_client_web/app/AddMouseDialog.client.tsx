@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Sex } from '@repo/types';
 import {
     addMouse,
@@ -31,11 +31,9 @@ import { Combobox, type ComboOption } from '@/components/ui/combobox';
 //   slot      — combobox over slot labels; empty = first slot; typing = new slot
 //   genotype  — free text, optional (defaults to '?')
 //
-// litter / cage / slot are COMBOBOXES (search-or-add). Values are the globally
-// unique display strings (litter code / cage number / slot label); submit()
-// resolves each to "existing vs new" by a case-insensitive lookup, matching the
-// store's global-dedupe semantics. This removes the former select + sentinel +
-// revealed-input trio.
+// Optional prefill props (Step 6): initialLineId / initialCageId / initialSlotId
+// seed the corresponding pickers on open. Prefill is resolved to display strings
+// so the existing string-based state/validation logic is unchanged.
 //
 // SERVER ERA SWAP: submit() currently calls addMouse() from the mock store.
 // Replace with a POST to colony_server; the dialog fields stay the same.
@@ -48,12 +46,16 @@ const SEX_OPTIONS: Sex[] = ['U', 'M', 'F'];
 export function AddMouseDialog({
     open,
     onClose,
+    initialLineId,
+    initialCageId,
+    initialSlotId,
 }: {
     open: boolean;
     onClose: () => void;
+    initialLineId?: number;
+    initialCageId?: number;
+    initialSlotId?: number;
 }) {
-    // Picker options derive from the LIVE store, not a frozen seed snapshot —
-    // so a slot the user just created shows up for the next littermate.
     const colony = useColonyGrid();
     const lineOptions = useMemo(
         () =>
@@ -69,12 +71,14 @@ export function AddMouseDialog({
         [colony]
     );
 
-    // Distinct existing codes latest-first + the next auto code (pure counter read).
     const litterCodes = useLitterCodes();
     const nextAutoCode = peekNextLitterCode();
 
+    // Resolve prefill IDs → display strings once on open.
+    // WHY on open (not on mount): the dialog is conditionally mounted so mount ≈
+    // open. Using an effect keyed on `open` also handles re-open after close with
+    // different prefill values (no stale state).
     const [sex, setSex] = useState<Sex>('U');
-    // litter/cage/slot are plain display strings (see file header).
     const [litterValue, setLitterValue] = useState<string>(nextAutoCode);
     const [pupNumber, setPupNumber] = useState('');
     const [dob, setDob] = useState(TODAY);
@@ -82,14 +86,55 @@ export function AddMouseDialog({
     const [cageValue, setCageValue] = useState<string>(
         colony.lines[0]?.cages[0]?.cageNumber ?? ''
     );
-    const [slotValue, setSlotValue] = useState(''); // '' = first slot
+    const [slotValue, setSlotValue] = useState('');
     const [genotype, setGenotype] = useState('');
-    // Rejection from the store surfaces here.
     const [error, setError] = useState<string | null>(null);
 
-    // --- Option lists + existing/new resolution (case-insensitive, matching the
-    //     store's dedupe). Cage number and slot label are globally unique, so a
-    //     lookup unambiguously tells existing from new. ---
+    // Seed from prefill props whenever the dialog opens. Resolves IDs to display
+    // strings; falls back to defaults when the ID is absent or not found.
+    useEffect(() => {
+        if (!open) return;
+
+        // Find the cage by initialCageId (searches all lines).
+        let resolvedLineId = initialLineId ?? colony.lines[0]?.lineId ?? 0;
+        let resolvedCageValue = '';
+        let resolvedSlotValue = '';
+
+        if (initialCageId !== undefined) {
+            for (const l of colony.lines) {
+                const cage = l.cages.find((c) => c.cageId === initialCageId);
+                if (cage) {
+                    // The cage's owning line must be selected so cageOptions includes it.
+                    resolvedLineId = l.lineId;
+                    resolvedCageValue = cage.cageNumber;
+                    if (initialSlotId !== undefined) {
+                        const slot = cage.slots.find((s) => s.slotId === initialSlotId);
+                        if (slot) resolvedSlotValue = slot.label;
+                    }
+                    break;
+                }
+            }
+        } else if (initialLineId !== undefined) {
+            // Only line prefilled — pick the first cage in that line (if any).
+            const line = colony.lines.find((l) => l.lineId === initialLineId);
+            resolvedCageValue = line?.cages[0]?.cageNumber ?? '';
+        } else {
+            // No prefill: default to line[0] cage[0].
+            resolvedCageValue = colony.lines[0]?.cages[0]?.cageNumber ?? '';
+        }
+
+        setSex('U');
+        setLitterValue(peekNextLitterCode());
+        setPupNumber('');
+        setDob(TODAY);
+        setLineId(resolvedLineId);
+        setCageValue(resolvedCageValue);
+        setSlotValue(resolvedSlotValue);
+        setGenotype('');
+        setError(null);
+    }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // --- Option lists + existing/new resolution ---
     const selectedLine = lineOptions.find((l) => l.lineId === lineId);
     const cages = selectedLine?.cages ?? [];
     const cageOptions: ComboOption[] = cages.map((c) => ({
@@ -130,7 +175,6 @@ export function AddMouseDialog({
         !dob ||
         cageValue.trim() === '' ||
         (isNewCage && (isNaN(newCageNum) || newCageNum < 1)) ||
-        // A brand-new cage has no slots — the user must name its first slot.
         (isNewCage && slotValue.trim() === '');
 
     function handleLineChange(newLineId: number) {
@@ -143,21 +187,7 @@ export function AddMouseDialog({
 
     function handleCageChange(value: string) {
         setCageValue(value);
-        setSlotValue(''); // cage changed → prior slot label no longer applies
-        setError(null);
-    }
-
-    function reset() {
-        setSex('U');
-        // Fresh peek: the counter may have advanced on the insert we just made.
-        setLitterValue(peekNextLitterCode());
-        setPupNumber('');
-        setDob(TODAY);
-        const firstLine = lineOptions[0];
-        setLineId(firstLine?.lineId ?? 0);
-        setCageValue(firstLine?.cages[0]?.cageNumber ?? '');
         setSlotValue('');
-        setGenotype('');
         setError(null);
     }
 
@@ -189,11 +219,9 @@ export function AddMouseDialog({
                   }
         );
         if (!result.ok) {
-            // Keep the dialog open so the user can fix the issue.
             setError(result.error);
             return;
         }
-        reset();
         onClose();
     }
 
