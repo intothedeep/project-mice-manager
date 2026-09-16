@@ -8,6 +8,7 @@ import {
     useColonyGrid,
     useLitterCodes,
 } from '@/lib/mockColonyStore';
+import { parseLitterCode } from '@/lib/litterCode';
 import { TODAY } from '@/lib/dueDates';
 import {
     Dialog,
@@ -18,36 +19,31 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox, type ComboOption } from '@/components/ui/combobox';
 
 // Dialog fields:
-//   sex        — M / F / U (default U)
-//   litter     — select from existing codes or auto-new sentinel
-//   pupNumber  — integer ≥ 1
-//   dob        — date (defaults to today)
-//   line       — pick from SEED_COLONY.lines (filters cage options)
-//   cage       — existing cage (by cageId) OR new-cage sentinel
-//   slot       — existing slot OR new-slot sentinel (forced new when cage is new)
-//   genotype   — free text, optional (defaults to '?')
+//   sex       — M / F / U (default U)
+//   litter    — combobox: pick an existing code, the auto-next code, or type + Add
+//   pupNumber — integer ≥ 1
+//   dob       — date (defaults to today)
+//   line      — pick from the live colony's lines (filters cage options)
+//   cage      — combobox over cage numbers; typing a new number creates a cage
+//   slot      — combobox over slot labels; empty = first slot; typing = new slot
+//   genotype  — free text, optional (defaults to '?')
+//
+// litter / cage / slot are COMBOBOXES (search-or-add). Values are the globally
+// unique display strings (litter code / cage number / slot label); submit()
+// resolves each to "existing vs new" by a case-insensitive lookup, matching the
+// store's global-dedupe semantics. This removes the former select + sentinel +
+// revealed-input trio.
 //
 // SERVER ERA SWAP: submit() currently calls addMouse() from the mock store.
-// Replace with a POST to colony_server; the server handles mouse_meta INSERT +
-// mice version-row INSERT + litter FK. The dialog fields stay the same.
+// Replace with a POST to colony_server; the dialog fields stay the same.
 
 const SELECT_CLASS =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
 const SEX_OPTIONS: Sex[] = ['U', 'M', 'F'];
-
-// Sentinel slot-select value meaning "create a new slot label" (vs an existing
-// slotId or '' for the cage's first slot).
-const NEW_SLOT = '__new__' as const;
-
-// Sentinel cage-select value meaning "create a new cage in the selected line".
-// Mirrors the NEW_SLOT pattern so both selects are structurally symmetric.
-const NEW_CAGE = '__new_cage__' as const;
-
-// Sentinel litter-select value meaning "use the auto-generated next code".
-const LITTER_NEW = '__new_litter__' as const;
 
 export function AddMouseDialog({
     open,
@@ -73,123 +69,125 @@ export function AddMouseDialog({
         [colony]
     );
 
-    // useLitterCodes returns DISTINCT codes latest-first from the live store.
+    // Distinct existing codes latest-first + the next auto code (pure counter read).
     const litterCodes = useLitterCodes();
-    // peekNextLitterCode is a pure read from the counter — no hook needed.
     const nextAutoCode = peekNextLitterCode();
 
     const [sex, setSex] = useState<Sex>('U');
-    // Default litter selection is the auto-sentinel (most common case: new litter).
-    const [litterChoice, setLitterChoice] = useState<string>(LITTER_NEW);
+    // litter/cage/slot are plain display strings (see file header).
+    const [litterValue, setLitterValue] = useState<string>(nextAutoCode);
     const [pupNumber, setPupNumber] = useState('');
     const [dob, setDob] = useState(TODAY);
     const [lineId, setLineId] = useState<number>(colony.lines[0]?.lineId ?? 0);
-    const [cageChoice, setCageChoice] = useState<number | typeof NEW_CAGE>(
-        colony.lines[0]?.cages[0]?.cageId ?? NEW_CAGE
+    const [cageValue, setCageValue] = useState<string>(
+        colony.lines[0]?.cages[0]?.cageNumber ?? ''
     );
-    const [newCageNumber, setNewCageNumber] = useState('');
-    // Slot select carries a number (existing slot), '' (first slot), or the
-    // NEW_SLOT sentinel (create a new label — revealed input below).
-    const [slotChoice, setSlotChoice] = useState<number | '' | typeof NEW_SLOT>('');
-    const [newSlotLabel, setNewSlotLabel] = useState('');
+    const [slotValue, setSlotValue] = useState(''); // '' = first slot
     const [genotype, setGenotype] = useState('');
     // Rejection from the store surfaces here.
     const [error, setError] = useState<string | null>(null);
 
-    // Cage options filtered by selected line.
+    // --- Option lists + existing/new resolution (case-insensitive, matching the
+    //     store's dedupe). Cage number and slot label are globally unique, so a
+    //     lookup unambiguously tells existing from new. ---
     const selectedLine = lineOptions.find((l) => l.lineId === lineId);
-    const cageOptions = selectedLine?.cages ?? [];
+    const cages = selectedLine?.cages ?? [];
+    const cageOptions: ComboOption[] = cages.map((c) => ({
+        value: c.cageNumber,
+        label: `cage ${c.cageNumber}`,
+    }));
+    const cageMatch = cages.find(
+        (c) => c.cageNumber.toLowerCase() === cageValue.trim().toLowerCase()
+    );
+    const isNewCage = cageValue.trim() !== '' && !cageMatch;
 
-    const creatingCage = cageChoice === NEW_CAGE;
-    // When creating a new cage, the slot area is always in new-slot mode — a
-    // fresh cage has no existing slots to choose from.
-    const creatingSlot = creatingCage || slotChoice === NEW_SLOT;
+    const slots = cageMatch?.slots ?? [];
+    const slotOptions: ComboOption[] = slots.map((s) => ({
+        value: s.label,
+        label: `slot ${s.label}`,
+    }));
+    const slotMatch = slots.find(
+        (s) => s.label.toLowerCase() === slotValue.trim().toLowerCase()
+    );
+    const isNewSlot = isNewCage || (slotValue.trim() !== '' && !slotMatch);
 
-    // Slot options filtered by selected cage (irrelevant when creating a cage).
-    const selectedCage = creatingCage
-        ? null
-        : cageOptions.find((c) => c.cageId === cageChoice);
-    const slotOptions = selectedCage?.slots ?? [];
+    const litterOptions: ComboOption[] = [
+        { value: nextAutoCode, label: `auto next: ${nextAutoCode}` },
+        ...litterCodes
+            .filter((c) => c !== nextAutoCode)
+            .map((c) => ({ value: c })),
+    ];
 
-    function handleLineChange(newLineId: number) {
-        setLineId(newLineId);
-        const line = lineOptions.find((l) => l.lineId === newLineId);
-        const firstCage = line?.cages[0];
-        if (firstCage) {
-            setCageChoice(firstCage.cageId);
-            setSlotChoice('');
-        } else {
-            setCageChoice(NEW_CAGE);
-            setSlotChoice(NEW_SLOT);
-        }
-        setNewCageNumber('');
-        setError(null);
-    }
-
-    function handleCageChange(value: string) {
-        setError(null);
-        if (value === NEW_CAGE) {
-            setCageChoice(NEW_CAGE);
-            // Force new-slot mode — a new cage has no slots to choose from.
-            setSlotChoice(NEW_SLOT);
-        } else {
-            setCageChoice(Number(value));
-            setSlotChoice('');
-        }
-        setNewCageNumber('');
-    }
-
-    // The actual litter code to submit: auto sentinel → use the peeked code.
-    const resolvedLitterCode =
-        litterChoice === LITTER_NEW ? nextAutoCode : litterChoice;
-
+    // --- validation ---
     const pupNum = parseInt(pupNumber, 10);
-    const newCageNum = newCageNumber.trim() ? parseInt(newCageNumber, 10) : NaN;
-
+    const litterOk = parseLitterCode(litterValue.trim()) !== null;
+    const newCageNum = isNewCage ? parseInt(cageValue.trim(), 10) : NaN;
     const isMissing =
-        !resolvedLitterCode ||
+        !litterOk ||
         !pupNumber ||
         isNaN(pupNum) ||
         pupNum < 1 ||
         !dob ||
-        (creatingCage && (isNaN(newCageNum) || newCageNum < 1)) ||
-        (creatingSlot && !newSlotLabel.trim());
+        cageValue.trim() === '' ||
+        (isNewCage && (isNaN(newCageNum) || newCageNum < 1)) ||
+        // A brand-new cage has no slots — the user must name its first slot.
+        (isNewCage && slotValue.trim() === '');
+
+    function handleLineChange(newLineId: number) {
+        setLineId(newLineId);
+        const line = lineOptions.find((l) => l.lineId === newLineId);
+        setCageValue(line?.cages[0]?.cageNumber ?? '');
+        setSlotValue('');
+        setError(null);
+    }
+
+    function handleCageChange(value: string) {
+        setCageValue(value);
+        setSlotValue(''); // cage changed → prior slot label no longer applies
+        setError(null);
+    }
 
     function reset() {
         setSex('U');
-        setLitterChoice(LITTER_NEW);
+        // Fresh peek: the counter may have advanced on the insert we just made.
+        setLitterValue(peekNextLitterCode());
         setPupNumber('');
         setDob(TODAY);
-        setLineId(lineOptions[0]?.lineId ?? 0);
-        const firstCage = lineOptions[0]?.cages[0];
-        setCageChoice(firstCage?.cageId ?? NEW_CAGE);
-        setNewCageNumber('');
-        setSlotChoice('');
-        setNewSlotLabel('');
+        const firstLine = lineOptions[0];
+        setLineId(firstLine?.lineId ?? 0);
+        setCageValue(firstLine?.cages[0]?.cageNumber ?? '');
+        setSlotValue('');
         setGenotype('');
         setError(null);
     }
 
     function submit() {
         if (isMissing) return;
-        const result = addMouse({
+        const base = {
             sex,
-            litterCode: resolvedLitterCode,
+            litterCode: litterValue.trim(),
             pupNumber: pupNum,
             dob,
-            ...(creatingCage
+            genotype: genotype.trim() || undefined,
+        };
+        const result = addMouse(
+            isNewCage
                 ? {
+                      ...base,
                       newCageNumber: newCageNum,
                       lineId,
-                      newSlotLabel: newSlotLabel.trim(),
+                      newSlotLabel: slotValue.trim(),
                   }
                 : {
-                      cageId: cageChoice as number,
-                      slotId: typeof slotChoice === 'number' ? slotChoice : undefined,
-                      newSlotLabel: slotChoice === NEW_SLOT ? newSlotLabel.trim() : undefined,
-                  }),
-            genotype: genotype.trim() || undefined,
-        });
+                      ...base,
+                      cageId: cageMatch!.cageId,
+                      slotId:
+                          !isNewSlot && slotValue.trim() !== ''
+                              ? slotMatch!.slotId
+                              : undefined,
+                      newSlotLabel: isNewSlot ? slotValue.trim() : undefined,
+                  }
+        );
         if (!result.ok) {
             // Keep the dialog open so the user can fix the issue.
             setError(result.error);
@@ -223,19 +221,18 @@ export function AddMouseDialog({
                     </select>
                 </Label>
 
-                <Label text="Litter code *">
-                    <select
-                        className={SELECT_CLASS}
-                        value={litterChoice}
-                        onChange={(e) => setLitterChoice(e.target.value)}
-                    >
-                        <option value={LITTER_NEW}>+ new (auto): {nextAutoCode}</option>
-                        {litterCodes.map((code) => (
-                            <option key={code} value={code}>
-                                {code}
-                            </option>
-                        ))}
-                    </select>
+                <Label text="Litter code * (search or add)">
+                    <Combobox
+                        value={litterValue}
+                        onChange={(v) => {
+                            setLitterValue(v);
+                            setError(null);
+                        }}
+                        options={litterOptions}
+                        placeholder="search or add code"
+                        addLabel={(t) => `+ Add litter ${t}`}
+                        transform={(t) => t.toUpperCase()}
+                    />
                 </Label>
 
                 <Label text="Pup number *">
@@ -270,73 +267,35 @@ export function AddMouseDialog({
                     </select>
                 </Label>
 
-                <Label text="Cage *">
-                    <select
-                        className={SELECT_CLASS}
-                        value={creatingCage ? NEW_CAGE : String(cageChoice)}
-                        onChange={(e) => handleCageChange(e.target.value)}
-                    >
-                        {cageOptions.map((c) => (
-                            <option key={c.cageId} value={c.cageId}>
-                                cage {c.cageNumber}
-                            </option>
-                        ))}
-                        <option value={NEW_CAGE}>+ new cage…</option>
-                    </select>
+                <Label text="Cage * (search or add)">
+                    <Combobox
+                        value={cageValue}
+                        onChange={handleCageChange}
+                        options={cageOptions}
+                        placeholder="search or add cage #"
+                        addLabel={(t) => `+ Add cage ${t}`}
+                    />
                 </Label>
 
-                {creatingCage ? (
-                    <Label text="New cage number * (unique colony-wide)">
-                        <Input
-                            type="number"
-                            min={1}
-                            placeholder="e.g. 2600"
-                            value={newCageNumber}
-                            onChange={(e) => {
-                                setNewCageNumber(e.target.value);
-                                setError(null);
-                            }}
-                        />
-                    </Label>
-                ) : null}
-
-                {/* Slot select — hidden when creating a new cage (forced new-slot) */}
-                {!creatingCage ? (
-                    <Label text="Slot (optional — uses first slot if omitted)">
-                        <select
-                            className={SELECT_CLASS}
-                            value={slotChoice}
-                            onChange={(e) => {
-                                const v = e.target.value;
-                                setError(null);
-                                setSlotChoice(
-                                    v === NEW_SLOT ? NEW_SLOT : v ? Number(v) : ''
-                                );
-                            }}
-                        >
-                            <option value="">— any (first slot) —</option>
-                            {slotOptions.map((s) => (
-                                <option key={s.slotId} value={s.slotId}>
-                                    slot {s.label}
-                                </option>
-                            ))}
-                            <option value={NEW_SLOT}>+ new slot…</option>
-                        </select>
-                    </Label>
-                ) : null}
-
-                {creatingSlot ? (
-                    <Label text="New slot label * (unique colony-wide)">
-                        <Input
-                            placeholder="e.g. A8"
-                            value={newSlotLabel}
-                            onChange={(e) => {
-                                setNewSlotLabel(e.target.value);
-                                setError(null);
-                            }}
-                        />
-                    </Label>
-                ) : null}
+                <Label
+                    text={
+                        isNewCage
+                            ? 'New slot label * (unique colony-wide)'
+                            : 'Slot (search or add — first slot if empty)'
+                    }
+                >
+                    <Combobox
+                        value={slotValue}
+                        onChange={(v) => {
+                            setSlotValue(v);
+                            setError(null);
+                        }}
+                        options={slotOptions}
+                        placeholder="search or add slot"
+                        addLabel={(t) => `+ Add slot ${t}`}
+                        emptyLabel={isNewCage ? undefined : '— first slot —'}
+                    />
+                </Label>
 
                 {error ? (
                     <p className="mt-2 text-xs font-medium text-signal-instruction">

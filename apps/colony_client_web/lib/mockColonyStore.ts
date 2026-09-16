@@ -232,7 +232,6 @@ function buildMouseCell(input: AddMouseInput, litterCode: string): MouseCell {
 // surface validation rejections.
 export function addMouse(input: AddMouseInput): AddMouseResult {
     const litterCode = input.litterCode.trim();
-    const peek = peekNextLitterCode();
     const isNewCagePath = input.newCageNumber !== undefined;
     const newLabel = input.newSlotLabel?.trim();
 
@@ -290,8 +289,7 @@ export function addMouse(input: AddMouseInput): AddMouseResult {
             }),
         };
 
-        // Advance litter counter if this insert consumed the auto code.
-        if (litterCode === peek) nextLitterOrd++;
+        advanceLitterCounter(litterCode);
 
         emit();
         return { ok: true };
@@ -356,13 +354,20 @@ export function addMouse(input: AddMouseInput): AddMouseResult {
         })),
     };
 
-    // Advance litter counter only when the inserted code matched the auto peek.
-    // WHY here: the counter is single-threaded mock state; bumping only on match
-    // prevents gaps when the user picks an existing code.
-    if (litterCode === peek) nextLitterOrd++;
+    advanceLitterCounter(litterCode);
 
     emit();
     return { ok: true };
+}
+
+// Keep the auto counter strictly AHEAD of any code that lands in the colony.
+// WHY max (not "bump only on peek match"): a manually-typed code above the
+// current peek would otherwise leave the auto option proposing a code that now
+// exists as a real litter — the user would think "new litter" but join an old
+// one. Math.max makes the next peek always fresh regardless of how the code got in.
+function advanceLitterCounter(litterCode: string): void {
+    const ord = parseLitterCode(litterCode);
+    if (ord !== null) nextLitterOrd = Math.max(nextLitterOrd, ord + 1);
 }
 
 // applyColonyMove: wraps gridMove.moveMouse and emits so the grid re-renders.
