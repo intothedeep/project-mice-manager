@@ -41,9 +41,14 @@ AI-assisted engineering workflow. Optimize for correctness, simplicity, maintain
 
 ## Workflow Docs
 
-Exactly **three** living root docs (`00.plan.md` / `00.tasks.md` / `01.status.md`) — fold work in,
-no per-feature variants. Full spec (lifecycle, archiving, stub format, status line style,
-**archive READ GUARD**) is owned by **`rules/docs.md`** — see there.
+Exactly **four** root docs: `00.plan.md` / `00.tasks.md` / `01.status.md` (living, agent-maintained)
++ `01.rules.md` (the OWNER's rules in their own words — agents READ it, NEVER write it; where a
+rule here overlaps, this file CITES `01.rules.md` instead of restating it). Root docs are the
+INDEX: stubs + cross-cutting content. Per-sub-phase ACTIVE detail lives in **`docs/phases/`**
+(committed; read on demand — the root stub is the truth; every phases file MUST have a stub).
+Completed work moves to `_docs/archive/` (gitignored cold storage). No other per-feature doc
+variants. Full spec (three tiers, promotion/demotion lifecycle, stub format, guard tokens,
+status line style, **READ GUARDs**, `01.rules.md` ownership) is owned by **`rules/docs.md`** — see there.
 
 ## Execution Discipline
 
@@ -96,7 +101,8 @@ Do these ONCE, at the very end of a task (not iteratively mid-work):
 1. **Subagents NEVER `git commit`/`git push`** — the main session (or the user) commits. A developer
    agent once auto-committed+pushed to main sweeping in unrelated WIP.
 2. **Doc edits are surgical** — never rewrite a whole living doc (`00.plan.md`/`00.tasks.md`/`01.status.md`)
-   from scratch; another session may share this checkout. Verify the diff after any agent doc write.
+   or a `docs/phases/` file from scratch; another session may share this checkout. Verify the diff after any
+   agent doc write. `01.rules.md` is never edited by an agent at all (`rules/docs.md` §8).
 3. **Worktree agents:** `git reset --hard main` before starting — isolation worktrees can base off a
    stale commit.
 4. **DB rows:** never hard-DELETE — `deleted_at` tombstone + mask at read (sanctioned exceptions are
@@ -105,3 +111,14 @@ Do these ONCE, at the very end of a task (not iteratively mid-work):
 ## Language-specific rules
 
 `rules/python.md`, `rules/nexjts.md`, `rules/docs.md`, `rules/BASE.md` load automatically — consult them for stack details.
+
+## Authoring rules (NOT auto-loaded — read on demand)
+
+`authoring/book.md` (book writing: Korean voice, 한글(English) bilingual policy, In-brief
+section openers, analogy consistency, semantic macros) and `authoring/latex.md` (XeLaTeX +
+xeCJK, fonts, the installed-package inventory, build, TikZ/table pitfalls).
+
+They live outside `rules/` on purpose: this repo has no books and no `.tex`, so loading them
+into every session would be pure overhead. **Read them before writing or editing any book
+chapter or `.tex` file.** Both are portable — copy them into another repo's `.claude/` as-is,
+and move them to `rules/` there if that repo's work is mostly authoring.
