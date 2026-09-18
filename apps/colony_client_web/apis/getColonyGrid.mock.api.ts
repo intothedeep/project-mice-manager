@@ -169,7 +169,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 201,
-                                    punches: [{ punchId: 4, location: 'toe', effectiveAt: '2026-02-01' }],
+                                    punches: [
+                                        { punchId: 4, location: 'toe', effectiveAt: '2026-02-01' },
+                                        // the 'e' in F10BEVe is this row — the label is composed from it, not typed
+                                        { punchId: 22, location: 'ear', effectiveAt: '2026-03-01' },
+                                    ],
                                     mouseLabel: 'F10BEVe',
                                     pupNumber: 10,
                                     litterCode: 'BEV',

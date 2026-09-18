@@ -31,12 +31,3 @@ export function buildMouseLabel(parts: MouseLabelParts): string {
     const earMarks = 'e'.repeat(Math.max(0, parts.earPunchCount));
     return `${parts.sex}${parts.pupNumber}${offsets}${parts.litterCode}${earMarks}`;
 }
-
-// Effective pup number = birth number + sum of active offsets.
-// COMPUTED ONLY — never stored, never a DTO field. Storing it would create a
-// second source of truth for one number: it would drift the moment an
-// offset is added or removed, silently disagreeing with pupNumber/pupOffsets
-// until someone remembers to recompute it.
-export function effectivePupNumber(pupNumber: number, pupOffsets: number[]): number {
-    return pupOffsets.reduce((sum, offset) => sum + offset, pupNumber);
-}
