@@ -31,7 +31,10 @@ export function moveMouse(
                     moved = slot.mice.splice(i, 1)[0];
                 }
             }
-            cage.slots = cage.slots.filter((s) => s.mice.length > 0);
+            // Emptied slots are KEPT. A slot may legitimately be empty (owner-
+            // confirmed invariant: line ≥ 1 cage, cage ≥ 1 slot, slot MAY be
+            // empty) — pruning here would silently delete a slot that addSlot
+            // had just created, and strand its cage with no add affordance.
         }
     }
     if (!moved) return colony;

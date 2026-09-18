@@ -70,9 +70,12 @@ export function cageNumberSet(grid: ColonyGrid): Set<string> {
 }
 
 /**
- * Scan every mouse renderedId in the grid, extract its litter code (ignoring
- * pooled "+N" notation and ear-tag suffixes — those return null from
- * extractLitterCode), and return the ordinal of the maximum code found.
+ * Scan every mouse mouseLabel in the grid, extract its litter code, and return
+ * the ordinal of the maximum code found. Pup-number-offset "+N" notation and
+ * punch-mark suffixes ARE tolerated (fixed 2026-09-16) — extractLitterCode
+ * used to return null for those, so ear-punched and offset-labeled mice were
+ * silently skipped here and a generated code could collide with one already
+ * in data.
  * WHY: the first generated code is nextLitterOrd+1, so seeding from the max
  * avoids re-issuing a code that already exists in data.
  */
@@ -82,7 +85,7 @@ export function maxSeedLitterOrdinal(grid: ColonyGrid): number {
         for (const c of l.cages)
             for (const s of c.slots)
                 for (const m of s.mice) {
-                    const code = extractLitterCode(m.renderedId);
+                    const code = extractLitterCode(m.mouseLabel);
                     if (code === null) continue;
                     const ord = parseLitterCode(code);
                     if (ord !== null && ord > max) max = ord;
@@ -91,14 +94,14 @@ export function maxSeedLitterOrdinal(grid: ColonyGrid): number {
 }
 
 /**
- * Set of all renderedIds currently in the grid (case-insensitive lowercase).
+ * Set of all mouseLabels currently in the grid (case-insensitive lowercase).
  * Used by updateMouse to reject duplicate id edits colony-wide.
  */
-export function renderedIdSet(grid: ColonyGrid): Set<string> {
+export function mouseLabelSet(grid: ColonyGrid): Set<string> {
     const set = new Set<string>();
     for (const l of grid.lines)
         for (const c of l.cages)
             for (const s of c.slots)
-                for (const m of s.mice) set.add(m.renderedId.toLowerCase());
+                for (const m of s.mice) set.add(m.mouseLabel.toLowerCase());
     return set;
 }

@@ -3,7 +3,9 @@
 export type {
     SignalColor,
     Sex,
-    MouseTaskTag,
+    PunchLocation,
+    PunchRef,
+    MouseCaseTag,
     ParentCell,
     MouseParents,
     MateRef,

@@ -105,7 +105,7 @@ export function MoveMenu({
                     <DialogTitle>
                         Move{' '}
                         <span className="font-mono text-signal-instruction">
-                            {mouse.renderedId}
+                            {mouse.mouseLabel}
                         </span>
                     </DialogTitle>
                 </DialogHeader>
@@ -220,7 +220,7 @@ export function MoveMenu({
                 {isCrossLine ? (
                     <p className="mt-3 flex items-start gap-2 rounded-md border border-signal-instruction/30 bg-signal-instruction/5 px-3 py-2 text-xs text-signal-instruction">
                         <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-                        Cross-line move — {mouse.renderedId} would leave its
+                        Cross-line move — {mouse.mouseLabel} would leave its
                         line. Allowed, but confirm this is intended.
                     </p>
                 ) : null}

@@ -5,7 +5,7 @@ import type { MouseCell, Sex, SignalColor } from '@repo/types';
 // the "dim non-matching" logic stays deterministic and testable.
 
 export interface GridFilter {
-    query: string; // substring over renderedId + genotype
+    query: string; // substring over mouseLabel + genotype
     sexes: Sex[]; // empty = all sexes
     signals: SignalColor[]; // empty = all signals
 }
@@ -20,7 +20,7 @@ export function matchesMouse(m: MouseCell, f: GridFilter): boolean {
     const q = f.query.trim().toLowerCase();
     if (
         q &&
-        !m.renderedId.toLowerCase().includes(q) &&
+        !m.mouseLabel.toLowerCase().includes(q) &&
         !m.genotype.toLowerCase().includes(q)
     ) {
         return false;

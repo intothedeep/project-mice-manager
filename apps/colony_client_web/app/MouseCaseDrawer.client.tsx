@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sheet';
 
 // CaseDrawerTarget — identifies which mouse's cases to show and how to focus.
-// metaId is the stable DB identity; label is the renderedId for display only.
+// metaId is the stable DB identity; label is the mouseLabel for display only.
 // signal (focus mode) must be a SignalColor so it matches the badge the user clicked.
 export type CaseDrawerTarget =
     | { kind: 'list'; metaId: number; label: string }
@@ -43,7 +43,7 @@ export function MouseCaseDrawer({
     //   - single-subject cases: c.subjectMouseId === target.metaId
     //   - batch cases: c.mice?.includes(target.metaId)
     // This is the F5AYL fix: metaId 102 (pNf1 slot A8) and 402 (PlpCre slot B8)
-    // share the same renderedId but have DIFFERENT cases — keying by metaId
+    // share the same mouseLabel but have DIFFERENT cases — keying by metaId
     // ensures each mouse sees only its own cases.
     const mouseCases = useMemo(() => {
         if (!target) return [];

@@ -4,9 +4,17 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Sex } from '@repo/types';
 import {
     addMouse,
+    addCage,
+    addSlot,
     peekNextLitterCode,
+    suggestNextCageNumber,
     useColonyGrid,
     useLitterCodes,
+    type AddCageInput,
+    type AddMouseInput,
+    type AddMouseResult,
+    type AddSlotInput,
+    type MouseSpec,
 } from '@/lib/mockColonyStore';
 import { parseLitterCode } from '@/lib/litterCode';
 import { TODAY } from '@/lib/dueDates';
@@ -35,13 +43,101 @@ import { Combobox, type ComboOption } from '@/components/ui/combobox';
 // seed the corresponding pickers on open. Prefill is resolved to display strings
 // so the existing string-based state/validation logic is unchanged.
 //
-// SERVER ERA SWAP: submit() currently calls addMouse() from the mock store.
-// Replace with a POST to colony_server; the dialog fields stay the same.
+// Mode (line/cage/slot/mouse rail) is DERIVED from the prefill shape via
+// resolveAddMode — never guessed from combobox state. Only the mouse rail
+// forces a mouse; the three container rails default the "Add first mouse
+// now" toggle OFF (line ≥ 1 cage, cage ≥ 1 slot, slot MAY be empty).
+//
+// SERVER ERA SWAP: submit() currently calls addMouse()/addSlot()/addCage()
+// from the mock store. Replace with a POST to colony_server; the dialog
+// fields stay the same.
 
 const SELECT_CLASS =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
 const SEX_OPTIONS: Sex[] = ['U', 'M', 'F'];
+
+export type AddMode = 'cage' | 'slot' | 'mouse';
+
+const MODE_TITLE: Record<AddMode, string> = {
+    cage: 'Add cage',
+    slot: 'Add slot',
+    mouse: 'Add mouse',
+};
+
+// Prefill shape → target rail. cageId+slotId (mouse rail) must win over
+// cageId alone (slot rail), which must win over lineId alone (cage rail) —
+// ColonyGridView only ever sends one of those three shapes, plus {} from the
+// standalone "Add mouse" button, which has no prefill and falls through to
+// 'mouse' (adds into line[0]/cage[0], the dialog's original default).
+export function resolveAddMode(prefill: {
+    lineId?: number;
+    cageId?: number;
+    slotId?: number;
+}): AddMode {
+    if (prefill.cageId !== undefined && prefill.slotId !== undefined) return 'mouse';
+    if (prefill.cageId !== undefined) return 'slot';
+    if (prefill.lineId !== undefined) return 'cage';
+    return 'mouse';
+}
+
+export type SubmitAction =
+    | { kind: 'cage'; input: AddCageInput }
+    | { kind: 'slot'; input: AddSlotInput }
+    | { kind: 'mouse'; input: AddMouseInput }
+    | { kind: 'none' };
+
+// Picks the mutation + payload from the resolved combobox state. A brand-new
+// cage/slot always wins over "place into the matched slot", mirroring
+// colonyMutations' own layering (addCage/addSlot delegate to addMouse
+// internally). `mouse` is only attached to a container payload when the
+// toggle is on — never fabricated, per the bug this fixes.
+export function buildSubmitAction(params: {
+    isNewCage: boolean;
+    isNewSlot: boolean;
+    needsMouse: boolean;
+    mouse: MouseSpec;
+    lineId: number;
+    newCageNumber: number;
+    slotLabel: string;
+    cageId?: number;
+    existingSlotId?: number;
+}): SubmitAction {
+    const {
+        isNewCage,
+        isNewSlot,
+        needsMouse,
+        mouse,
+        lineId,
+        newCageNumber,
+        slotLabel,
+        cageId,
+        existingSlotId,
+    } = params;
+
+    if (isNewCage) {
+        return {
+            kind: 'cage',
+            input: {
+                lineId,
+                cageNumber: newCageNumber,
+                slotLabel,
+                mouse: needsMouse ? mouse : undefined,
+            },
+        };
+    }
+    if (isNewSlot) {
+        if (cageId === undefined) return { kind: 'none' };
+        return {
+            kind: 'slot',
+            input: { cageId, slotLabel, mouse: needsMouse ? mouse : undefined },
+        };
+    }
+    if (!needsMouse || cageId === undefined || existingSlotId === undefined) {
+        return { kind: 'none' };
+    }
+    return { kind: 'mouse', input: { ...mouse, cageId, slotId: existingSlotId } };
+}
 
 export function AddMouseDialog({
     open,
@@ -74,6 +170,14 @@ export function AddMouseDialog({
     const litterCodes = useLitterCodes();
     const nextAutoCode = peekNextLitterCode();
 
+    // Mode never changes across a mount — the dialog is remounted (fresh
+    // key) on every open, so deriving it straight from props is equivalent
+    // to (and simpler than) tracking it in the open-effect below.
+    const mode = useMemo(
+        () => resolveAddMode({ lineId: initialLineId, cageId: initialCageId, slotId: initialSlotId }),
+        [initialLineId, initialCageId, initialSlotId]
+    );
+
     // Resolve prefill IDs → display strings once on open.
     // WHY on open (not on mount): the dialog is conditionally mounted so mount ≈
     // open. Using an effect keyed on `open` also handles re-open after close with
@@ -87,8 +191,14 @@ export function AddMouseDialog({
         colony.lines[0]?.cages[0]?.cageNumber ?? ''
     );
     const [slotValue, setSlotValue] = useState('');
+    // Container rails default OFF: creating an empty slot is the common case
+    // (a cage is labelled and racked before an animal goes in). Not shown at
+    // all on the mouse rail, where a mouse is always required.
+    const [includeMouse, setIncludeMouse] = useState(false);
     const [genotype, setGenotype] = useState('');
     const [error, setError] = useState<string | null>(null);
+
+    const needsMouse = mode === 'mouse' || includeMouse;
 
     // Seed from prefill props whenever the dialog opens. Resolves IDs to display
     // strings; falls back to defaults when the ID is absent or not found.
@@ -115,9 +225,9 @@ export function AddMouseDialog({
                 }
             }
         } else if (initialLineId !== undefined) {
-            // Only line prefilled — pick the first cage in that line (if any).
-            const line = colony.lines.find((l) => l.lineId === initialLineId);
-            resolvedCageValue = line?.cages[0]?.cageNumber ?? '';
+            // Only line prefilled — open in NEW-CAGE mode (empty field, never the
+            // line's existing first cage) with a freely-editable next-number guess.
+            resolvedCageValue = suggestNextCageNumber();
         } else {
             // No prefill: default to line[0] cage[0].
             resolvedCageValue = colony.lines[0]?.cages[0]?.cageNumber ?? '';
@@ -130,6 +240,7 @@ export function AddMouseDialog({
         setLineId(resolvedLineId);
         setCageValue(resolvedCageValue);
         setSlotValue(resolvedSlotValue);
+        setIncludeMouse(false);
         setGenotype('');
         setError(null);
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -154,7 +265,7 @@ export function AddMouseDialog({
     const slotMatch = slots.find(
         (s) => s.label.toLowerCase() === slotValue.trim().toLowerCase()
     );
-    const isNewSlot = isNewCage || (slotValue.trim() !== '' && !slotMatch);
+    const isNewSlot = isNewCage || mode === 'slot' || (slotValue.trim() !== '' && !slotMatch);
 
     const litterOptions: ComboOption[] = [
         { value: nextAutoCode, label: `auto next: ${nextAutoCode}` },
@@ -167,20 +278,28 @@ export function AddMouseDialog({
     const pupNum = parseInt(pupNumber, 10);
     const litterOk = parseLitterCode(litterValue.trim()) !== null;
     const newCageNum = isNewCage ? parseInt(cageValue.trim(), 10) : NaN;
-    const isMissing =
-        !litterOk ||
-        !pupNumber ||
-        isNaN(pupNum) ||
-        pupNum < 1 ||
-        !dob ||
+    const mouseMissing =
+        needsMouse && (!litterOk || !pupNumber || isNaN(pupNum) || pupNum < 1 || !dob);
+    const containerMissing =
         cageValue.trim() === '' ||
         (isNewCage && (isNaN(newCageNum) || newCageNum < 1)) ||
-        (isNewCage && slotValue.trim() === '');
+        ((isNewCage || mode === 'slot') && slotValue.trim() === '');
+    // Nothing would happen: existing cage + existing/first slot + toggle off.
+    const nothingToSubmit = !isNewCage && !isNewSlot && !needsMouse;
+    const isMissing = mouseMissing || containerMissing || nothingToSubmit;
 
     function handleLineChange(newLineId: number) {
         setLineId(newLineId);
         const line = lineOptions.find((l) => l.lineId === newLineId);
-        setCageValue(line?.cages[0]?.cageNumber ?? '');
+        // In cage mode the INTENT is a new cage, so switching lines must keep
+        // offering one. Falling back to the line's first existing cage here
+        // would flip isNewCage false and silently disable submit while the
+        // title still says "Add cage" — a dead end with no message.
+        setCageValue(
+            mode === 'cage'
+                ? suggestNextCageNumber()
+                : (line?.cages[0]?.cageNumber ?? '')
+        );
         setSlotValue('');
         setError(null);
     }
@@ -193,31 +312,41 @@ export function AddMouseDialog({
 
     function submit() {
         if (isMissing) return;
-        const base = {
+        const mouse: MouseSpec = {
             sex,
             litterCode: litterValue.trim(),
             pupNumber: pupNum,
             dob,
             genotype: genotype.trim() || undefined,
         };
-        const result = addMouse(
-            isNewCage
-                ? {
-                      ...base,
-                      newCageNumber: newCageNum,
-                      lineId,
-                      newSlotLabel: slotValue.trim(),
-                  }
-                : {
-                      ...base,
-                      cageId: cageMatch!.cageId,
-                      slotId:
-                          !isNewSlot && slotValue.trim() !== ''
-                              ? slotMatch!.slotId
-                              : undefined,
-                      newSlotLabel: isNewSlot ? slotValue.trim() : undefined,
-                  }
-        );
+
+        const action = buildSubmitAction({
+            isNewCage,
+            isNewSlot,
+            needsMouse,
+            mouse,
+            lineId,
+            newCageNumber: newCageNum,
+            slotLabel: slotValue.trim(),
+            cageId: cageMatch?.cageId,
+            existingSlotId: slotMatch?.slotId ?? cageMatch?.slots[0]?.slotId,
+        });
+
+        let result: AddMouseResult;
+        switch (action.kind) {
+            case 'cage':
+                result = addCage(action.input);
+                break;
+            case 'slot':
+                result = addSlot(action.input);
+                break;
+            case 'mouse':
+                result = addMouse(action.input);
+                break;
+            case 'none':
+                setError('Cage has no slot — create a new slot label to place the mouse.');
+                return;
+        }
         if (!result.ok) {
             setError(result.error);
             return;
@@ -232,54 +361,72 @@ export function AddMouseDialog({
         >
             <DialogContent className="max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add mouse</DialogTitle>
+                    <DialogTitle>{MODE_TITLE[mode]}</DialogTitle>
                 </DialogHeader>
 
-                <Label text="Sex">
-                    <select
-                        className={SELECT_CLASS}
-                        value={sex}
-                        onChange={(e) => setSex(e.target.value as Sex)}
-                    >
-                        {SEX_OPTIONS.map((s) => (
-                            <option key={s} value={s}>
-                                {s === 'M' ? 'M — male' : s === 'F' ? 'F — female' : 'U — unsexed'}
-                            </option>
-                        ))}
-                    </select>
-                </Label>
+                {mode !== 'mouse' ? (
+                    <label className="mt-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <input
+                            type="checkbox"
+                            checked={includeMouse}
+                            onChange={(e) => setIncludeMouse(e.target.checked)}
+                        />
+                        Add first mouse now
+                        <span className="font-normal text-muted-foreground/70">
+                            (off = leaves the slot empty)
+                        </span>
+                    </label>
+                ) : null}
 
-                <Label text="Litter code * (search or add)">
-                    <Combobox
-                        value={litterValue}
-                        onChange={(v) => {
-                            setLitterValue(v);
-                            setError(null);
-                        }}
-                        options={litterOptions}
-                        placeholder="search or add code"
-                        addLabel={(t) => `+ Add litter ${t}`}
-                        transform={(t) => t.toUpperCase()}
-                    />
-                </Label>
+                {needsMouse ? (
+                    <>
+                        <Label text="Sex">
+                            <select
+                                className={SELECT_CLASS}
+                                value={sex}
+                                onChange={(e) => setSex(e.target.value as Sex)}
+                            >
+                                {SEX_OPTIONS.map((s) => (
+                                    <option key={s} value={s}>
+                                        {s === 'M' ? 'M — male' : s === 'F' ? 'F — female' : 'U — unsexed'}
+                                    </option>
+                                ))}
+                            </select>
+                        </Label>
 
-                <Label text="Pup number *">
-                    <Input
-                        type="number"
-                        min={1}
-                        placeholder="e.g. 9"
-                        value={pupNumber}
-                        onChange={(e) => setPupNumber(e.target.value)}
-                    />
-                </Label>
+                        <Label text="Litter code * (search or add)">
+                            <Combobox
+                                value={litterValue}
+                                onChange={(v) => {
+                                    setLitterValue(v);
+                                    setError(null);
+                                }}
+                                options={litterOptions}
+                                placeholder="search or add code"
+                                addLabel={(t) => `+ Add litter ${t}`}
+                                transform={(t) => t.toUpperCase()}
+                            />
+                        </Label>
 
-                <Label text="Date of birth *">
-                    <Input
-                        type="date"
-                        value={dob}
-                        onChange={(e) => setDob(e.target.value)}
-                    />
-                </Label>
+                        <Label text="Pup number *">
+                            <Input
+                                type="number"
+                                min={1}
+                                placeholder="e.g. 9"
+                                value={pupNumber}
+                                onChange={(e) => setPupNumber(e.target.value)}
+                            />
+                        </Label>
+
+                        <Label text="Date of birth *">
+                            <Input
+                                type="date"
+                                value={dob}
+                                onChange={(e) => setDob(e.target.value)}
+                            />
+                        </Label>
+                    </>
+                ) : null}
 
                 <Label text="Line">
                     <select
@@ -307,7 +454,7 @@ export function AddMouseDialog({
 
                 <Label
                     text={
-                        isNewCage
+                        isNewCage || mode === 'slot'
                             ? 'New slot label * (unique colony-wide)'
                             : 'Slot (search or add — first slot if empty)'
                     }
@@ -321,7 +468,7 @@ export function AddMouseDialog({
                         options={slotOptions}
                         placeholder="search or add slot"
                         addLabel={(t) => `+ Add slot ${t}`}
-                        emptyLabel={isNewCage ? undefined : '— first slot —'}
+                        emptyLabel={isNewCage || mode === 'slot' ? undefined : '— first slot —'}
                     />
                 </Label>
 
@@ -331,20 +478,22 @@ export function AddMouseDialog({
                     </p>
                 ) : null}
 
-                <Label text="Genotype (optional — defaults to ?)">
-                    <Input
-                        placeholder="e.g. Nf1 f/+"
-                        value={genotype}
-                        onChange={(e) => setGenotype(e.target.value)}
-                    />
-                </Label>
+                {needsMouse ? (
+                    <Label text="Genotype (optional — defaults to ?)">
+                        <Input
+                            placeholder="e.g. Nf1 f/+"
+                            value={genotype}
+                            onChange={(e) => setGenotype(e.target.value)}
+                        />
+                    </Label>
+                ) : null}
 
                 <DialogFooter>
                     <Button variant="outline" size="sm" onClick={onClose}>
                         Cancel
                     </Button>
                     <Button size="sm" disabled={isMissing} onClick={submit}>
-                        Add mouse
+                        {MODE_TITLE[mode]}
                     </Button>
                 </DialogFooter>
             </DialogContent>

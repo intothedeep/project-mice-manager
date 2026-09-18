@@ -33,7 +33,7 @@ const MOUSE_OPTIONS = Array.from(
     new Set(
         SEED_COLONY.lines.flatMap((l) =>
             l.cages.flatMap((c) =>
-                c.slots.flatMap((s) => s.mice.map((m) => m.renderedId))
+                c.slots.flatMap((s) => s.mice.map((m) => m.mouseLabel))
             )
         )
     )
@@ -50,7 +50,7 @@ export function NewTaskDialog({
     open: boolean;
     onClose: () => void;
     // Batch mode: when set, create ONE case with subjectKind='mice' covering
-    // all these mice. metaId drives the badge index; label is the renderedId.
+    // all these mice. metaId drives the badge index; label is the mouseLabel.
     preset?: { metaId: number; label: string }[];
 }) {
     // In batch mode the subject is the preset mice, so only mouse-subject task

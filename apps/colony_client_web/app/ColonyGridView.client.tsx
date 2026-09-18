@@ -3,8 +3,9 @@
 import type {
     GridCage,
     GridLine,
+    GridSlot,
     MouseCell,
-    MouseTaskTag,
+    MouseCaseTag,
     ParentCell,
     Sex,
     SignalColor,
@@ -23,7 +24,6 @@ import { type MoveTarget } from '@/lib/gridMove';
 import {
     resolvePath,
     isOnSelection,
-    LEVEL_RANK,
     type Selection,
     type SelLevel,
     type SelPath,
@@ -99,22 +99,22 @@ export function ColonyGridView() {
     const [taskOpen, setTaskOpen] = useState(false);
     const [taskMice, setTaskMice] = useState<{ metaId: number; label: string }[]>([]);
     const [caseDrawer, setCaseDrawer] = useState<CaseDrawerTarget | null>(null);
-    const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; mouse: { metaId: number; renderedId: string } } | null>(null);
+    const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; mouse: { metaId: number; mouseLabel: string } } | null>(null);
     // null = closed; {} = no prefill; {cageId,...} = prefilled
     const [addMouseTarget, setAddMouseTarget] = useState<AddMouseTarget | null>(null);
     const [addLineOpen, setAddLineOpen] = useState(false);
 
     const allCases = useTasks();
     const badgeIndex = useMemo(() => {
-        const index = new Map<number, MouseTaskTag[]>();
-        const push = (metaId: number, tag: MouseTaskTag) => {
+        const index = new Map<number, MouseCaseTag[]>();
+        const push = (metaId: number, tag: MouseCaseTag) => {
             const existing = index.get(metaId);
             if (existing) existing.push(tag);
             else index.set(metaId, [tag]);
         };
         for (const c of allCases) {
             if (c.status !== 'todo' && c.status !== 'doing') continue;
-            const tag: MouseTaskTag = {
+            const tag: MouseCaseTag = {
                 type: c.caseType,
                 signal: signalColorOf(c.signal),
             };
@@ -135,7 +135,7 @@ export function ColonyGridView() {
         [allCases, taskLog]
     );
     const composed = (m: MouseCell) =>
-        composeMouseLabel(m.renderedId, reclipIndex.get(m.metaId) ?? 0);
+        composeMouseLabel(m.mouseLabel, reclipIndex.get(m.metaId) ?? 0);
 
     const on = isFilterActive(filter);
     const match = useMemo(
@@ -159,14 +159,6 @@ export function ColonyGridView() {
     const hl = (elemLevel: number, ids: SelPath) =>
         selection?.kind === 'node' &&
         isOnSelection(path, selection.level, elemLevel, ids);
-
-    // tail(): lights ONLY the selected node + ancestor chain — never the subtree,
-    // never genotype/mate washes. Gate for the structural [+] overlays.
-    // L = the structural level of the element holding the [+] (1=line, 2=cage, 3=slot).
-    const tail = (L: number, ids: SelPath) =>
-        selection?.kind === 'node' &&
-        L <= LEVEL_RANK[selection.level] &&
-        hl(L, ids);
 
     const hlGenotype = selection?.kind === 'genotype' ? selection.value : null;
     const hlMate = selection?.kind === 'mate' ? selection.color : null;
@@ -265,8 +257,8 @@ export function ColonyGridView() {
                                         (mt) => mt.color === selection.color
                                     );
                         if (inSel)
-                            // WHY renderedId (not composedLabel): addTask uses the BASE label; .N suffix is a read-time projection.
-            out.push({ metaId: m.metaId, label: m.renderedId });
+                            // WHY mouseLabel (not composedLabel): addTask uses the BASE label; .N suffix is a read-time projection.
+            out.push({ metaId: m.metaId, label: m.mouseLabel });
                     })
                 )
             )
@@ -289,7 +281,7 @@ export function ColonyGridView() {
                     s.mice.forEach((m) =>
                         m.mates.forEach((mt) => {
                             if (mt.color === selection.color) {
-                                names.add(m.renderedId);
+                                names.add(m.mouseLabel);
                                 names.add(mt.partnerId);
                             }
                         })
@@ -303,7 +295,7 @@ export function ColonyGridView() {
             selLine ? `line: ${selLine.lineName}` : undefined,
             selCage ? `cage: ${selCage.cageNumber}` : undefined,
             selSlot ? `slot ${selSlot.label}` : undefined,
-            selMouse ? `mouse: ${composeMouseLabel(selMouse.renderedId, reclipIndex.get(selMouse.metaId) ?? 0)}` : undefined,
+            selMouse ? `mouse: ${composeMouseLabel(selMouse.mouseLabel, reclipIndex.get(selMouse.metaId) ?? 0)}` : undefined,
         ].filter((s): s is string => !!s);
     }
 
@@ -358,7 +350,7 @@ export function ColonyGridView() {
         setSelected((prev) => {
             const next = { ...prev };
             if (next[m.metaId]) delete next[m.metaId];
-            else next[m.metaId] = m.renderedId;
+            else next[m.metaId] = m.mouseLabel;
             return next;
         });
     }
@@ -463,46 +455,129 @@ export function ColonyGridView() {
                 </div>
                 {/* one scroll container for BOTH axes */}
                 <div className="thin-scroll min-h-0 flex-1 overflow-auto">
-                    {/* pb-10: ensures the last-row tail [+] is never clipped by the
-                        scroll container. Padding on the scrolled content renders
-                        past the last child; padding on the overflow element does not. */}
+                    {/* pb-10: the last line's tail [+] straddles the card's bottom
+                        border, so it needs room below. Padding on the scrolled content
+                        renders past the last child; padding on the overflow element does not. */}
                     <div className="relative min-w-[78rem] pb-10">
                         <ColumnHeader />
-                        {/* space-y-3: real gap between lines so the line-tail [+]
-                            sits in the gap rather than on top of the next line. */}
-                        <div className="space-y-3">
-                            {colony.lines.map((l, i) => (
+                        {/* space-y-6: gap between line cards, so each line reads as a
+                            distinct block and the straddling tail [+] has clear room. */}
+                        <div className="space-y-6">
+                            {colony.lines.map((l, i) => {
+                                // A line shows the add-row when it is highlighted — by node
+                                // selection OR a genotype/mate wash. Same predicate LineLabel
+                                // lights with, so a genotype multi-select gives every hit
+                                // line its own row (user rule).
+                                const lineHl =
+                                    hl(1, { lineId: l.lineId }) ||
+                                    (genoSets?.lines.has(l.lineId) ?? false) ||
+                                    (mateSets?.lines.has(l.lineId) ?? false);
+                                // Add-affordance gate — NODE selection only (see TailPlus).
+                                const lineSel = hl(1, { lineId: l.lineId });
+                                const cageHl = (c: GridCage) =>
+                                    hl(2, { lineId: l.lineId, cageId: c.cageId }) ||
+                                    (genoSets?.cages.has(c.cageId) ?? false) ||
+                                    (mateSets?.cages.has(c.cageId) ?? false);
+                                const slotHl = (c: GridCage, s: GridSlot) =>
+                                    hl(3, {
+                                        lineId: l.lineId,
+                                        cageId: c.cageId,
+                                        slotId: s.slotId,
+                                    }) ||
+                                    (genoSets?.slots.has(s.slotId) ?? false) ||
+                                    (mateSets?.slots.has(s.slotId) ?? false);
+                                const mouseHl = (c: GridCage, s: GridSlot, m: MouseCell) =>
+                                    hl(4, {
+                                        lineId: l.lineId,
+                                        cageId: c.cageId,
+                                        slotId: s.slotId,
+                                        mouseId: m.metaId,
+                                    }) ||
+                                    genoMouse(m.genotype) ||
+                                    mateMouse(m);
+                                // Tail [+] anchors: per COLUMN, only the BOTTOM-MOST highlighted
+                                // cell within this line carries the icon (user rule). Prefill is
+                                // exact from that cell's own ancestors — no path guessing.
+                                const cageSel = (c: GridCage) =>
+                                    hl(2, { lineId: l.lineId, cageId: c.cageId });
+                                const slotSel = (c: GridCage, s: GridSlot) =>
+                                    hl(3, { lineId: l.lineId, cageId: c.cageId, slotId: s.slotId });
+                                const mouseSel = (c: GridCage, s: GridSlot, m: MouseCell) =>
+                                    hl(4, {
+                                        lineId: l.lineId,
+                                        cageId: c.cageId,
+                                        slotId: s.slotId,
+                                        mouseId: m.metaId,
+                                    });
+                                const lastHlCage = [...l.cages].reverse().find(cageSel);
+                                const lastHlSlot = l.cages
+                                    .flatMap((c) => c.slots.map((s) => ({ c, s })))
+                                    .reverse()
+                                    .find(({ c, s }) => slotSel(c, s));
+                                const lastHlMouse = l.cages
+                                    .flatMap((c) =>
+                                        c.slots.flatMap((s) => s.mice.map((m) => ({ c, s, m })))
+                                    )
+                                    .reverse()
+                                    .find(({ c, s, m }) => mouseSel(c, s, m));
+                                return (
+                                <div key={l.lineId}>
                                 <div
-                                    key={l.lineId}
                                     id={`line-${l.lineId}`}
-                                    className="relative flex border-b border-border"
+                                    // Full border + subtle shadow: each line block is a card,
+                                    // lifted off the gap so the separation reads at a glance.
+                                    className="relative flex border border-border shadow-sm"
                                 >
+                                    {lineSel ? (
+                                        <TailPlus
+                                            rail={RAIL_W.line}
+                                            label="Add new line"
+                                            onClick={() => setAddLineOpen(true)}
+                                        />
+                                    ) : null}
                                     <LineLabel
                                         line={l}
                                         index={i + 1}
                                         count={countLineMice(l)}
-                                        highlighted={
-                                            hl(1, { lineId: l.lineId }) ||
-                                            (genoSets?.lines.has(l.lineId) ?? false) ||
-                                            (mateSets?.lines.has(l.lineId) ?? false)
-                                        }
+                                        highlighted={lineHl}
                                         onClick={() => goTo({ level: 'line', id: l.lineId })}
                                     />
                                     <div className="min-w-0 flex-1">
+                                        {/* Empty line: the cage/slot/mouse [+] all live inside
+                                            l.cages.map, so a just-created line would be a dead end.
+                                            A standing "+ cage" is its only way forward. */}
+                                        {l.cages.length === 0 ? (
+                                            <button
+                                                type="button"
+                                                aria-label="Add first cage to line"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setAddMouseTarget({ lineId: l.lineId });
+                                                }}
+                                                className="flex w-full items-center px-2 py-1 font-mono text-[10px] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+                                            >
+                                                + cage
+                                            </button>
+                                        ) : null}
                                         {l.cages.map((c) => (
                                             <div
                                                 key={c.cageId}
                                                 id={`cage-${c.cageId}`}
                                                 className="relative flex border-t border-border/60 first:border-t-0"
                                             >
+                                                {c.cageId === lastHlCage?.cageId ? (
+                                                    <TailPlus
+                                                        rail={RAIL_W.cage}
+                                                        label="Add cage to line"
+                                                        onClick={() =>
+                                                            setAddMouseTarget({ lineId: l.lineId })
+                                                        }
+                                                    />
+                                                ) : null}
                                                 <CageLabel
                                                     number={c.cageNumber}
                                                     count={countCageMice(c)}
-                                                    highlighted={
-                                                        hl(2, { lineId: l.lineId, cageId: c.cageId }) ||
-                                                        (genoSets?.cages.has(c.cageId) ?? false) ||
-                                                        (mateSets?.cages.has(c.cageId) ?? false)
-                                                    }
+                                                    highlighted={cageHl(c)}
                                                     onClick={() => goTo({ level: 'cage', id: c.cageId })}
                                                 />
                                                 <div className="min-w-0 flex-1">
@@ -512,24 +587,42 @@ export function ColonyGridView() {
                                                             id={`slot-${s.slotId}`}
                                                             className="relative flex border-t border-border/40 first:border-t-0"
                                                         >
+                                                            {s.slotId === lastHlSlot?.s.slotId ? (
+                                                                <TailPlus
+                                                                    rail={RAIL_W.slot}
+                                                                    label="Add slot to cage"
+                                                                    onClick={() =>
+                                                                        setAddMouseTarget({
+                                                                            cageId: c.cageId,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            ) : null}
                                                             <SlotLabel
                                                                 label={s.label}
                                                                 count={countSlotMice(s.mice)}
                                                                 adults={countSlotAdults(s.mice)}
                                                                 cap={SLOT_ADULT_CAP}
                                                                 over={countSlotAdults(s.mice) > SLOT_ADULT_CAP}
-                                                                highlighted={
-                                                                    hl(3, {
-                                                                        lineId: l.lineId,
-                                                                        cageId: c.cageId,
-                                                                        slotId: s.slotId,
-                                                                    }) ||
-                                                                    (genoSets?.slots.has(s.slotId) ?? false) ||
-                                                                    (mateSets?.slots.has(s.slotId) ?? false)
-                                                                }
+                                                                highlighted={slotHl(c, s)}
                                                                 onClick={() => goTo({ level: 'slot', id: s.slotId })}
                                                             />
                                                             <div className="min-w-0 flex-1">
+                                                                {/* Empty slot: a standing "+ mouse" fills the empty block so the
+                                                                    first mouse can be added without selecting first. */}
+                                                                {s.mice.length === 0 ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label="Add first mouse to slot"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAddMouseTarget({ cageId: c.cageId, slotId: s.slotId });
+                                                                        }}
+                                                                        className="flex w-full items-center px-2 py-1 font-mono text-[10px] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+                                                                    >
+                                                                        + mouse
+                                                                    </button>
+                                                                ) : null}
                                                                 {s.mice.map((m) => (
                                                                     <MouseRow
                                                                         key={m.metaId}
@@ -539,15 +632,15 @@ export function ColonyGridView() {
                                                                         dateHits={dateIndex.get(m.metaId)}
                                                                         tags={badgeIndex.get(m.metaId) ?? []}
                                                                         zebra={(rowIndex.get(m.metaId) ?? 0) % 2 === 1}
-                                                                        highlighted={
-                                                                            hl(4, {
-                                                                                lineId: l.lineId,
-                                                                                cageId: c.cageId,
-                                                                                slotId: s.slotId,
-                                                                                mouseId: m.metaId,
-                                                                            }) ||
-                                                                            genoMouse(m.genotype) ||
-                                                                            mateMouse(m)
+                                                                        highlighted={mouseHl(c, s, m)}
+                                                                        onAddBelow={
+                                                                            m.metaId === lastHlMouse?.m.metaId
+                                                                                ? () =>
+                                                                                      setAddMouseTarget({
+                                                                                          cageId: c.cageId,
+                                                                                          slotId: s.slotId,
+                                                                                      })
+                                                                                : undefined
                                                                         }
                                                                         filterOn={on}
                                                                         isMatch={match(m)}
@@ -580,7 +673,7 @@ export function ColonyGridView() {
                                                                         }}
                                                                         onCtxMenu={(e) => {
                                                                             e.preventDefault();
-                                                                            setCtxMenu({ x: e.clientX, y: e.clientY, mouse: { metaId: m.metaId, renderedId: m.renderedId } });
+                                                                            setCtxMenu({ x: e.clientX, y: e.clientY, mouse: { metaId: m.metaId, mouseLabel: m.mouseLabel } });
                                                                         }}
                                                                         onUpdate={(patch) => {
                                                                             const result = updateMouse(m.metaId, patch);
@@ -589,76 +682,17 @@ export function ColonyGridView() {
                                                                     />
                                                                 ))}
                                                             </div>
-                                                            {/* slot-tail [+]: opens AddMouseDialog prefilled with cageId+slotId.
-                                                                Gated by tail(3,…) so it only shows on the selected slot (or ancestor).
-                                                                stopPropagation: the slot div has no goTo handler but ancestors do. */}
-                                                            {tail(3, { lineId: l.lineId, cageId: c.cageId, slotId: s.slotId }) ? (
-                                                                <button
-                                                                    type="button"
-                                                                    aria-label="Add mouse to slot"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setAddMouseTarget({ cageId: c.cageId, slotId: s.slotId });
-                                                                    }}
-                                                                    className="pointer-events-auto absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
-                                                                >
-                                                                    + mouse
-                                                                </button>
-                                                            ) : null}
                                                         </div>
                                                     ))}
                                                 </div>
-                                                {/* cage-tail [+]: opens AddMouseDialog in new-slot mode (user types slot label).
-                                                    Gated by tail(2,…) → only on selected cage or ancestor. */}
-                                                {tail(2, { lineId: l.lineId, cageId: c.cageId }) ? (
-                                                    <button
-                                                        type="button"
-                                                        aria-label="Add slot to cage"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setAddMouseTarget({ cageId: c.cageId });
-                                                        }}
-                                                        className="pointer-events-auto absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
-                                                    >
-                                                        + slot
-                                                    </button>
-                                                ) : null}
                                             </div>
                                         ))}
                                     </div>
-                                    {/* line-tail [+]: opens AddMouseDialog in new-cage mode (user types cage # + slot label).
-                                        Gated by tail(1,…) → only on selected line. */}
-                                    {tail(1, { lineId: l.lineId }) ? (
-                                        <button
-                                            type="button"
-                                            aria-label="Add cage to line"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setAddMouseTarget({ lineId: l.lineId });
-                                            }}
-                                            className="pointer-events-auto absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
-                                        >
-                                            + cage
-                                        </button>
-                                    ) : null}
                                 </div>
-                            ))}
+                                </div>
+                                );
+                            })}
                         </div>
-                        {/* grid-bottom [+]: always visible when a node is selected.
-                            Gated by selection?.kind === 'node' per spec. */}
-                        {selection?.kind === 'node' ? (
-                            <button
-                                type="button"
-                                aria-label="Add new line"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setAddLineOpen(true);
-                                }}
-                                className="pointer-events-auto absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-none border border-border bg-background px-2 py-0.5 font-mono text-[9px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
-                            >
-                                + line
-                            </button>
-                        ) : null}
                     </div>
                 </div>
             </Card>
@@ -737,11 +771,11 @@ export function ColonyGridView() {
                             def,
                             values: {},
                             signal: 'instruction',
-                            subjectLabel: ctxMenu.mouse.renderedId,
+                            subjectLabel: ctxMenu.mouse.mouseLabel,
                             detail: null,
                             dueDate: null,
                             assignee: null,
-                            mice: [{ metaId: ctxMenu.mouse.metaId, label: ctxMenu.mouse.renderedId }],
+                            mice: [{ metaId: ctxMenu.mouse.metaId, label: ctxMenu.mouse.mouseLabel }],
                         });
                         setCtxMenu(null);
                     }}
@@ -1207,6 +1241,44 @@ function ColumnHeader() {
     );
 }
 
+// TailPlus: [+] straddling the BOTTOM BORDER of the bottom-most NODE-SELECTED
+// cell of one column (user rule). `rail` mirrors that column's width (RAIL_W /
+// SEL_W) so the icon sits centred under its own column. Rendered as a SIBLING
+// of the rail <button> (never inside it — nested buttons are invalid DOM and
+// LineLabel's overflow-hidden would clip a straddling icon). z-20 clears
+// HlOverlay (z-10) and stays under the sticky header (z-30).
+function TailPlus({
+    rail,
+    label,
+    onClick,
+}: {
+    rail: string;
+    label: string;
+    onClick: () => void;
+}) {
+    return (
+        <div
+            className={cn(
+                rail,
+                'pointer-events-none absolute bottom-0 left-0 z-20 flex translate-y-1/2 justify-center'
+            )}
+        >
+            <button
+                type="button"
+                aria-label={label}
+                title={label}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick();
+                }}
+                className="pointer-events-auto flex size-4 items-center justify-center rounded-full border border-primary bg-card text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+            >
+                <Plus className="size-2.5" />
+            </button>
+        </div>
+    );
+}
+
 /* ---------- left-rail labels (COLUMN-based hierarchy) ---------- */
 
 const RAIL_BASE =
@@ -1368,8 +1440,10 @@ function ParentRow({
     onJump: (metaId: number) => void;
     divider?: boolean;
 }) {
+    // min-h-0 + no flex-1: the parent cell is now a 2-row grid, so the track
+    // sizes this row — see the mate cell's comment for why flex sizing broke it.
     const base = cn(
-        'grid flex-1 grid-cols-2',
+        'grid min-h-0 grid-cols-2 overflow-hidden',
         divider && 'border-t border-border/40'
     );
     if (!parent) {
@@ -1394,8 +1468,8 @@ function ParentRow({
                 }}
                 title={
                     clickable
-                        ? `go to ${parent.renderedId}`
-                        : `${parent.renderedId} (not shown here)`
+                        ? `go to ${parent.mouseLabel}`
+                        : `${parent.mouseLabel} (not shown here)`
                 }
                 className={cn(
                     'flex items-center truncate px-1 text-left font-mono text-[10px] font-semibold',
@@ -1405,7 +1479,7 @@ function ParentRow({
                         : 'cursor-default opacity-60'
                 )}
             >
-                {parent.renderedId}
+                {parent.mouseLabel}
             </button>
             <span
                 title={parent.genotype ?? undefined}
@@ -1459,6 +1533,7 @@ function MouseRow({
     dateHits,
     zebra,
     highlighted,
+    onAddBelow,
     filterOn,
     isMatch,
     checked,
@@ -1476,10 +1551,12 @@ function MouseRow({
     id: string;
     mouse: MouseCell;
     composedLabel: string;
-    tags: MouseTaskTag[];
+    tags: MouseCaseTag[];
     dateHits: Partial<Record<DateColumn, DateCaseHit>> | undefined;
     zebra: boolean;
     highlighted: boolean;
+    // Set only on the bottom-most highlighted mouse row of a line — see TailPlus.
+    onAddBelow?: () => void;
     filterOn: boolean;
     isMatch: boolean;
     checked: boolean;
@@ -1518,18 +1595,27 @@ function MouseRow({
             id={id}
             onContextMenu={onCtxMenu}
             className={cn(
-                'group relative border-b border-border/40 transition-opacity last:border-b-0',
+                'group relative border-b border-border/40 last:border-b-0',
                 !dead && (zebra ? 'bg-muted/40' : 'bg-background'),
-                dead && 'bg-neutral-700 text-neutral-300',
-                dimmed ? 'opacity-25' : 'opacity-100'
+                dead && 'bg-neutral-700 text-neutral-300'
             )}
         >
             {highlighted ? <HlOverlay /> : null}
+            {onAddBelow ? (
+                <TailPlus
+                    rail={SEL_W}
+                    label="Add mouse to slot"
+                    onClick={onAddBelow}
+                />
+            ) : null}
             <div
                 role="button"
                 tabIndex={-1}
                 onClick={onSelect}
-                className="flex cursor-pointer"
+                className={cn(
+                    'flex cursor-pointer transition-opacity',
+                    dimmed ? 'opacity-25' : 'opacity-100'
+                )}
             >
                 <label
                     className={cn(
@@ -1551,8 +1637,8 @@ function MouseRow({
                     <div className={cn('grid items-stretch', MOUSE_COLS)}>
                         {/* id cell — A4: single-click opens drawer (200ms), dblclick edits */}
                         <EditableCell
-                            value={mouse.renderedId}
-                            onCommit={(next) => onUpdate({ renderedId: next })}
+                            value={mouse.mouseLabel}
+                            onCommit={(next) => onUpdate({ mouseLabel: next })}
                             className={cn(
                                 CELL,
                                 !dead && SEX_TINT[mouse.sex],
@@ -1639,65 +1725,104 @@ function MouseRow({
                             {fmtDate(mouse.dob)}
                         </EditableCell>
 
-                        <div className="flex flex-col justify-center border-r border-border/40">
+                        {/* grid-rows-2, not flex-col: a flex item's min-height is
+                            auto, so the half holding text cannot shrink below its
+                            content and shoves the divider off the 50% line — which
+                            is why it stopped lining up with the parent cell's. Two
+                            1fr tracks split exactly in half at any row height. */}
+                        {/* grid-rows-2, not flex-col: a flex item's min-height is
+                            auto, so the half holding text cannot shrink below its
+                            content and shoves the divider off the 50% line — which
+                            is why it stopped lining up with the parent cell's. Two
+                            1fr tracks split exactly in half at any row height. */}
+                        <div className="grid grid-rows-2 border-r border-border/40">
                             {mouse.mates.length > 0 ? (
-                                <>
-                                    <div className="flex flex-1 flex-wrap items-center gap-1 px-1 py-0.5">
-                                        {mouse.mates.map((mt, i) => {
-                                            const clickable =
-                                                mt.partnerMetaId != null;
-                                            return (
+                                (() => {
+                                    // Latest = matedOn sorted DESCENDING, nulls last.
+                                    // Never array order: a server query without an
+                                    // ORDER BY would then surface the wrong partner
+                                    // with no error to notice.
+                                    const byLatest = [...mouse.mates].sort((x, y) => {
+                                        if (x.matedOn === y.matedOn) return 0;
+                                        if (x.matedOn == null) return 1;
+                                        if (y.matedOn == null) return -1;
+                                        return y.matedOn.localeCompare(x.matedOn);
+                                    });
+                                    const latest = byLatest[0]!;
+                                    const clickable = latest.partnerMetaId != null;
+                                    return (
+                                        <>
+                                            {/* Top half = the LATEST mate only. Ids are
+                                                long and wrap badly; the badges below
+                                                carry the whole group, so the label names
+                                                the current partner and the colours carry
+                                                the history. One line → never pushes the
+                                                divider. */}
+                                            <div className="flex min-h-0 items-center overflow-hidden px-1 py-0.5">
                                                 <button
-                                                    key={i}
                                                     type="button"
                                                     disabled={!clickable}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (mt.partnerMetaId != null)
-                                                            onJumpMouse(mt.partnerMetaId);
+                                                        if (latest.partnerMetaId != null)
+                                                            onJumpMouse(latest.partnerMetaId);
                                                     }}
                                                     title={
-                                                        clickable
-                                                            ? `go to ${mt.partnerId}`
-                                                            : mt.partnerId
+                                                        byLatest.length > 1
+                                                            ? `latest of ${byLatest.length}: ${byLatest
+                                                                  .map(
+                                                                      (m) =>
+                                                                          `${m.partnerId}${m.matedOn ? ` (${fmtDate(m.matedOn)})` : ''}`
+                                                                  )
+                                                                  .join(', ')}`
+                                                            : clickable
+                                                              ? `go to ${latest.partnerId}`
+                                                              : latest.partnerId
                                                     }
                                                     className={cn(
-                                                        'truncate font-mono text-[10px] font-semibold',
+                                                        'truncate font-mono text-[9px] font-semibold',
                                                         clickable
                                                             ? 'cursor-pointer hover:underline'
                                                             : 'cursor-default opacity-60'
                                                     )}
                                                 >
-                                                    {mt.partnerId}
+                                                    {latest.partnerId}
                                                 </button>
-                                            );
-                                        })}
-                                    </div>
-                                    <div className="flex flex-1 flex-wrap items-center gap-1 border-t border-border/40 px-1 py-0.5">
-                                        {mouse.mates.map((mt, i) => (
-                                            <button
-                                                key={i}
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onMate(mt.color);
-                                                }}
-                                                className="size-3 shrink-0 cursor-pointer rounded-sm border border-black/10 hover:ring-1 hover:ring-primary"
-                                                style={{ background: mt.color }}
-                                                title="highlight mate group"
-                                                aria-label="highlight mate group"
-                                            />
-                                        ))}
-                                    </div>
-                                </>
+                                            </div>
+                                            {/* Badges keep the SAME order as the label
+                                                above — leftmost is the latest — and wrap
+                                                as the group grows. */}
+                                            <div className="flex min-h-0 flex-wrap items-center gap-1 overflow-hidden border-t border-border/40 px-1 py-0.5">
+                                                {byLatest.map((mt, i) => (
+                                                    <button
+                                                        key={i}
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onMate(mt.color);
+                                                        }}
+                                                        className="size-3 shrink-0 cursor-pointer rounded-sm border border-black/10 hover:ring-1 hover:ring-primary"
+                                                        style={{ background: mt.color }}
+                                                        title={
+                                                            mt.matedOn
+                                                                ? `${mt.partnerId} · ${fmtDate(mt.matedOn)} — highlight mate group`
+                                                                : `${mt.partnerId} — highlight mate group`
+                                                        }
+                                                        aria-label="highlight mate group"
+                                                    />
+                                                ))}
+                                            </div>
+                                        </>
+                                    );
+                                })()
                             ) : (
-                                <span className="flex items-center px-1 text-[11px] text-muted-foreground/40">
+                                <span className="row-span-2 flex items-center px-1 text-[11px] text-muted-foreground/40">
                                     —
                                 </span>
                             )}
                         </div>
 
-                        <div className="flex flex-col border-r border-border/40">
+                        <div className="grid grid-rows-2 border-r border-border/40">
                             <ParentRow
                                 tint="bg-sky-100"
                                 parent={mouse.parents?.father}

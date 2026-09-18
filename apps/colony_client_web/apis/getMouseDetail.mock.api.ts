@@ -34,7 +34,7 @@ const DETAILS: Record<number, MouseDetail> = {
             },
         ],
     },
-    // M4+10AZZ — the unresolved "+10" pooled notation
+    // M4+10AZZ — the "+10" pup-number offset, assigned on transfer (plan §5 Q23)
     103: {
         metaId: 103,
         dob: '2026-06-14',
@@ -49,7 +49,7 @@ const DETAILS: Record<number, MouseDetail> = {
                 at: '2026-09-02',
                 actor: 'Jia',
                 summary:
-                    "flagged: pooled '+10' — meaning TBD, confirm with professor",
+                    "flagged: transfer offset '+10' — storage design pending (plan §5 Q45)",
             },
             {
                 at: '2026-06-14',
@@ -101,7 +101,7 @@ const DETAILS: Record<number, MouseDetail> = {
             },
         ],
     },
-    // M4BCW.2 — a re-clip / tag re-issue
+    // M4BCW.2 — a second tissue collection (.2)
     401: {
         metaId: 401,
         dob: '2026-06-01',
@@ -115,7 +115,7 @@ const DETAILS: Record<number, MouseDetail> = {
             {
                 at: '2026-09-06',
                 actor: 'Sam',
-                summary: 're-clip (.2) — tag re-issued, re-genotype scheduled',
+                summary: 'second tissue collection (.2) — re-genotype scheduled',
             },
             {
                 at: '2026-06-01',

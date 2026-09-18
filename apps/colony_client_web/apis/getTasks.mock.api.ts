@@ -224,7 +224,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'M4+10AZZ',
         subjectMouseId: 103,
-        detail: "pooled '+10' notation — meaning TBD with professor",
+        detail: "transfer offset '+10' — confirm storage design (plan §5 Q45)",
         dueDate: '2026-09-25',
         createdAt: '2026-09-03',
         assignee: null,

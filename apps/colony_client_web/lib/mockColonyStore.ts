@@ -18,10 +18,16 @@ import {
     maxSeedLitterOrdinal,
 } from '@/lib/colonySeed';
 import {
-    addMouse as purAddMouse,
+    addMouse as pureAddMouse,
+    addSlot as pureAddSlot,
+    addCage as pureAddCage,
     updateMouse as pureUpdateMouse,
     addLine as pureAddLine,
+    suggestNextCageNumber as pureSuggestNextCageNumber,
+    type MouseSpec,
     type AddMouseInput,
+    type AddSlotInput,
+    type AddCageInput,
     type UpdateMousePatch,
     type AddMouseResult,
     type AddLineInput,
@@ -36,7 +42,16 @@ import {
 // The store then becomes a thin react-query wrapper and this file is retired.
 
 // Re-export types consumed by the view layer so its imports stay stable.
-export type { AddMouseInput, UpdateMousePatch, AddMouseResult, AddLineInput, AddLineResult };
+export type {
+    MouseSpec,
+    AddMouseInput,
+    AddSlotInput,
+    AddCageInput,
+    UpdateMousePatch,
+    AddMouseResult,
+    AddLineInput,
+    AddLineResult,
+};
 
 // ---- state -----------------------------------------------------------------
 
@@ -82,7 +97,7 @@ export function useLitterCodes(): string[] {
             for (const c of l.cages)
                 for (const s of c.slots)
                     for (const m of s.mice) {
-                        const code = extractLitterCode(m.renderedId);
+                        const code = extractLitterCode(m.mouseLabel);
                         if (code === null) continue;
                         const ord = parseLitterCode(code);
                         if (ord !== null) seen.set(ord, code);
@@ -98,16 +113,43 @@ export function peekNextLitterCode(): string {
     return formatLitterCode(counters.nextLitterOrd);
 }
 
+// Suggested next cage number for the "new cage" field default — read-only,
+// derived from current state (no counter advance).
+export function suggestNextCageNumber(): string {
+    return pureSuggestNextCageNumber(state);
+}
+
 // ---- public writes (thin wrappers) -----------------------------------------
 
-export function addMouse(input: AddMouseInput): AddMouseResult {
-    const r = purAddMouse(state, counters, input);
+// Shared by every mutation below: commit state/counters only on success, emit
+// only when something actually changed.
+function commitIfOk<R extends { ok: boolean }>(r: {
+    state: ColonyGrid;
+    counters: Counters;
+    result: R;
+}): R {
     if (r.result.ok) {
         state = r.state;
         counters = r.counters;
         emit();
     }
     return r.result;
+}
+
+export function addMouse(input: AddMouseInput): AddMouseResult {
+    return commitIfOk(pureAddMouse(state, counters, input));
+}
+
+export function addSlot(input: AddSlotInput): AddMouseResult {
+    return commitIfOk(pureAddSlot(state, counters, input));
+}
+
+export function addCage(input: AddCageInput): AddMouseResult {
+    return commitIfOk(pureAddCage(state, counters, input));
+}
+
+export function addLine(input: AddLineInput): AddLineResult {
+    return commitIfOk(pureAddLine(state, counters, input));
 }
 
 export function updateMouse(metaId: number, patch: UpdateMousePatch): AddMouseResult {
@@ -116,16 +158,6 @@ export function updateMouse(metaId: number, patch: UpdateMousePatch): AddMouseRe
     // Only emit when state reference actually changed (no-op guard).
     if (r.state !== state) {
         state = r.state;
-        emit();
-    }
-    return r.result;
-}
-
-export function addLine(input: AddLineInput): AddLineResult {
-    const r = pureAddLine(state, counters, input);
-    if (r.result.ok) {
-        state = r.state;
-        counters = r.counters;
         emit();
     }
     return r.result;

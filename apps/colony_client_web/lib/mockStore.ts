@@ -138,7 +138,7 @@ export interface NewTaskInput {
 // in the mice[] field. No per-mouse cases.
 // Single-subject path: mice absent → one case, subjectKind from def.subjectKind,
 // subjectMouseId set when def.subjectKind === 'mouse' and a metaId is available
-// in input (NOT resolved from renderedId to avoid the 102-vs-402 ambiguity).
+// in input (NOT resolved from mouseLabel to avoid the 102-vs-402 ambiguity).
 // For a Mate, auto-enqueues plug-check + delivery into Upcoming.
 export function addTask(input: NewTaskInput): void {
     const caseId = nextCaseId++;
@@ -179,7 +179,7 @@ export function addTask(input: NewTaskInput): void {
             subjectKind: input.def.subjectKind,
             subjectLabel: input.subjectLabel,
             // subjectMouseId is not available from the dialog (the dialog passes
-            // renderedId strings, not metaIds). Set null here; the real server
+            // mouseLabel strings, not metaIds). Set null here; the real server
             // will resolve the FK. Avoids the 102-vs-402 label-lookup bug.
             subjectMouseId: null,
             detail: input.detail,

@@ -57,7 +57,7 @@ export function MouseDetailDrawer({
     // .N re-clip label (read-time derived, same as the grid).
     const label = m
         ? composeMouseLabel(
-              m.renderedId,
+              m.mouseLabel,
               buildReclipIndex(cases).get(metaId) ?? 0
           )
         : '';
@@ -144,7 +144,7 @@ export function MouseDetailDrawer({
                                                             {parentRole}
                                                         </span>
                                                         <span className="font-mono">
-                                                            {p.renderedId}
+                                                            {p.mouseLabel}
                                                         </span>
                                                         <span className="font-mono text-[11px] text-muted-foreground">
                                                             {p.genotype ?? ''}

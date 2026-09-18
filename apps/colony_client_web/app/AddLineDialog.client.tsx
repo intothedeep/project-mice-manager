@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { addLine } from '@/lib/mockColonyStore';
+import { useEffect, useState } from 'react';
+import { addLine, suggestNextCageNumber } from '@/lib/mockColonyStore';
 import {
     Dialog,
     DialogContent,
@@ -13,7 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 // Small dialog for creating a new mouse line (+ line tail affordance).
-// Collects lineName (required) and an optional hex color for nominalGenotypeColor.
+// Collects lineName (required), an optional hex color for nominalGenotypeColor,
+// and — since line >= 1 cage is a structural invariant (colonyMutations.ts) —
+// the first cage number + slot label. No mouse: this dialog never created one.
 
 export function AddLineDialog({
     open,
@@ -24,30 +26,55 @@ export function AddLineDialog({
 }) {
     const [lineName, setLineName] = useState('');
     const [color, setColor] = useState('');
+    // Recomputed on OPEN, not at mount: this dialog stays mounted for the
+    // life of the page, so a mount-time suggestion goes stale the moment a
+    // cage is added elsewhere and then pre-fills a duplicate number.
+    const [cageNumber, setCageNumber] = useState('');
+    const [slotLabel, setSlotLabel] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-    const isMissing = lineName.trim() === '';
+    const cageNum = parseInt(cageNumber.trim(), 10);
+    const isMissing =
+        lineName.trim() === '' ||
+        cageNumber.trim() === '' ||
+        isNaN(cageNum) ||
+        cageNum < 1 ||
+        slotLabel.trim() === '';
 
     function submit() {
         if (isMissing) return;
         const result = addLine({
             lineName: lineName.trim(),
             nominalGenotypeColor: color.trim() || null,
+            cageNumber: cageNum,
+            slotLabel: slotLabel.trim(),
         });
         if (!result.ok) {
             setError(result.error);
             return;
         }
-        setLineName('');
-        setColor('');
-        setError(null);
+        reset();
         onClose();
     }
 
-    function handleClose() {
+    // Seed the cage suggestion whenever the dialog OPENS. This component stays
+    // mounted for the life of the page, so a mount-time value goes stale as soon
+    // as a cage is created elsewhere and would then pre-fill a duplicate.
+    useEffect(() => {
+        if (!open) return;
+        setCageNumber(suggestNextCageNumber());
+    }, [open]);
+
+    function reset() {
         setLineName('');
         setColor('');
+        setCageNumber(suggestNextCageNumber());
+        setSlotLabel('');
         setError(null);
+    }
+
+    function handleClose() {
+        reset();
         onClose();
     }
 
@@ -78,6 +105,32 @@ export function AddLineDialog({
                         placeholder="#4f9cf9"
                         value={color}
                         onChange={(e) => setColor(e.target.value)}
+                    />
+                </label>
+
+                <label className="mt-3 flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                    First cage number * (unique colony-wide)
+                    <Input
+                        type="number"
+                        min={1}
+                        placeholder="e.g. 12"
+                        value={cageNumber}
+                        onChange={(e) => {
+                            setCageNumber(e.target.value);
+                            setError(null);
+                        }}
+                    />
+                </label>
+
+                <label className="mt-3 flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                    First slot label * (unique colony-wide)
+                    <Input
+                        placeholder="e.g. F5"
+                        value={slotLabel}
+                        onChange={(e) => {
+                            setSlotLabel(e.target.value);
+                            setError(null);
+                        }}
                     />
                 </label>
 

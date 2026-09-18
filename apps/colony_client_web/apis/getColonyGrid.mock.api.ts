@@ -10,7 +10,7 @@ import type { ColonyGrid } from '@repo/types';
 // Full hierarchy: colony › line › cage › slot › mice (a slot holds many mice).
 // The fixture is anonymised-but-realistic and deliberately seeds the known
 // domain ambiguities so the demo doubles as a live open-question list:
-//   - M4+10AZZ : the "+N" pooled notation nobody (incl. the professor) has defined
+//   - M4+10AZZ : the "+N" pup-number-offset notation, assigned on transfer
 //   - U3BCX    : an unsexed newborn pup (sex = U until genotyped/sexed)
 //   - F10BEVe  : ear-tag suffix "e"
 //   - M4BCW    : reclip animal — ".2" label is READ-TIME derived from
@@ -71,7 +71,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 101,
-                                    renderedId: 'M4BCW',
+                                    punches: [{ punchId: 1, location: 'toe', effectiveAt: '2024-02-10' }],
+                                    mouseLabel: 'M4BCW',
+                                    pupNumber: 4,
+                                    litterCode: 'BCW',
+                                    pupOffsets: [],
                                     sex: 'M',
                                     genotype: 'Nf1 f/+',
                                     signal: 'done',
@@ -93,12 +97,17 @@ const COLONY_GRID: ColonyGrid = {
                                             partnerId: 'F5AYL',
                                             partnerMetaId: 402,
                                             color: MATE.g401,
+                                            matedOn: '2026-07-02',
                                         },
                                     ],
                                 },
                                 {
                                     metaId: 102,
-                                    renderedId: 'F5AYL',
+                                    punches: [{ punchId: 2, location: 'toe', effectiveAt: '2025-05-01' }],
+                                    mouseLabel: 'F5AYL',
+                                    pupNumber: 5,
+                                    litterCode: 'AYL',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -116,25 +125,29 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 103,
-                                    renderedId: 'M4+10AZZ',
+                                    punches: [{ punchId: 3, location: 'toe', effectiveAt: '2026-05-20' }],
+                                    mouseLabel: 'M4+10AZZ',
+                                    pupNumber: 4,
+                                    litterCode: 'AZZ',
+                                    pupOffsets: [10],
                                     sex: 'M',
                                     genotype: 'PlpCre;Nf1 f/+',
                                     signal: 'flag',
                                     isAlive: true,
                                     attention:
-                                        "pooled '+10' — meaning TBD, confirm with professor",
+                                        "transfer offset '+10' — storage design pending (plan §5 Q45)",
                                     dob: '2026-05-20',
                                     genotypeColor: geno('PlpCre;Nf1 f/+'),
                                     mates: [],
                                     parents: {
                                         father: {
-                                            renderedId: 'M4BCW',
+                                            mouseLabel: 'M4BCW',
                                             metaId: 101,
                                             genotype: 'Nf1 f/+',
                                             genotypeColor: geno('Nf1 f/+'),
                                         },
                                         mother: {
-                                            renderedId: 'F5AYL',
+                                            mouseLabel: 'F5AYL',
                                             metaId: 102,
                                             genotype: 'WT',
                                             genotypeColor: geno('WT'),
@@ -156,7 +169,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 201,
-                                    renderedId: 'F10BEVe',
+                                    punches: [{ punchId: 4, location: 'toe', effectiveAt: '2026-02-01' }],
+                                    mouseLabel: 'F10BEVe',
+                                    pupNumber: 10,
+                                    litterCode: 'BEV',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'Nf1 +/+',
                                     signal: 'done',
@@ -167,13 +184,13 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         father: {
-                                            renderedId: 'M0AAA',
+                                            mouseLabel: 'M0AAA',
                                             metaId: null,
                                             genotype: 'Nf1 f/+',
                                             genotypeColor: geno('Nf1 f/+'),
                                         },
                                         mother: {
-                                            renderedId: 'F0AAA',
+                                            mouseLabel: 'F0AAA',
                                             metaId: null,
                                             genotype: 'Nf1 +/+',
                                             genotypeColor: geno('Nf1 +/+'),
@@ -182,7 +199,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 202,
-                                    renderedId: 'U3BCX',
+                                    punches: [{ punchId: 5, location: 'toe', effectiveAt: '2026-09-02' }],
+                                    mouseLabel: 'U3BCX',
+                                    pupNumber: 3,
+                                    litterCode: 'BCX',
+                                    pupOffsets: [],
                                     sex: 'U',
                                     genotype: '?',
                                     signal: 'plan',
@@ -194,18 +215,18 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         // Father is M4BCW (metaId 101) — the reclipped animal.
-                                        // renderedId stored as base; grid composes .N suffix at
+                                        // mouseLabel stored as base; grid composes .N suffix at
                                         // read time. ParentRow renders this field directly
                                         // (secondary surface — known bare-label limitation).
                                         father: {
-                                            renderedId: 'M4BCW',
+                                            mouseLabel: 'M4BCW',
                                             metaId: 101,
                                             genotype: 'Nf1 f/+',
                                             genotypeColor:
                                                 geno('Nf1 f/+'),
                                         },
                                         mother: {
-                                            renderedId: 'F5AYL',
+                                            mouseLabel: 'F5AYL',
                                             metaId: 402,
                                             genotype: 'PlpCre;Ai14 +/+',
                                             genotypeColor:
@@ -215,7 +236,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 203,
-                                    renderedId: 'U4BCX',
+                                    punches: [{ punchId: 6, location: 'toe', effectiveAt: '2026-09-02' }],
+                                    mouseLabel: 'U4BCX',
+                                    pupNumber: 4,
+                                    litterCode: 'BCX',
+                                    pupOffsets: [],
                                     sex: 'U',
                                     genotype: '?',
                                     signal: 'plan',
@@ -240,7 +265,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 501,
-                                    renderedId: 'M1BCW',
+                                    punches: [{ punchId: 7, location: 'toe', effectiveAt: '2024-03-01' }],
+                                    mouseLabel: 'M1BCW',
+                                    pupNumber: 1,
+                                    litterCode: 'BCW',
+                                    pupOffsets: [],
                                     sex: 'M',
                                     genotype: 'Nf1 f/f',
                                     signal: 'instruction',
@@ -254,12 +283,17 @@ const COLONY_GRID: ColonyGrid = {
                                             partnerId: 'F9AYL',
                                             partnerMetaId: 502,
                                             color: MATE.gA,
+                                            matedOn: '2026-08-14',
                                         },
                                     ],
                                 },
                                 {
                                     metaId: 502,
-                                    renderedId: 'F9AYL',
+                                    punches: [{ punchId: 8, location: 'toe', effectiveAt: '2025-04-01' }],
+                                    mouseLabel: 'F9AYL',
+                                    pupNumber: 9,
+                                    litterCode: 'AYL',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'Nf1 f/+',
                                     signal: 'plan',
@@ -273,11 +307,13 @@ const COLONY_GRID: ColonyGrid = {
                                             partnerId: 'M1BCW',
                                             partnerMetaId: 501,
                                             color: MATE.gA,
+                                            matedOn: '2026-08-20',
                                         },
                                         {
                                             partnerId: 'M8BEZ',
                                             partnerMetaId: 503,
                                             color: MATE.gB,
+                                            matedOn: '2026-06-11',
                                         },
                                     ],
                                 },
@@ -289,7 +325,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 503,
-                                    renderedId: 'M8BEZ',
+                                    punches: [{ punchId: 9, location: 'toe', effectiveAt: '2024-06-01' }],
+                                    mouseLabel: 'M8BEZ',
+                                    pupNumber: 8,
+                                    litterCode: 'BEZ',
+                                    pupOffsets: [],
                                     sex: 'M',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -302,6 +342,7 @@ const COLONY_GRID: ColonyGrid = {
                                             partnerId: 'F9AYL',
                                             partnerMetaId: 502,
                                             color: MATE.gB,
+                                            matedOn: '2026-08-14',
                                         },
                                     ],
                                 },
@@ -327,7 +368,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 301,
-                                    renderedId: 'F5BGX',
+                                    punches: [{ punchId: 10, location: 'toe', effectiveAt: '2025-01-15' }],
+                                    mouseLabel: 'F5BGX',
+                                    pupNumber: 5,
+                                    litterCode: 'BGX',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'Ai14 f/f',
                                     signal: 'dead',
@@ -361,7 +406,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 402,
-                                    renderedId: 'F5AYL',
+                                    punches: [{ punchId: 11, location: 'toe', effectiveAt: '2025-06-15' }],
+                                    mouseLabel: 'F5AYL',
+                                    pupNumber: 5,
+                                    litterCode: 'AYL',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'PlpCre;Ai14 +/+',
                                     signal: 'plan',
@@ -381,6 +430,7 @@ const COLONY_GRID: ColonyGrid = {
                                             partnerId: 'M4BCW',
                                             partnerMetaId: 101,
                                             color: MATE.g401,
+                                            matedOn: '2026-05-30',
                                         },
                                     ],
                                 },
@@ -406,7 +456,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 601,
-                                    renderedId: 'M2WT',
+                                    punches: [{ punchId: 12, location: 'toe', effectiveAt: '2026-03-01' }],
+                                    mouseLabel: 'M2WT',
+                                    pupNumber: 2,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'M',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -418,7 +472,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 602,
-                                    renderedId: 'F3WT',
+                                    punches: [{ punchId: 13, location: 'toe', effectiveAt: '2025-02-01' }],
+                                    mouseLabel: 'F3WT',
+                                    pupNumber: 3,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'WT',
                                     signal: 'flag',
@@ -436,7 +494,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 603,
-                                    renderedId: 'U5BFA',
+                                    punches: [{ punchId: 14, location: 'toe', effectiveAt: '2026-08-20' }],
+                                    mouseLabel: 'U5BFA',
+                                    pupNumber: 5,
+                                    litterCode: 'BFA',
+                                    pupOffsets: [],
                                     sex: 'U',
                                     genotype: '?',
                                     signal: 'plan',
@@ -448,13 +510,13 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         father: {
-                                            renderedId: 'M2WT',
+                                            mouseLabel: 'M2WT',
                                             metaId: 601,
                                             genotype: 'WT',
                                             genotypeColor: geno('WT'),
                                         },
                                         mother: {
-                                            renderedId: 'F3WT',
+                                            mouseLabel: 'F3WT',
                                             metaId: 602,
                                             genotype: 'WT',
                                             genotypeColor: geno('WT'),
@@ -472,7 +534,11 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 611,
-                                    renderedId: 'M6WT',
+                                    punches: [{ punchId: 15, location: 'toe', effectiveAt: '2026-01-10' }],
+                                    mouseLabel: 'M6WT',
+                                    pupNumber: 6,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'M',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -484,7 +550,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 612,
-                                    renderedId: 'M7WT',
+                                    punches: [{ punchId: 16, location: 'toe', effectiveAt: '2026-02-15' }],
+                                    mouseLabel: 'M7WT',
+                                    pupNumber: 7,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'M',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -496,7 +566,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 613,
-                                    renderedId: 'F4WT',
+                                    punches: [{ punchId: 17, location: 'toe', effectiveAt: '2026-03-01' }],
+                                    mouseLabel: 'F4WT',
+                                    pupNumber: 4,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -508,7 +582,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 614,
-                                    renderedId: 'F5WT',
+                                    punches: [{ punchId: 18, location: 'toe', effectiveAt: '2026-03-20' }],
+                                    mouseLabel: 'F5WT',
+                                    pupNumber: 5,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -520,7 +598,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 615,
-                                    renderedId: 'F6WT',
+                                    punches: [{ punchId: 19, location: 'toe', effectiveAt: '2026-04-05' }],
+                                    mouseLabel: 'F6WT',
+                                    pupNumber: 6,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'F',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -532,7 +614,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 616,
-                                    renderedId: 'M8WT',
+                                    punches: [{ punchId: 20, location: 'toe', effectiveAt: '2026-05-01' }],
+                                    mouseLabel: 'M8WT',
+                                    pupNumber: 8,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'M',
                                     genotype: 'WT',
                                     signal: 'done',
@@ -544,7 +630,11 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 617,
-                                    renderedId: 'U9WT',
+                                    punches: [{ punchId: 21, location: 'toe', effectiveAt: '2026-09-04' }],
+                                    mouseLabel: 'U9WT',
+                                    pupNumber: 9,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
                                     sex: 'U',
                                     genotype: 'WT',
                                     signal: 'plan',
