@@ -335,6 +335,43 @@ CREATE INDEX notes_slot_idx ON public.notes USING btree (slot_id) WHERE (slot_id
 CREATE INDEX notes_subject_mouse_idx ON public.notes USING btree (subject_mouse_id, created_at DESC)
 ```
 
+## `punches`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
+| `punch_location` | text | NOT NULL |  |  |
+| `effective_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `actor_id` | bigint | NOT NULL |  | → `users` |
+| `note` | text |  |  |  |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE INDEX punches_mouse_idx ON public.punches USING btree (mouse_id) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX punches_pkey ON public.punches USING btree (id)
+```
+
+## `pup_number_offsets`
+
+| column | type | null | default | references |
+|---|---|---|---|---|
+| `id` | bigint | NOT NULL |  |  |
+| `mouse_id` | bigint | NOT NULL |  | → `mouse_meta` |
+| `offset_value` | integer | NOT NULL |  |  |
+| `actor_id` | bigint | NOT NULL |  | → `users` |
+| `note` | text |  |  |  |
+| `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `updated_at` | timestamp with time zone | NOT NULL | `now()` |  |
+| `deleted_at` | timestamp with time zone |  |  |  |
+
+```sql
+CREATE INDEX pup_number_offsets_mouse_idx ON public.pup_number_offsets USING btree (mouse_id, id) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX pup_number_offsets_pkey ON public.pup_number_offsets USING btree (id)
+```
+
 ## `signals`
 
 | column | type | null | default | references |
