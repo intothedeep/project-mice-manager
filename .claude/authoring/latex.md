@@ -118,18 +118,36 @@ Plex Sans KR / Sans / Mono는 무료이고 한글·라틴·모노를 한 가족�
 - 폭이 필요하면 `tabularx` + `X` 열.
 - 숫자 열은 소수점 자리를 통일한다.
 
-## 9. 교차 참조
+## 9. 코드 블록 (listings)
+
+- **코드 블록을 쪽 중간에서 자르지 않는다 (2026-09-18, 저자 지시).** 잘린 코드는 앞뒤 쪽을 오가며
+  읽어야 한다. preamble에서 모든 `lstlisting`을 쪽이 나뉘지 않는 `minipage`로 자동으로 감싼다.
+  들어가지 않으면 블록 전체가 다음 쪽으로 넘어간다(표의 `[H]`와 같은 동작).
+
+  ```latex
+  \usepackage{etoolbox}
+  \BeforeBeginEnvironment{lstlisting}{\par\medskip\noindent\begin{minipage}{\linewidth}}
+  \AfterEndEnvironment{lstlisting}{\end{minipage}\par\medskip}
+  ```
+
+  - `\lstset{float=H}`로는 **안 된다**(실측: 블록이 그대로 잘렸다).
+  - 본문의 `lstlisting`은 그대로 쓴다. 감싸기는 preamble이 맡는다.
+  - 대가: 넘어간 자리 앞 쪽 아래에 빈 공간이 남는다.
+  - **한 쪽보다 긴 코드는 쪽 밖으로 넘친다.** 그런 코드는 의미 단위(클래스·함수)로 블록을 나눈다.
+- 긴 코드는 줄이 접히지 않게 `basicstyle=\ttfamily\scriptsize`로 한 단계 줄이고, 주석은 짧게 쓴다.
+
+## 10. 교차 참조
 
 - `cleveref`의 `\Cref`를 쓴다 — `\ref`를 직접 쓰지 않는다.
   ("그림 3"을 손으로 적지 않는다. 번호가 바뀌면 틀린다.)
 - 라벨 접두사 고정: `ch:` · `sec:` · `fig:` · `tab:` · `eq:` · `ex:`.
 - `\label`은 `\caption` **뒤에** 둔다. 앞에 두면 엉뚱한 번호를 잡는다.
 
-## 10. 날짜
+## 11. 날짜
 
 표시는 `YYYY/MM/DD`로 통일한다. 저장·정렬용 값은 ISO(`YYYY-MM-DD`)를 쓴다.
 
-## 11. 빌드 산출물
+## 12. 빌드 산출물
 
 - `latexmk -xelatex main.tex` — 이 한 줄이 유일한 빌드 경로다.
 - `.aux` `.log` `.out` `.toc` `.fls` `.fdb_latexmk` 등 중간 산출물은 커밋하지 않는다.
