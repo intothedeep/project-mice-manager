@@ -48,6 +48,13 @@ directly (KISS).
 (`rules/core.md` Authority order), so an agent hands its output back; it never
 "passes it on".
 
+**And it does not do the dispatched work itself.** Once a task is an agent's, the
+main session does not run that agent's searches, write that agent's output file, or
+read the reference material written for that agent — doing so burns the orchestration
+context that every remaining dispatch depends on. Reading to VERIFY a returned result,
+and the end-of-task build below, are not the agent's work and stay allowed. If the urge
+is "잠깐 내가 직접 확인해보지", that is a re-dispatch, not an exception.
+
 1. **system-architect** — analyze, design.
 2. **product-manager** — plan: split into atomic tasks with acceptance criteria in
    `PLAN.md`.

@@ -36,3 +36,7 @@ agent — a skill is the only invocable, repeatable home for this procedure.
   Model allocation). Never name a model in this file.
 - The concurrency cap on parallel `researcher` dispatches: `rules/core.md`.
 - Write-first / append-per-verified-row: `research-methodology` §1.
+- Search budget, query tactics and source-quality tells: `research-methodology` §2, §3.
+- The main session orchestrates and does not do a dispatched agent's work itself:
+  `.claude/CLAUDE.md` Workflow cycle. It applies here at every step — do not run a
+  workstream's searches or write its output file to "just check one thing".
