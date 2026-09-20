@@ -55,11 +55,15 @@ The test: Every changed line should trace directly to the user's request.
 
 **Define success criteria. Loop until verified.**
 
-Transform tasks into verifiable goals:
+Transform tasks into verifiable goals. **This repo has tests SUSPENDED
+(`rules/core.md` owns that rule)** — verify by DELIBERATE BREAKAGE against the real
+system, never by writing a `*.test.*` file or running a test runner:
 
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+- "Add validation" → "feed it an invalid input, observe the rejection, clean up"
+- "Fix the bug" → "reproduce the failure first, apply the fix, reproduce again and
+  watch it not happen"
+- "Refactor X" → "exercise the same real path before and after; the observed
+  behavior is identical"
 
 For multi-step tasks, state a brief plan:
 

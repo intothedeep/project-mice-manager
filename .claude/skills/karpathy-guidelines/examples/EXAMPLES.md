@@ -454,7 +454,7 @@ Each step is independently verifiable and deployable.
 Start with step 1?
 ```
 
-### Example 3: Test-First Verification
+### Example 3: Reproduce-First Verification
 
 **User Request:** "The sorting breaks when there are duplicate scores"
 
@@ -468,32 +468,27 @@ def sort_scores(scores):
 
 **✅ What Should Happen (Reproduce First)**
 
+Tests are SUSPENDED in this repo (`rules/core.md` owns that rule). Reproduce the
+failure against the real system instead — no `*.test.*` file, no test runner.
+
 ```python
-# 1. First, write a test that reproduces the issue
-def test_sort_with_duplicate_scores():
-    """Test sorting when multiple items have same score."""
-    scores = [
-        {'name': 'Alice', 'score': 100},
-        {'name': 'Bob', 'score': 100},
-        {'name': 'Charlie', 'score': 90},
-    ]
+# 1. First, trigger the bug for real and watch it happen
+scores = [
+    {'name': 'Alice', 'score': 100},
+    {'name': 'Bob', 'score': 100},
+    {'name': 'Charlie', 'score': 90},
+]
+print([s['name'] for s in sort_scores(scores)])   # run it 10x
+# Observed: the two 100s swap between runs -> the bug is real, and it is ordering,
+# not scoring. Now you know what to fix.
 
-    result = sort_scores(scores)
-
-    # The bug: order is non-deterministic for duplicates
-    # Run this test multiple times, it should be consistent
-    assert result[0]['score'] == 100
-    assert result[1]['score'] == 100
-    assert result[2]['score'] == 90
-
-# Verify: Run test 10 times → fails with inconsistent ordering
-
-# 2. Now fix with stable sort
+# 2. Now fix with a stable, total ordering
 def sort_scores(scores):
     """Sort by score descending, then name ascending for ties."""
     return sorted(scores, key=lambda x: (-x['score'], x['name']))
 
-# Verify: Test passes consistently
+# 3. Run the same 10x loop again: the order is identical every time. Then delete
+#    the probe -- it was an observation, not an artifact to keep.
 ```
 
 ---
@@ -505,7 +500,7 @@ def sort_scores(scores):
 | Think Before Coding | Silently assumes file format, fields, scope        | List assumptions explicitly, ask for clarification            |
 | Simplicity First    | Strategy pattern for single discount calculation   | One function until complexity is actually needed              |
 | Surgical Changes    | Reformats quotes, adds type hints while fixing bug | Only change lines that fix the reported issue                 |
-| Goal-Driven         | "I'll review and improve the code"                 | "Write test for bug X → make it pass → verify no regressions" |
+| Goal-Driven         | "I'll review and improve the code"                 | "Reproduce bug X → fix → reproduce again and watch it not happen" |
 
 ## Key Insight
 

@@ -8,4 +8,11 @@ export CLAUDE_CONFIG_DIR="$HOME/.claude-work"
 mkdir -p "$CLAUDE_CONFIG_DIR"
 
 echo "--- Starting CLAUDE WORK ---"
-claude
+
+if [ "$1" = "danger" ]; then
+    echo "--- DANGEROUS MODE ---"
+    claude remote-control --permission-mode bypassPermissions  
+else
+    echo "--- SAFE MODE ---"
+    claude
+fi

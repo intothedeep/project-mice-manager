@@ -1,5 +1,7 @@
 ---
-trigger: always_on
+paths:
+  - "**/*.py"
+  - "pyproject.toml"
 ---
 
 # Python
@@ -10,11 +12,11 @@ trigger: always_on
 - **Package Manager**: Use `uv add` / `uv run` — never `pip install` globally or `conda`.
 - **Configuration**: Use `pyproject.toml` as the single source of truth for all project configurations (dependencies, tool configs, etc.). Avoid `setup.py`, `requirements.txt`, or scattered config files.
 
-## 2. Testing
+## 2. Verification (no test runner)
 
-- **Testing Framework**: Use `pytest`.
-- **Scope**: Write tests for **simple core logic only**. Do not over-test boilerplate, simple getters/setters, or complex integrations unless specified. Keep tests lightweight and fast.
-- **Structure**: Tests should mirror the `src/` or core code directory structure.
+Tests are SUSPENDED repo-wide — `rules/core.md` owns that rule and its rationale;
+do not restate it. Verify Python behavior by DELIBERATE BREAKAGE against the real
+system instead: trigger the failure, observe it, clean up.
 
 ## 3. Core Directives
 
@@ -30,12 +32,12 @@ trigger: always_on
 ```text
 project/
 ├── pyproject.toml      # Config & Dependencies
-├── src/                # (or equivalent core directory)
-│   └── module/
-│       └── *.py        # Implementation files
-└── tests/
-    └── test_*.py       # Pytest files
+└── src/                # (or equivalent core directory)
+    └── module/
+        └── *.py        # Implementation files
 ```
+
+No `tests/` directory: see §2.
 
 ## 5. Typical Workflow Commands
 
@@ -46,10 +48,7 @@ uv venv --python 3.13
 # 2. Install dependencies
 uv pip install -e .
 
-# 3. Run tests
-uv run pytest
-
-# 4. Add a dependency
+# 3. Add a dependency
 uv add <package>
 ```
 
@@ -60,9 +59,6 @@ uv add <package>
 name = "project-name"
 version = "0.1.0"
 dependencies = []
-
-[tool.pytest.ini_options]
-addopts = "-v"
 
 [tool.ruff]
 line-length = 100
