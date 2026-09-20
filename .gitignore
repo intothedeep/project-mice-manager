@@ -45,8 +45,6 @@ z_*
 # holds ACTIVE per-sub-phase detail in docs/phases/). The underscore is the whole
 # difference between "local-only cold storage" and "committed truth". Do NOT add `docs/`
 # here, and do NOT drop the underscore from this line.
-_docs/
-_scripts/
 x_*
 
 # real lab data — the source workbook holds REAL colony records; never committed.
