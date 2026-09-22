@@ -71,7 +71,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 101,
-                                    punches: [{ punchId: 1, location: 'toe', effectiveAt: '2024-02-10' }],
+                                    punches: [
+                                        {
+                                            punchId: 1,
+                                            location: 'toe',
+                                            effectiveAt: '2024-02-10',
+                                        },
+                                    ],
                                     mouseLabel: 'M4BCW',
                                     pupNumber: 4,
                                     litterCode: 'BCW',
@@ -80,7 +86,8 @@ const COLONY_GRID: ColonyGrid = {
                                     genotype: 'Nf1 f/+',
                                     signal: 'done',
                                     isAlive: true,
-                                    attention: 're-clip (.2) — re-genotype this week',
+                                    attention:
+                                        're-clip (.2) — re-genotype this week',
                                     dob: '2024-02-10',
                                     genotypeColor: geno('Nf1 f/+'),
                                     // dates resolved from mates/tasks (plan §4). Migrated from
@@ -103,7 +110,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 102,
-                                    punches: [{ punchId: 2, location: 'toe', effectiveAt: '2025-05-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 2,
+                                            location: 'toe',
+                                            effectiveAt: '2025-05-01',
+                                        },
+                                    ],
                                     mouseLabel: 'F5AYL',
                                     pupNumber: 5,
                                     litterCode: 'AYL',
@@ -125,7 +138,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 103,
-                                    punches: [{ punchId: 3, location: 'toe', effectiveAt: '2026-05-20' }],
+                                    punches: [
+                                        {
+                                            punchId: 3,
+                                            location: 'toe',
+                                            effectiveAt: '2026-05-20',
+                                        },
+                                    ],
                                     mouseLabel: 'M4+10AZZ',
                                     pupNumber: 4,
                                     litterCode: 'AZZ',
@@ -170,9 +189,17 @@ const COLONY_GRID: ColonyGrid = {
                                 {
                                     metaId: 201,
                                     punches: [
-                                        { punchId: 4, location: 'toe', effectiveAt: '2026-02-01' },
+                                        {
+                                            punchId: 4,
+                                            location: 'toe',
+                                            effectiveAt: '2026-02-01',
+                                        },
                                         // the 'e' in F10BEVe is this row — the label is composed from it, not typed
-                                        { punchId: 22, location: 'ear', effectiveAt: '2026-03-01' },
+                                        {
+                                            punchId: 22,
+                                            location: 'ear',
+                                            effectiveAt: '2026-03-01',
+                                        },
                                     ],
                                     mouseLabel: 'F10BEVe',
                                     pupNumber: 10,
@@ -203,7 +230,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 202,
-                                    punches: [{ punchId: 5, location: 'toe', effectiveAt: '2026-09-02' }],
+                                    punches: [
+                                        {
+                                            punchId: 5,
+                                            location: 'toe',
+                                            effectiveAt: '2026-09-02',
+                                        },
+                                    ],
                                     mouseLabel: 'U3BCX',
                                     pupNumber: 3,
                                     litterCode: 'BCX',
@@ -226,8 +259,7 @@ const COLONY_GRID: ColonyGrid = {
                                             mouseLabel: 'M4BCW',
                                             metaId: 101,
                                             genotype: 'Nf1 f/+',
-                                            genotypeColor:
-                                                geno('Nf1 f/+'),
+                                            genotypeColor: geno('Nf1 f/+'),
                                         },
                                         mother: {
                                             mouseLabel: 'F5AYL',
@@ -240,7 +272,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 203,
-                                    punches: [{ punchId: 6, location: 'toe', effectiveAt: '2026-09-02' }],
+                                    punches: [
+                                        {
+                                            punchId: 6,
+                                            location: 'toe',
+                                            effectiveAt: '2026-09-02',
+                                        },
+                                    ],
                                     mouseLabel: 'U4BCX',
                                     pupNumber: 4,
                                     litterCode: 'BCX',
@@ -269,7 +307,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 501,
-                                    punches: [{ punchId: 7, location: 'toe', effectiveAt: '2024-03-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 7,
+                                            location: 'toe',
+                                            effectiveAt: '2024-03-01',
+                                        },
+                                    ],
                                     mouseLabel: 'M1BCW',
                                     pupNumber: 1,
                                     litterCode: 'BCW',
@@ -293,7 +337,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 502,
-                                    punches: [{ punchId: 8, location: 'toe', effectiveAt: '2025-04-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 8,
+                                            location: 'toe',
+                                            effectiveAt: '2025-04-01',
+                                        },
+                                    ],
                                     mouseLabel: 'F9AYL',
                                     pupNumber: 9,
                                     litterCode: 'AYL',
@@ -329,7 +379,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 503,
-                                    punches: [{ punchId: 9, location: 'toe', effectiveAt: '2024-06-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 9,
+                                            location: 'toe',
+                                            effectiveAt: '2024-06-01',
+                                        },
+                                    ],
                                     mouseLabel: 'M8BEZ',
                                     pupNumber: 8,
                                     litterCode: 'BEZ',
@@ -372,7 +428,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 301,
-                                    punches: [{ punchId: 10, location: 'toe', effectiveAt: '2025-01-15' }],
+                                    punches: [
+                                        {
+                                            punchId: 10,
+                                            location: 'toe',
+                                            effectiveAt: '2025-01-15',
+                                        },
+                                    ],
                                     mouseLabel: 'F5BGX',
                                     pupNumber: 5,
                                     litterCode: 'BGX',
@@ -410,7 +472,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 402,
-                                    punches: [{ punchId: 11, location: 'toe', effectiveAt: '2025-06-15' }],
+                                    punches: [
+                                        {
+                                            punchId: 11,
+                                            location: 'toe',
+                                            effectiveAt: '2025-06-15',
+                                        },
+                                    ],
                                     mouseLabel: 'F5AYL',
                                     pupNumber: 5,
                                     litterCode: 'AYL',
@@ -460,7 +528,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 601,
-                                    punches: [{ punchId: 12, location: 'toe', effectiveAt: '2026-03-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 12,
+                                            location: 'toe',
+                                            effectiveAt: '2026-03-01',
+                                        },
+                                    ],
                                     mouseLabel: 'M2WT',
                                     pupNumber: 2,
                                     litterCode: 'WT',
@@ -476,7 +550,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 602,
-                                    punches: [{ punchId: 13, location: 'toe', effectiveAt: '2025-02-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 13,
+                                            location: 'toe',
+                                            effectiveAt: '2025-02-01',
+                                        },
+                                    ],
                                     mouseLabel: 'F3WT',
                                     pupNumber: 3,
                                     litterCode: 'WT',
@@ -498,7 +578,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 603,
-                                    punches: [{ punchId: 14, location: 'toe', effectiveAt: '2026-08-20' }],
+                                    punches: [
+                                        {
+                                            punchId: 14,
+                                            location: 'toe',
+                                            effectiveAt: '2026-08-20',
+                                        },
+                                    ],
                                     mouseLabel: 'U5BFA',
                                     pupNumber: 5,
                                     litterCode: 'BFA',
@@ -538,7 +624,13 @@ const COLONY_GRID: ColonyGrid = {
                             mice: [
                                 {
                                     metaId: 611,
-                                    punches: [{ punchId: 15, location: 'toe', effectiveAt: '2026-01-10' }],
+                                    punches: [
+                                        {
+                                            punchId: 15,
+                                            location: 'toe',
+                                            effectiveAt: '2026-01-10',
+                                        },
+                                    ],
                                     mouseLabel: 'M6WT',
                                     pupNumber: 6,
                                     litterCode: 'WT',
@@ -554,7 +646,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 612,
-                                    punches: [{ punchId: 16, location: 'toe', effectiveAt: '2026-02-15' }],
+                                    punches: [
+                                        {
+                                            punchId: 16,
+                                            location: 'toe',
+                                            effectiveAt: '2026-02-15',
+                                        },
+                                    ],
                                     mouseLabel: 'M7WT',
                                     pupNumber: 7,
                                     litterCode: 'WT',
@@ -570,7 +668,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 613,
-                                    punches: [{ punchId: 17, location: 'toe', effectiveAt: '2026-03-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 17,
+                                            location: 'toe',
+                                            effectiveAt: '2026-03-01',
+                                        },
+                                    ],
                                     mouseLabel: 'F4WT',
                                     pupNumber: 4,
                                     litterCode: 'WT',
@@ -586,7 +690,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 614,
-                                    punches: [{ punchId: 18, location: 'toe', effectiveAt: '2026-03-20' }],
+                                    punches: [
+                                        {
+                                            punchId: 18,
+                                            location: 'toe',
+                                            effectiveAt: '2026-03-20',
+                                        },
+                                    ],
                                     mouseLabel: 'F5WT',
                                     pupNumber: 5,
                                     litterCode: 'WT',
@@ -602,7 +712,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 615,
-                                    punches: [{ punchId: 19, location: 'toe', effectiveAt: '2026-04-05' }],
+                                    punches: [
+                                        {
+                                            punchId: 19,
+                                            location: 'toe',
+                                            effectiveAt: '2026-04-05',
+                                        },
+                                    ],
                                     mouseLabel: 'F6WT',
                                     pupNumber: 6,
                                     litterCode: 'WT',
@@ -618,7 +734,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 616,
-                                    punches: [{ punchId: 20, location: 'toe', effectiveAt: '2026-05-01' }],
+                                    punches: [
+                                        {
+                                            punchId: 20,
+                                            location: 'toe',
+                                            effectiveAt: '2026-05-01',
+                                        },
+                                    ],
                                     mouseLabel: 'M8WT',
                                     pupNumber: 8,
                                     litterCode: 'WT',
@@ -634,7 +756,13 @@ const COLONY_GRID: ColonyGrid = {
                                 },
                                 {
                                     metaId: 617,
-                                    punches: [{ punchId: 21, location: 'toe', effectiveAt: '2026-09-04' }],
+                                    punches: [
+                                        {
+                                            punchId: 21,
+                                            location: 'toe',
+                                            effectiveAt: '2026-09-04',
+                                        },
+                                    ],
                                     mouseLabel: 'U9WT',
                                     pupNumber: 9,
                                     litterCode: 'WT',

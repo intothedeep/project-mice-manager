@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils';
 // Double-click activation is wired by the PARENT (not here), so this atom
 // stays unaware of the click-timer vs. dblclick conflict on the id cell.
 
-
 interface BaseProps {
     /** Current stored value (used to seed draft on activate). */
     value: string;
@@ -127,7 +126,10 @@ export function EditableCell({
 
     if (type === 'select' && options) {
         return (
-            <div className={cn('relative', className)} title={error ?? undefined}>
+            <div
+                className={cn('relative', className)}
+                title={error ?? undefined}
+            >
                 <select
                     ref={inputRef as React.RefObject<HTMLSelectElement>}
                     value={draft}
@@ -138,7 +140,10 @@ export function EditableCell({
                     className={sharedInputClass}
                 >
                     {options.map((o) => (
-                        <option key={o.value} value={o.value}>
+                        <option
+                            key={o.value}
+                            value={o.value}
+                        >
                             {o.label}
                         </option>
                     ))}
@@ -153,7 +158,10 @@ export function EditableCell({
     }
 
     return (
-        <div className={cn('relative', className)} title={error ?? undefined}>
+        <div
+            className={cn('relative', className)}
+            title={error ?? undefined}
+        >
             <input
                 ref={inputRef as React.RefObject<HTMLInputElement>}
                 type={type === 'date' ? 'date' : 'text'}

@@ -20,7 +20,7 @@ export async function resolveSystemUserId(): Promise<bigint> {
     if (rows.length === 0) {
         throw new Error(
             `System user not found (clerk_user_id=${SYSTEM_SENTINEL_CLERK_ID}). ` +
-            `Apply migration 0022_seed_system_user.sql.`
+                `Apply migration 0022_seed_system_user.sql.`
         );
     }
     return BigInt(rows[0].id);

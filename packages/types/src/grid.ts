@@ -19,14 +19,9 @@
 //   plan        → blue text  (FONT FF0432FF)
 //   dead        → gray fill  (sac → dead → gray box)
 //   flag        → yellow fill (attention / sample-flag)
-export type SignalColor =
-  | "done"
-  | "instruction"
-  | "plan"
-  | "dead"
-  | "flag";
+export type SignalColor = 'done' | 'instruction' | 'plan' | 'dead' | 'flag';
 
-export type Sex = "M" | "F" | "U";
+export type Sex = 'M' | 'F' | 'U';
 
 // Punch = a physical ear/toe mark used for genotyping/identification tracking.
 // The rendered id (mouseLabel) is the READ-TIME projection of a mouse's label;
@@ -34,16 +29,16 @@ export type Sex = "M" | "F" | "U";
 // field, so the UI never has to parse punch state back out of a label (the
 // position of the 'e' suffix in a rendered id is an OPEN QUESTION to the lab
 // owner — see apps/colony_client_web/lib/litterCode.ts).
-export type PunchLocation = "toe" | "ear" | "other";
+export type PunchLocation = 'toe' | 'ear' | 'other';
 
 export interface PunchRef {
-  punchId: number;
-  location: PunchLocation;
-  // WHEN the punch happened, not when the row was written. created_at takes
-  // transaction-start time, so an implicit toe punch and a same-transaction
-  // ear punch would be unorderable — the punch history list needs this key.
-  effectiveAt: string; // ISO date
-  note?: string;
+    punchId: number;
+    location: PunchLocation;
+    // WHEN the punch happened, not when the row was written. created_at takes
+    // transaction-start time, so an implicit toe punch and a same-transaction
+    // ear punch would be unorderable — the punch history list needs this key.
+    effectiveAt: string; // ISO date
+    note?: string;
 }
 
 // Under Task model v2 the case is the primary entity and a task is a child
@@ -54,100 +49,100 @@ export interface PunchRef {
 // cases (status 'todo' or 'doing'), keyed by mouse metaId — not resolved by
 // the server.
 export interface MouseCaseTag {
-  type: string; // caseType, e.g. "Genotyping", "Sac", "Wean" (tooltip)
-  signal: SignalColor; // tag colour, mirroring the workflow-signal legend
+    type: string; // caseType, e.g. "Genotyping", "Sac", "Wean" (tooltip)
+    signal: SignalColor; // tag colour, mirroring the workflow-signal legend
 }
 
 // A parent reference shown in the grid's parents column. metaId lets the UI jump
 // to that parent's row; null = the parent is not shown here (outside / unknown).
 export interface ParentCell {
-  mouseLabel: string;
-  metaId: number | null;
-  genotype: string | null;
-  genotypeColor: string | null; // tint for the parent's genotype sub-cell (same palette as MouseCell.genotypeColor)
+    mouseLabel: string;
+    metaId: number | null;
+    genotype: string | null;
+    genotypeColor: string | null; // tint for the parent's genotype sub-cell (same palette as MouseCell.genotypeColor)
 }
 
 export interface MouseParents {
-  father: ParentCell | null; // ♂ (rendered blue)
-  mother: ParentCell | null; // ♀ (rendered pink)
+    father: ParentCell | null; // ♂ (rendered blue)
+    mother: ParentCell | null; // ♀ (rendered pink)
 }
 
 // A current mate of this mouse: the partner's id (+ metaId for click-to-jump) and
 // the mate-group colour badge. A mouse mated to several partners has several.
 export interface MateRef {
-  partnerId: string;
-  partnerMetaId: number | null;
-  color: string;
-  // ISO date of THIS pairing (matings.mated_on). The grid shows the LATEST mate
-  // by sorting these descending, so the value must not be inferred from array
-  // order — a server query without ORDER BY would otherwise silently surface the
-  // wrong partner. null = not recorded; those sort last.
-  matedOn: string | null;
+    partnerId: string;
+    partnerMetaId: number | null;
+    color: string;
+    // ISO date of THIS pairing (matings.mated_on). The grid shows the LATEST mate
+    // by sorting these descending, so the value must not be inferred from array
+    // order — a server query without ORDER BY would otherwise silently surface the
+    // wrong partner. null = not recorded; those sort last.
+    matedOn: string | null;
 }
 
 // Breeding / lifecycle dates from the Breeders sheet (cols I–N) — all ISO dates
 // (parsed from YYMMDD), null when not recorded. `deliv` may be approximate ('~').
 export interface MouseDates {
-  lastMating: string | null;
-  plug: string | null;
-  deliv: string | null;
-  tissue: string | null;
-  genotyping: string | null;
+    lastMating: string | null;
+    plug: string | null;
+    deliv: string | null;
+    tissue: string | null;
+    genotyping: string | null;
 }
 
 export interface MouseCell {
-  metaId: number;
-  mouseLabel: string; // sex+number+litter-code+tag, e.g. "M4BCW", "U3BCX", "F10BEVe"
-  // Parts the label above is composed FROM (see lib/mouseIdentity.ts
-  // buildMouseLabel) — mouseLabel is a READ-TIME projection of these, never
-  // parsed back apart (same rule as punches below). Required: every
-  // mouse-creation path (AddMouseInput) already carries pupNumber and
-  // litterCode, so there is no partial-data caller to accommodate the way
-  // punches?/mouse-creation not yet minting punches does.
-  pupNumber: number; // BIRTH number, immutable (mouse_meta.pup_number)
-  litterCode: string; // denormalized on mouse_meta
-  // ACTIVE pup-number offsets in CHAIN order; [] = never renumbered. Order is
-  // significant for the rendered string ("1+10+20" vs "1+20+10") even though
-  // the sum is the same either way.
-  pupOffsets: number[];
-  sex: Sex;
-  genotype: string; // derived marker-combo label, e.g. "Nf1 f/+", "WT"
-  signal: SignalColor;
-  isAlive: boolean;
-  attention: string | null; // short note surfaced on the cell (why it is flagged / planned)
-  // activeTasks removed (T6): badges are now derived from the case store in
-  // ColonyGridView.client.tsx (useTasks + signalColorOf), keyed by metaId.
-  // MouseCaseTag and SignalColor are kept — the derived index is typed by them.
-  dob: string | null; // ISO date of birth; the "age" colour is computed from dob + sex at read (never stored — it changes daily)
-  genotypeColor: string | null; // resolved identity hex for this mouse's genotype; null = unknown '?' → neutral. Server resolves from color_assignments(channel='genotype').
-  mates: MateRef[]; // current mate(s): partner id + group colour badge. [] if not breeding; several when mated to multiple partners.
-  punches?: PunchRef[]; // ACTIVE punches only (deleted rows masked upstream); read-time projection, never parsed from mouseLabel. Optional: mouse-creation (lib/colonyMutations.ts) does not mint punches yet — a later step.
-  parents?: MouseParents; // father/mother refs for the parents column; omitted when unknown (founders)
-  dates?: MouseDates; // breeding/lifecycle dates (last mating, plug, deliv, tissue, genotyping)
+    metaId: number;
+    mouseLabel: string; // sex+number+litter-code+tag, e.g. "M4BCW", "U3BCX", "F10BEVe"
+    // Parts the label above is composed FROM (see lib/mouseIdentity.ts
+    // buildMouseLabel) — mouseLabel is a READ-TIME projection of these, never
+    // parsed back apart (same rule as punches below). Required: every
+    // mouse-creation path (AddMouseInput) already carries pupNumber and
+    // litterCode, so there is no partial-data caller to accommodate the way
+    // punches?/mouse-creation not yet minting punches does.
+    pupNumber: number; // BIRTH number, immutable (mouse_meta.pup_number)
+    litterCode: string; // denormalized on mouse_meta
+    // ACTIVE pup-number offsets in CHAIN order; [] = never renumbered. Order is
+    // significant for the rendered string ("1+10+20" vs "1+20+10") even though
+    // the sum is the same either way.
+    pupOffsets: number[];
+    sex: Sex;
+    genotype: string; // derived marker-combo label, e.g. "Nf1 f/+", "WT"
+    signal: SignalColor;
+    isAlive: boolean;
+    attention: string | null; // short note surfaced on the cell (why it is flagged / planned)
+    // activeTasks removed (T6): badges are now derived from the case store in
+    // ColonyGridView.client.tsx (useTasks + signalColorOf), keyed by metaId.
+    // MouseCaseTag and SignalColor are kept — the derived index is typed by them.
+    dob: string | null; // ISO date of birth; the "age" colour is computed from dob + sex at read (never stored — it changes daily)
+    genotypeColor: string | null; // resolved identity hex for this mouse's genotype; null = unknown '?' → neutral. Server resolves from color_assignments(channel='genotype').
+    mates: MateRef[]; // current mate(s): partner id + group colour badge. [] if not breeding; several when mated to multiple partners.
+    punches?: PunchRef[]; // ACTIVE punches only (deleted rows masked upstream); read-time projection, never parsed from mouseLabel. Optional: mouse-creation (lib/colonyMutations.ts) does not mint punches yet — a later step.
+    parents?: MouseParents; // father/mother refs for the parents column; omitted when unknown (founders)
+    dates?: MouseDates; // breeding/lifecycle dates (last mating, plug, deliv, tissue, genotyping)
 }
 
 export interface GridSlot {
-  slotId: number;
-  label: string; // GLOBALLY-UNIQUE slot label, e.g. "A8" — unique on its own, NOT scoped by cage
-  mice: MouseCell[];
+    slotId: number;
+    label: string; // GLOBALLY-UNIQUE slot label, e.g. "A8" — unique on its own, NOT scoped by cage
+    mice: MouseCell[];
 }
 
 export interface GridCage {
-  cageId: number;
-  cageNumber: string; // e.g. "2413"
-  location: string | null;
-  slots: GridSlot[];
+    cageId: number;
+    cageNumber: string; // e.g. "2413"
+    location: string | null;
+    slots: GridSlot[];
 }
 
 export interface GridLine {
-  lineId: number;
-  lineName: string; // e.g. "pNf1 flox;ccEGFP"
-  nominalGenotypeColor: string | null; // the line's SOLE rail colour — its nominal genotype colour (same palette as MouseCell.genotypeColor); null for the default WT line (neutral, on-brand). A mouse whose genotypeColor differs is a transfer. (Dropped the separate lineColor identity hue 2026-09-12: line ≈ genotype 1:1, so it was redundant; lines stay identifiable by index badge + name.)
-  cages: GridCage[];
+    lineId: number;
+    lineName: string; // e.g. "pNf1 flox;ccEGFP"
+    nominalGenotypeColor: string | null; // the line's SOLE rail colour — its nominal genotype colour (same palette as MouseCell.genotypeColor); null for the default WT line (neutral, on-brand). A mouse whose genotypeColor differs is a transfer. (Dropped the separate lineColor identity hue 2026-09-12: line ≈ genotype 1:1, so it was redundant; lines stay identifiable by index badge + name.)
+    cages: GridCage[];
 }
 
 export interface ColonyGrid {
-  colonyId: number;
-  colonyName: string;
-  lines: GridLine[];
+    colonyId: number;
+    colonyName: string;
+    lines: GridLine[];
 }

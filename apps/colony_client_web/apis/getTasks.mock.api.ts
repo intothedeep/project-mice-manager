@@ -1,4 +1,10 @@
-import type { CaseCard, Task, CaseTaskStatus, TaskSubjectKind, TaskSignal } from '@repo/types';
+import type {
+    CaseCard,
+    Task,
+    CaseTaskStatus,
+    TaskSubjectKind,
+    TaskSignal,
+} from '@repo/types';
 
 // Mock fetcher for the Task bin. Named as the future real fetcher so the
 // mock→real swap is one file.
@@ -36,7 +42,10 @@ export type ClientCaseCard = Omit<CaseCard, 'status'> & {
 // ClientTask: one immutable child task-log row (append-only).
 // SWAP NOTE: when the real server exposes Task rows directly, this is Task.
 // Uses string actors (display names) instead of actor FK ids — mock-side only.
-export type ClientTask = Pick<Task, 'id' | 'caseId' | 'status' | 'actorRole' | 'note' | 'createdAt'> & {
+export type ClientTask = Pick<
+    Task,
+    'id' | 'caseId' | 'status' | 'actorRole' | 'note' | 'createdAt'
+> & {
     actor: string; // display name (real: JOIN users ON actor_id)
 };
 
@@ -65,7 +74,9 @@ export function toCaseCard(
 
     // Latest done/verified actor in the active window.
     const doneRow = [...active].reverse().find((t) => t.status === 'done');
-    const verifiedRow = [...active].reverse().find((t) => t.status === 'verified');
+    const verifiedRow = [...active]
+        .reverse()
+        .find((t) => t.status === 'verified');
 
     return {
         ...c,
@@ -89,12 +100,12 @@ export const SEED_CASES: SeedCaseRow[] = [
         // animal, not a second mouse). subjectLabel is the BASE — the derived
         // ".N" suffix is composed at read time by composeMouseLabel().
         id: 1,
-        caseType: 'Genotyping',            // was 'Genotype' — matches TASK_TYPES
+        caseType: 'Genotyping', // was 'Genotype' — matches TASK_TYPES
         signal: 'instruction' as TaskSignal,
         status: 'todo' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'M4BCW',
-        subjectMouseId: 101,               // metaId: M4BCW in pNf1 flox cage 2413 slot A8
+        subjectMouseId: 101, // metaId: M4BCW in pNf1 flox cage 2413 slot A8
         detail: 're-clip — re-run PCR',
         dueDate: '2026-09-10',
         createdAt: '2026-09-03',
@@ -115,12 +126,12 @@ export const SEED_CASES: SeedCaseRow[] = [
     },
     {
         id: 3,
-        caseType: 'Mate',                  // was 'Set up mating' — matches TASK_TYPES
+        caseType: 'Mate', // was 'Set up mating' — matches TASK_TYPES
         signal: 'plan' as TaskSignal,
         status: 'doing' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'F5AYL',
-        subjectMouseId: 402,               // metaId: F5AYL in PlpCre;Ai14 cage 2502 slot B8
+        subjectMouseId: 402, // metaId: F5AYL in PlpCre;Ai14 cage 2502 slot B8
         detail: 'pair with M4BCW',
         dueDate: '2026-09-15',
         createdAt: '2026-09-03',
@@ -133,7 +144,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'doing' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'M4BCW',
-        subjectMouseId: 101,               // metaId: M4BCW in pNf1 flox cage 2413 slot A8
+        subjectMouseId: 101, // metaId: M4BCW in pNf1 flox cage 2413 slot A8
         detail: 'cage 2413 → 2414',
         dueDate: '2026-09-07',
         createdAt: '2026-09-03',
@@ -159,7 +170,7 @@ export const SEED_CASES: SeedCaseRow[] = [
         status: 'verified' as CaseTaskStatus,
         subjectKind: 'mouse' as TaskSubjectKind,
         subjectLabel: 'F5BGX',
-        subjectMouseId: 301,               // metaId: F5BGX in PlpCre;Ai14 cage 2501 slot F8
+        subjectMouseId: 301, // metaId: F5BGX in PlpCre;Ai14 cage 2501 slot F8
         detail: 'endpoint reached',
         dueDate: '2026-09-05',
         createdAt: '2026-09-03',
@@ -167,7 +178,7 @@ export const SEED_CASES: SeedCaseRow[] = [
     },
     {
         id: 7,
-        caseType: 'Genotyping',            // was 'Genotype' — matches TASK_TYPES
+        caseType: 'Genotyping', // was 'Genotype' — matches TASK_TYPES
         signal: 'instruction' as TaskSignal,
         status: 'verified' as CaseTaskStatus,
         subjectKind: 'cage' as TaskSubjectKind,
@@ -429,70 +440,366 @@ export const SEED_CASES: SeedCaseRow[] = [
 //   cases 19,20,21 → todo(system) + done(...)         → doneBy set, verifiedBy=null
 export const SEED_TASK_LOG: ClientTask[] = [
     // case 1 — todo only
-    { id: 101, caseId: 1, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    {
+        id: 101,
+        caseId: 1,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
 
     // case 2 — todo only
-    { id: 201, caseId: 2, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    {
+        id: 201,
+        caseId: 2,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
 
     // case 3 — todo + doing (doneBy/verifiedBy = null)
-    { id: 301, caseId: 3, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 302, caseId: 3, status: 'doing',    actorRole: 'staff',     actor: 'Sam',              note: null, createdAt: '2026-09-04' },
+    {
+        id: 301,
+        caseId: 3,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 302,
+        caseId: 3,
+        status: 'doing',
+        actorRole: 'staff',
+        actor: 'Sam',
+        note: null,
+        createdAt: '2026-09-04',
+    },
 
     // case 4 — todo + doing (doneBy/verifiedBy = null)
-    { id: 401, caseId: 4, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 402, caseId: 4, status: 'doing',    actorRole: 'staff',     actor: 'Jia',              note: null, createdAt: '2026-09-04' },
+    {
+        id: 401,
+        caseId: 4,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 402,
+        caseId: 4,
+        status: 'doing',
+        actorRole: 'staff',
+        actor: 'Jia',
+        note: null,
+        createdAt: '2026-09-04',
+    },
 
     // case 5 — todo + done → doneBy='Sam', verifiedBy=null
-    { id: 501, caseId: 5, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 502, caseId: 5, status: 'done',     actorRole: 'professor', actor: 'Sam',              note: null, createdAt: '2026-09-06' },
+    {
+        id: 501,
+        caseId: 5,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 502,
+        caseId: 5,
+        status: 'done',
+        actorRole: 'professor',
+        actor: 'Sam',
+        note: null,
+        createdAt: '2026-09-06',
+    },
 
     // case 6 — full lifecycle → doneBy='Jia', verifiedBy='Dr. Lopez-Juarez'
-    { id: 601, caseId: 6, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 602, caseId: 6, status: 'doing',    actorRole: 'staff',     actor: 'Jia',              note: null, createdAt: '2026-09-04' },
-    { id: 603, caseId: 6, status: 'done',     actorRole: 'professor', actor: 'Jia',              note: null, createdAt: '2026-09-05' },
-    { id: 604, caseId: 6, status: 'verified', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-05' },
+    {
+        id: 601,
+        caseId: 6,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 602,
+        caseId: 6,
+        status: 'doing',
+        actorRole: 'staff',
+        actor: 'Jia',
+        note: null,
+        createdAt: '2026-09-04',
+    },
+    {
+        id: 603,
+        caseId: 6,
+        status: 'done',
+        actorRole: 'professor',
+        actor: 'Jia',
+        note: null,
+        createdAt: '2026-09-05',
+    },
+    {
+        id: 604,
+        caseId: 6,
+        status: 'verified',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-05',
+    },
 
     // case 7 — full lifecycle → doneBy='Sam', verifiedBy='Dr. Lopez-Juarez'
-    { id: 701, caseId: 7, status: 'todo',     actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 702, caseId: 7, status: 'doing',    actorRole: 'staff',     actor: 'Sam',              note: null, createdAt: '2026-09-03' },
-    { id: 703, caseId: 7, status: 'done',     actorRole: 'professor', actor: 'Sam',              note: null, createdAt: '2026-09-04' },
-    { id: 704, caseId: 7, status: 'verified', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-04' },
+    {
+        id: 701,
+        caseId: 7,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 702,
+        caseId: 7,
+        status: 'doing',
+        actorRole: 'staff',
+        actor: 'Sam',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 703,
+        caseId: 7,
+        status: 'done',
+        actorRole: 'professor',
+        actor: 'Sam',
+        note: null,
+        createdAt: '2026-09-04',
+    },
+    {
+        id: 704,
+        caseId: 7,
+        status: 'verified',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-04',
+    },
 
     // case 8 — todo + cancelled → both null
-    { id: 801, caseId: 8, status: 'todo',      actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-01' },
-    { id: 802, caseId: 8, status: 'cancelled', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: 'superseded by full rack audit', createdAt: '2026-09-01' },
+    {
+        id: 801,
+        caseId: 8,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-01',
+    },
+    {
+        id: 802,
+        caseId: 8,
+        status: 'cancelled',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: 'superseded by full rack audit',
+        createdAt: '2026-09-01',
+    },
 
     // case 9 — batch (mice: 202, 203) — todo only
-    { id: 901, caseId: 9, status: 'todo',      actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    {
+        id: 901,
+        caseId: 9,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
 
     // T7 parity cases — all todo only
-    { id: 1001, caseId: 10, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 1101, caseId: 11, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 1201, caseId: 12, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 1301, caseId: 13, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 1401, caseId: 14, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    {
+        id: 1001,
+        caseId: 10,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 1101,
+        caseId: 11,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 1201,
+        caseId: 12,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 1301,
+        caseId: 13,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 1401,
+        caseId: 14,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
 
     // M4BCW (101) showcase — 3 instruction + 1 plan + 1 note, all open (todo)
-    { id: 1501, caseId: 15, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 1601, caseId: 16, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 1701, caseId: 17, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 1801, caseId: 18, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
+    {
+        id: 1501,
+        caseId: 15,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 1601,
+        caseId: 16,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 1701,
+        caseId: 17,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 1801,
+        caseId: 18,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
 
     // T3 — Done Tissue collection log rows (todo→done) for cases 19, 20, 21.
     // case 19 → doneBy='Jia'
-    { id: 1901, caseId: 19, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2024-08-28' },
-    { id: 1902, caseId: 19, status: 'done', actorRole: 'staff',     actor: 'Jia',              note: null, createdAt: '2024-09-01' },
+    {
+        id: 1901,
+        caseId: 19,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2024-08-28',
+    },
+    {
+        id: 1902,
+        caseId: 19,
+        status: 'done',
+        actorRole: 'staff',
+        actor: 'Jia',
+        note: null,
+        createdAt: '2024-09-01',
+    },
     // case 20 → doneBy='Jia'
-    { id: 2001, caseId: 20, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-01' },
-    { id: 2002, caseId: 20, status: 'done', actorRole: 'staff',     actor: 'Jia',              note: null, createdAt: '2026-09-03' },
+    {
+        id: 2001,
+        caseId: 20,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-01',
+    },
+    {
+        id: 2002,
+        caseId: 20,
+        status: 'done',
+        actorRole: 'staff',
+        actor: 'Jia',
+        note: null,
+        createdAt: '2026-09-03',
+    },
     // case 21 (M1BCW, metaId 501, N=1 → bare label) → doneBy='Sam'
-    { id: 2101, caseId: 21, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2024-03-12' },
-    { id: 2102, caseId: 21, status: 'done', actorRole: 'staff',     actor: 'Sam',              note: null, createdAt: '2024-03-15' },
+    {
+        id: 2101,
+        caseId: 21,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2024-03-12',
+    },
+    {
+        id: 2102,
+        caseId: 21,
+        status: 'done',
+        actorRole: 'staff',
+        actor: 'Sam',
+        note: null,
+        createdAt: '2024-03-15',
+    },
 
     // date-colour demo (cases 22 plug / 23 done tissue)
-    { id: 2201, caseId: 22, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-14' },
-    { id: 2301, caseId: 23, status: 'todo', actorRole: 'professor', actor: 'Dr. Lopez-Juarez', note: null, createdAt: '2026-09-03' },
-    { id: 2302, caseId: 23, status: 'done', actorRole: 'staff',     actor: 'Sam',              note: null, createdAt: '2026-09-05' },
+    {
+        id: 2201,
+        caseId: 22,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-14',
+    },
+    {
+        id: 2301,
+        caseId: 23,
+        status: 'todo',
+        actorRole: 'professor',
+        actor: 'Dr. Lopez-Juarez',
+        note: null,
+        createdAt: '2026-09-03',
+    },
+    {
+        id: 2302,
+        caseId: 23,
+        status: 'done',
+        actorRole: 'staff',
+        actor: 'Sam',
+        note: null,
+        createdAt: '2026-09-05',
+    },
 ];
 
 // Seed for the client store; the real fetcher will replace this.

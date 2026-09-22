@@ -43,14 +43,7 @@ function Swatch({ entry }: { entry: PaletteEntry }) {
         );
     }
     if (entry.kind === 'tw-class') {
-        return (
-            <div
-                className={cn(
-                    'size-5 border border-border',
-                    entry.hex
-                )}
-            />
-        );
+        return <div className={cn('size-5 border border-border', entry.hex)} />;
     }
     // kind:'hex' or kind:'css-var' — both work as inline style backgroundColor
     return (
@@ -83,7 +76,8 @@ export default async function PalettePage() {
                         <h2 className="mb-2 text-sm font-semibold tracking-tight">
                             {CHANNEL_LABEL[channel]}
                             <span className="ml-2 text-xs font-normal text-muted-foreground">
-                                {rows.length} entr{rows.length === 1 ? 'y' : 'ies'}
+                                {rows.length} entr
+                                {rows.length === 1 ? 'y' : 'ies'}
                             </span>
                         </h2>
                         <table className="w-full border-collapse border text-xs">
@@ -138,7 +132,8 @@ export default async function PalettePage() {
                                             <span
                                                 className={cn(
                                                     'rounded px-1 py-0.5 text-[10px] font-medium',
-                                                    entry.futureSource === 'color_palette'
+                                                    entry.futureSource ===
+                                                        'color_palette'
                                                         ? 'bg-violet-100 text-violet-700'
                                                         : 'bg-muted text-muted-foreground'
                                                 )}

@@ -79,7 +79,10 @@ export function AddLineDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+        <Dialog
+            open={open}
+            onOpenChange={(o) => !o && handleClose()}
+        >
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Add line</DialogTitle>
@@ -95,7 +98,9 @@ export function AddLineDialog({
                             setLineName(e.target.value);
                             setError(null);
                         }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') submit();
+                        }}
                     />
                 </label>
 
@@ -141,10 +146,18 @@ export function AddLineDialog({
                 ) : null}
 
                 <DialogFooter>
-                    <Button variant="outline" size="sm" onClick={handleClose}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClose}
+                    >
                         Cancel
                     </Button>
-                    <Button size="sm" disabled={isMissing} onClick={submit}>
+                    <Button
+                        size="sm"
+                        disabled={isMissing}
+                        onClick={submit}
+                    >
                         Add line
                     </Button>
                 </DialogFooter>

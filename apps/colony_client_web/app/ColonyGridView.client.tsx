@@ -28,12 +28,27 @@ import {
     type SelLevel,
     type SelPath,
 } from '@/lib/gridSelection';
-import { SIGNAL_LABEL, SIGNAL_ORDER, signalTagFillClass, signalColorOf, dateColorOf } from '@/lib/signal';
-import { buildDateCaseIndex, type DateColumn, type DateCaseHit } from '@/lib/dateSignal';
+import {
+    SIGNAL_LABEL,
+    SIGNAL_ORDER,
+    signalTagFillClass,
+    signalColorOf,
+    dateColorOf,
+} from '@/lib/signal';
+import {
+    buildDateCaseIndex,
+    type DateColumn,
+    type DateCaseHit,
+} from '@/lib/dateSignal';
 import { formatDate } from '@/lib/dueDates';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { useTasks, useTaskLog, addTask } from '@/lib/mockStore';
-import { useColonyGrid, applyColonyMove, updateMouse, type UpdateMousePatch } from '@/lib/mockColonyStore';
+import {
+    useColonyGrid,
+    applyColonyMove,
+    updateMouse,
+    type UpdateMousePatch,
+} from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -42,7 +57,10 @@ import { cn } from '@/lib/utils';
 import { useNavSlotNode } from './NavSlot.client';
 import { MoveMenu } from './MoveMenu.client';
 import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
-import { MouseCaseDrawer, type CaseDrawerTarget } from './MouseCaseDrawer.client';
+import {
+    MouseCaseDrawer,
+    type CaseDrawerTarget,
+} from './MouseCaseDrawer.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { MouseCaseTypeMenu } from './MouseCaseTypeMenu.client';
 import { AddMouseDialog } from './AddMouseDialog.client';
@@ -97,11 +115,19 @@ export function ColonyGridView() {
     const [detail, setDetail] = useState<SelectedMouse | null>(null);
     const [selected, setSelected] = useState<Record<number, string>>({});
     const [taskOpen, setTaskOpen] = useState(false);
-    const [taskMice, setTaskMice] = useState<{ metaId: number; label: string }[]>([]);
+    const [taskMice, setTaskMice] = useState<
+        { metaId: number; label: string }[]
+    >([]);
     const [caseDrawer, setCaseDrawer] = useState<CaseDrawerTarget | null>(null);
-    const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; mouse: { metaId: number; mouseLabel: string } } | null>(null);
+    const [ctxMenu, setCtxMenu] = useState<{
+        x: number;
+        y: number;
+        mouse: { metaId: number; mouseLabel: string };
+    } | null>(null);
     // null = closed; {} = no prefill; {cageId,...} = prefilled
-    const [addMouseTarget, setAddMouseTarget] = useState<AddMouseTarget | null>(null);
+    const [addMouseTarget, setAddMouseTarget] = useState<AddMouseTarget | null>(
+        null
+    );
     const [addLineOpen, setAddLineOpen] = useState(false);
 
     const allCases = useTasks();
@@ -153,7 +179,8 @@ export function ColonyGridView() {
     const totalMice = colony.lines.reduce((n, l) => n + lineMice(l).length, 0);
 
     const path = useMemo(
-        () => resolvePath(colony, selection?.kind === 'node' ? selection : null),
+        () =>
+            resolvePath(colony, selection?.kind === 'node' ? selection : null),
         [colony, selection]
     );
     const hl = (elemLevel: number, ids: SelPath) =>
@@ -258,7 +285,7 @@ export function ColonyGridView() {
                                     );
                         if (inSel)
                             // WHY mouseLabel (not composedLabel): addTask uses the BASE label; .N suffix is a read-time projection.
-            out.push({ metaId: m.metaId, label: m.mouseLabel });
+                            out.push({ metaId: m.metaId, label: m.mouseLabel });
                     })
                 )
             )
@@ -295,7 +322,9 @@ export function ColonyGridView() {
             selLine ? `line: ${selLine.lineName}` : undefined,
             selCage ? `cage: ${selCage.cageNumber}` : undefined,
             selSlot ? `slot ${selSlot.label}` : undefined,
-            selMouse ? `mouse: ${composeMouseLabel(selMouse.mouseLabel, reclipIndex.get(selMouse.metaId) ?? 0)}` : undefined,
+            selMouse
+                ? `mouse: ${composeMouseLabel(selMouse.mouseLabel, reclipIndex.get(selMouse.metaId) ?? 0)}`
+                : undefined,
         ].filter((s): s is string => !!s);
     }
 
@@ -428,8 +457,8 @@ export function ColonyGridView() {
                                             setTaskOpen(true);
                                         }}
                                     >
-                                        <ListPlus className="size-2.5" /> Create task
-                                        · {selectionMice.length}
+                                        <ListPlus className="size-2.5" /> Create
+                                        task · {selectionMice.length}
                                     </Button>
                                 ) : null}
                                 <Button
@@ -475,7 +504,10 @@ export function ColonyGridView() {
                                 // Add-affordance gate — NODE selection only (see TailPlus).
                                 const lineSel = hl(1, { lineId: l.lineId });
                                 const cageHl = (c: GridCage) =>
-                                    hl(2, { lineId: l.lineId, cageId: c.cageId }) ||
+                                    hl(2, {
+                                        lineId: l.lineId,
+                                        cageId: c.cageId,
+                                    }) ||
                                     (genoSets?.cages.has(c.cageId) ?? false) ||
                                     (mateSets?.cages.has(c.cageId) ?? false);
                                 const slotHl = (c: GridCage, s: GridSlot) =>
@@ -486,7 +518,11 @@ export function ColonyGridView() {
                                     }) ||
                                     (genoSets?.slots.has(s.slotId) ?? false) ||
                                     (mateSets?.slots.has(s.slotId) ?? false);
-                                const mouseHl = (c: GridCage, s: GridSlot, m: MouseCell) =>
+                                const mouseHl = (
+                                    c: GridCage,
+                                    s: GridSlot,
+                                    m: MouseCell
+                                ) =>
                                     hl(4, {
                                         lineId: l.lineId,
                                         cageId: c.cageId,
@@ -499,197 +535,387 @@ export function ColonyGridView() {
                                 // cell within this line carries the icon (user rule). Prefill is
                                 // exact from that cell's own ancestors — no path guessing.
                                 const cageSel = (c: GridCage) =>
-                                    hl(2, { lineId: l.lineId, cageId: c.cageId });
+                                    hl(2, {
+                                        lineId: l.lineId,
+                                        cageId: c.cageId,
+                                    });
                                 const slotSel = (c: GridCage, s: GridSlot) =>
-                                    hl(3, { lineId: l.lineId, cageId: c.cageId, slotId: s.slotId });
-                                const mouseSel = (c: GridCage, s: GridSlot, m: MouseCell) =>
+                                    hl(3, {
+                                        lineId: l.lineId,
+                                        cageId: c.cageId,
+                                        slotId: s.slotId,
+                                    });
+                                const mouseSel = (
+                                    c: GridCage,
+                                    s: GridSlot,
+                                    m: MouseCell
+                                ) =>
                                     hl(4, {
                                         lineId: l.lineId,
                                         cageId: c.cageId,
                                         slotId: s.slotId,
                                         mouseId: m.metaId,
                                     });
-                                const lastHlCage = [...l.cages].reverse().find(cageSel);
+                                const lastHlCage = [...l.cages]
+                                    .reverse()
+                                    .find(cageSel);
                                 const lastHlSlot = l.cages
-                                    .flatMap((c) => c.slots.map((s) => ({ c, s })))
+                                    .flatMap((c) =>
+                                        c.slots.map((s) => ({ c, s }))
+                                    )
                                     .reverse()
                                     .find(({ c, s }) => slotSel(c, s));
                                 const lastHlMouse = l.cages
                                     .flatMap((c) =>
-                                        c.slots.flatMap((s) => s.mice.map((m) => ({ c, s, m })))
+                                        c.slots.flatMap((s) =>
+                                            s.mice.map((m) => ({ c, s, m }))
+                                        )
                                     )
                                     .reverse()
                                     .find(({ c, s, m }) => mouseSel(c, s, m));
                                 return (
-                                <div key={l.lineId}>
-                                <div
-                                    id={`line-${l.lineId}`}
-                                    // Full border + subtle shadow: each line block is a card,
-                                    // lifted off the gap so the separation reads at a glance.
-                                    className="relative flex border border-border shadow-sm"
-                                >
-                                    {lineSel ? (
-                                        <TailPlus
-                                            rail={RAIL_W.line}
-                                            label="Add new line"
-                                            onClick={() => setAddLineOpen(true)}
-                                        />
-                                    ) : null}
-                                    <LineLabel
-                                        line={l}
-                                        index={i + 1}
-                                        count={countLineMice(l)}
-                                        highlighted={lineHl}
-                                        onClick={() => goTo({ level: 'line', id: l.lineId })}
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                        {/* Empty line: the cage/slot/mouse [+] all live inside
+                                    <div key={l.lineId}>
+                                        <div
+                                            id={`line-${l.lineId}`}
+                                            // Full border + subtle shadow: each line block is a card,
+                                            // lifted off the gap so the separation reads at a glance.
+                                            className="relative flex border border-border shadow-sm"
+                                        >
+                                            {lineSel ? (
+                                                <TailPlus
+                                                    rail={RAIL_W.line}
+                                                    label="Add new line"
+                                                    onClick={() =>
+                                                        setAddLineOpen(true)
+                                                    }
+                                                />
+                                            ) : null}
+                                            <LineLabel
+                                                line={l}
+                                                index={i + 1}
+                                                count={countLineMice(l)}
+                                                highlighted={lineHl}
+                                                onClick={() =>
+                                                    goTo({
+                                                        level: 'line',
+                                                        id: l.lineId,
+                                                    })
+                                                }
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                {/* Empty line: the cage/slot/mouse [+] all live inside
                                             l.cages.map, so a just-created line would be a dead end.
                                             A standing "+ cage" is its only way forward. */}
-                                        {l.cages.length === 0 ? (
-                                            <button
-                                                type="button"
-                                                aria-label="Add first cage to line"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setAddMouseTarget({ lineId: l.lineId });
-                                                }}
-                                                className="flex w-full items-center px-2 py-1 font-mono text-[10px] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
-                                            >
-                                                + cage
-                                            </button>
-                                        ) : null}
-                                        {l.cages.map((c) => (
-                                            <div
-                                                key={c.cageId}
-                                                id={`cage-${c.cageId}`}
-                                                className="relative flex border-t border-border/60 first:border-t-0"
-                                            >
-                                                {c.cageId === lastHlCage?.cageId ? (
-                                                    <TailPlus
-                                                        rail={RAIL_W.cage}
-                                                        label="Add cage to line"
-                                                        onClick={() =>
-                                                            setAddMouseTarget({ lineId: l.lineId })
-                                                        }
-                                                    />
+                                                {l.cages.length === 0 ? (
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Add first cage to line"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setAddMouseTarget({
+                                                                lineId: l.lineId,
+                                                            });
+                                                        }}
+                                                        className="flex w-full items-center px-2 py-1 font-mono text-[10px] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+                                                    >
+                                                        + cage
+                                                    </button>
                                                 ) : null}
-                                                <CageLabel
-                                                    number={c.cageNumber}
-                                                    count={countCageMice(c)}
-                                                    highlighted={cageHl(c)}
-                                                    onClick={() => goTo({ level: 'cage', id: c.cageId })}
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                    {c.slots.map((s) => (
-                                                        <div
-                                                            key={s.slotId}
-                                                            id={`slot-${s.slotId}`}
-                                                            className="relative flex border-t border-border/40 first:border-t-0"
-                                                        >
-                                                            {s.slotId === lastHlSlot?.s.slotId ? (
-                                                                <TailPlus
-                                                                    rail={RAIL_W.slot}
-                                                                    label="Add slot to cage"
-                                                                    onClick={() =>
-                                                                        setAddMouseTarget({
-                                                                            cageId: c.cageId,
-                                                                        })
-                                                                    }
-                                                                />
-                                                            ) : null}
-                                                            <SlotLabel
-                                                                label={s.label}
-                                                                count={countSlotMice(s.mice)}
-                                                                adults={countSlotAdults(s.mice)}
-                                                                cap={SLOT_ADULT_CAP}
-                                                                over={countSlotAdults(s.mice) > SLOT_ADULT_CAP}
-                                                                highlighted={slotHl(c, s)}
-                                                                onClick={() => goTo({ level: 'slot', id: s.slotId })}
+                                                {l.cages.map((c) => (
+                                                    <div
+                                                        key={c.cageId}
+                                                        id={`cage-${c.cageId}`}
+                                                        className="relative flex border-t border-border/60 first:border-t-0"
+                                                    >
+                                                        {c.cageId ===
+                                                        lastHlCage?.cageId ? (
+                                                            <TailPlus
+                                                                rail={
+                                                                    RAIL_W.cage
+                                                                }
+                                                                label="Add cage to line"
+                                                                onClick={() =>
+                                                                    setAddMouseTarget(
+                                                                        {
+                                                                            lineId: l.lineId,
+                                                                        }
+                                                                    )
+                                                                }
                                                             />
-                                                            <div className="min-w-0 flex-1">
-                                                                {/* Empty slot: a standing "+ mouse" fills the empty block so the
-                                                                    first mouse can be added without selecting first. */}
-                                                                {s.mice.length === 0 ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        aria-label="Add first mouse to slot"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setAddMouseTarget({ cageId: c.cageId, slotId: s.slotId });
-                                                                        }}
-                                                                        className="flex w-full items-center px-2 py-1 font-mono text-[10px] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+                                                        ) : null}
+                                                        <CageLabel
+                                                            number={
+                                                                c.cageNumber
+                                                            }
+                                                            count={countCageMice(
+                                                                c
+                                                            )}
+                                                            highlighted={cageHl(
+                                                                c
+                                                            )}
+                                                            onClick={() =>
+                                                                goTo({
+                                                                    level: 'cage',
+                                                                    id: c.cageId,
+                                                                })
+                                                            }
+                                                        />
+                                                        <div className="min-w-0 flex-1">
+                                                            {c.slots.map(
+                                                                (s) => (
+                                                                    <div
+                                                                        key={
+                                                                            s.slotId
+                                                                        }
+                                                                        id={`slot-${s.slotId}`}
+                                                                        className="relative flex border-t border-border/40 first:border-t-0"
                                                                     >
-                                                                        + mouse
-                                                                    </button>
-                                                                ) : null}
-                                                                {s.mice.map((m) => (
-                                                                    <MouseRow
-                                                                        key={m.metaId}
-                                                                        id={`mouse-${m.metaId}`}
-                                                                        mouse={m}
-                                                                        composedLabel={composed(m)}
-                                                                        dateHits={dateIndex.get(m.metaId)}
-                                                                        tags={badgeIndex.get(m.metaId) ?? []}
-                                                                        zebra={(rowIndex.get(m.metaId) ?? 0) % 2 === 1}
-                                                                        highlighted={mouseHl(c, s, m)}
-                                                                        onAddBelow={
-                                                                            m.metaId === lastHlMouse?.m.metaId
-                                                                                ? () =>
-                                                                                      setAddMouseTarget({
-                                                                                          cageId: c.cageId,
-                                                                                          slotId: s.slotId,
-                                                                                      })
-                                                                                : undefined
-                                                                        }
-                                                                        filterOn={on}
-                                                                        isMatch={match(m)}
-                                                                        checked={!!selected[m.metaId]}
-                                                                        onToggle={() => toggleSelect(m)}
-                                                                        onSelect={() => goTo({ level: 'mouse', id: m.metaId })}
-                                                                        onJumpMouse={(mid) => jump('mouse', mid)}
-                                                                        onOpen={() => {
-                                                                            setCaseDrawer(null);
-                                                                            setDetail({
-                                                                                mouse: m,
-                                                                                lineName: l.lineName,
-                                                                                cageNumber: c.cageNumber,
-                                                                                slotLabel: s.label,
-                                                                            });
-                                                                        }}
-                                                                        onMove={() =>
-                                                                            setMoving({
-                                                                                mouse: m,
-                                                                                lineId: l.lineId,
-                                                                                cageId: c.cageId,
-                                                                                slotId: s.slotId,
-                                                                            })
-                                                                        }
-                                                                        onGenotype={() => pickGenotype(m.genotype)}
-                                                                        onMate={pickMate}
-                                                                        onOpenCases={(t) => {
-                                                                            setDetail(null);
-                                                                            setCaseDrawer(t);
-                                                                        }}
-                                                                        onCtxMenu={(e) => {
-                                                                            e.preventDefault();
-                                                                            setCtxMenu({ x: e.clientX, y: e.clientY, mouse: { metaId: m.metaId, mouseLabel: m.mouseLabel } });
-                                                                        }}
-                                                                        onUpdate={(patch) => {
-                                                                            const result = updateMouse(m.metaId, patch);
-                                                                            return result.ok ? null : result.error;
-                                                                        }}
-                                                                    />
-                                                                ))}
-                                                            </div>
+                                                                        {s.slotId ===
+                                                                        lastHlSlot
+                                                                            ?.s
+                                                                            .slotId ? (
+                                                                            <TailPlus
+                                                                                rail={
+                                                                                    RAIL_W.slot
+                                                                                }
+                                                                                label="Add slot to cage"
+                                                                                onClick={() =>
+                                                                                    setAddMouseTarget(
+                                                                                        {
+                                                                                            cageId: c.cageId,
+                                                                                        }
+                                                                                    )
+                                                                                }
+                                                                            />
+                                                                        ) : null}
+                                                                        <SlotLabel
+                                                                            label={
+                                                                                s.label
+                                                                            }
+                                                                            count={countSlotMice(
+                                                                                s.mice
+                                                                            )}
+                                                                            adults={countSlotAdults(
+                                                                                s.mice
+                                                                            )}
+                                                                            cap={
+                                                                                SLOT_ADULT_CAP
+                                                                            }
+                                                                            over={
+                                                                                countSlotAdults(
+                                                                                    s.mice
+                                                                                ) >
+                                                                                SLOT_ADULT_CAP
+                                                                            }
+                                                                            highlighted={slotHl(
+                                                                                c,
+                                                                                s
+                                                                            )}
+                                                                            onClick={() =>
+                                                                                goTo(
+                                                                                    {
+                                                                                        level: 'slot',
+                                                                                        id: s.slotId,
+                                                                                    }
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <div className="min-w-0 flex-1">
+                                                                            {/* Empty slot: a standing "+ mouse" fills the empty block so the
+                                                                    first mouse can be added without selecting first. */}
+                                                                            {s
+                                                                                .mice
+                                                                                .length ===
+                                                                            0 ? (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    aria-label="Add first mouse to slot"
+                                                                                    onClick={(
+                                                                                        e
+                                                                                    ) => {
+                                                                                        e.stopPropagation();
+                                                                                        setAddMouseTarget(
+                                                                                            {
+                                                                                                cageId: c.cageId,
+                                                                                                slotId: s.slotId,
+                                                                                            }
+                                                                                        );
+                                                                                    }}
+                                                                                    className="flex w-full items-center px-2 py-1 font-mono text-[10px] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+                                                                                >
+                                                                                    +
+                                                                                    mouse
+                                                                                </button>
+                                                                            ) : null}
+                                                                            {s.mice.map(
+                                                                                (
+                                                                                    m
+                                                                                ) => (
+                                                                                    <MouseRow
+                                                                                        key={
+                                                                                            m.metaId
+                                                                                        }
+                                                                                        id={`mouse-${m.metaId}`}
+                                                                                        mouse={
+                                                                                            m
+                                                                                        }
+                                                                                        composedLabel={composed(
+                                                                                            m
+                                                                                        )}
+                                                                                        dateHits={dateIndex.get(
+                                                                                            m.metaId
+                                                                                        )}
+                                                                                        tags={
+                                                                                            badgeIndex.get(
+                                                                                                m.metaId
+                                                                                            ) ??
+                                                                                            []
+                                                                                        }
+                                                                                        zebra={
+                                                                                            (rowIndex.get(
+                                                                                                m.metaId
+                                                                                            ) ??
+                                                                                                0) %
+                                                                                                2 ===
+                                                                                            1
+                                                                                        }
+                                                                                        highlighted={mouseHl(
+                                                                                            c,
+                                                                                            s,
+                                                                                            m
+                                                                                        )}
+                                                                                        onAddBelow={
+                                                                                            m.metaId ===
+                                                                                            lastHlMouse
+                                                                                                ?.m
+                                                                                                .metaId
+                                                                                                ? () =>
+                                                                                                      setAddMouseTarget(
+                                                                                                          {
+                                                                                                              cageId: c.cageId,
+                                                                                                              slotId: s.slotId,
+                                                                                                          }
+                                                                                                      )
+                                                                                                : undefined
+                                                                                        }
+                                                                                        filterOn={
+                                                                                            on
+                                                                                        }
+                                                                                        isMatch={match(
+                                                                                            m
+                                                                                        )}
+                                                                                        checked={
+                                                                                            !!selected[
+                                                                                                m
+                                                                                                    .metaId
+                                                                                            ]
+                                                                                        }
+                                                                                        onToggle={() =>
+                                                                                            toggleSelect(
+                                                                                                m
+                                                                                            )
+                                                                                        }
+                                                                                        onSelect={() =>
+                                                                                            goTo(
+                                                                                                {
+                                                                                                    level: 'mouse',
+                                                                                                    id: m.metaId,
+                                                                                                }
+                                                                                            )
+                                                                                        }
+                                                                                        onJumpMouse={(
+                                                                                            mid
+                                                                                        ) =>
+                                                                                            jump(
+                                                                                                'mouse',
+                                                                                                mid
+                                                                                            )
+                                                                                        }
+                                                                                        onOpen={() => {
+                                                                                            setCaseDrawer(
+                                                                                                null
+                                                                                            );
+                                                                                            setDetail(
+                                                                                                {
+                                                                                                    mouse: m,
+                                                                                                    lineName:
+                                                                                                        l.lineName,
+                                                                                                    cageNumber:
+                                                                                                        c.cageNumber,
+                                                                                                    slotLabel:
+                                                                                                        s.label,
+                                                                                                }
+                                                                                            );
+                                                                                        }}
+                                                                                        onMove={() =>
+                                                                                            setMoving(
+                                                                                                {
+                                                                                                    mouse: m,
+                                                                                                    lineId: l.lineId,
+                                                                                                    cageId: c.cageId,
+                                                                                                    slotId: s.slotId,
+                                                                                                }
+                                                                                            )
+                                                                                        }
+                                                                                        onGenotype={() =>
+                                                                                            pickGenotype(
+                                                                                                m.genotype
+                                                                                            )
+                                                                                        }
+                                                                                        onMate={
+                                                                                            pickMate
+                                                                                        }
+                                                                                        onOpenCases={(
+                                                                                            t
+                                                                                        ) => {
+                                                                                            setDetail(
+                                                                                                null
+                                                                                            );
+                                                                                            setCaseDrawer(
+                                                                                                t
+                                                                                            );
+                                                                                        }}
+                                                                                        onCtxMenu={(
+                                                                                            e
+                                                                                        ) => {
+                                                                                            e.preventDefault();
+                                                                                            setCtxMenu(
+                                                                                                {
+                                                                                                    x: e.clientX,
+                                                                                                    y: e.clientY,
+                                                                                                    mouse: {
+                                                                                                        metaId: m.metaId,
+                                                                                                        mouseLabel:
+                                                                                                            m.mouseLabel,
+                                                                                                    },
+                                                                                                }
+                                                                                            );
+                                                                                        }}
+                                                                                        onUpdate={(
+                                                                                            patch
+                                                                                        ) => {
+                                                                                            const result =
+                                                                                                updateMouse(
+                                                                                                    m.metaId,
+                                                                                                    patch
+                                                                                                );
+                                                                                            return result.ok
+                                                                                                ? null
+                                                                                                : result.error;
+                                                                                        }}
+                                                                                    />
+                                                                                )
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            )}
                                                         </div>
-                                                    ))}
-                                                </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
+                                        </div>
                                     </div>
-                                </div>
-                                </div>
                                 );
                             })}
                         </div>
@@ -775,12 +1001,20 @@ export function ColonyGridView() {
                             detail: null,
                             dueDate: null,
                             assignee: null,
-                            mice: [{ metaId: ctxMenu.mouse.metaId, label: ctxMenu.mouse.mouseLabel }],
+                            mice: [
+                                {
+                                    metaId: ctxMenu.mouse.metaId,
+                                    label: ctxMenu.mouse.mouseLabel,
+                                },
+                            ],
                         });
                         setCtxMenu(null);
                     }}
                     onSac={() => {
-                        updateMouse(ctxMenu.mouse.metaId, { signal: 'dead', isAlive: false });
+                        updateMouse(ctxMenu.mouse.metaId, {
+                            signal: 'dead',
+                            isAlive: false,
+                        });
                         setCtxMenu(null);
                     }}
                     onClose={() => setCtxMenu(null)}
@@ -1330,7 +1564,10 @@ function LineLabel({
             <span className="font-mono text-[11px] font-semibold whitespace-nowrap text-foreground [writing-mode:vertical-rl]">
                 {line.lineName}
             </span>
-            <CountBadge count={count} title="live mice in line" />
+            <CountBadge
+                count={count}
+                title="live mice in line"
+            />
         </button>
     );
 }
@@ -1371,7 +1608,10 @@ function CageLabel({
             <span className="font-mono text-[13px] font-bold text-foreground">
                 {number}
             </span>
-            <CountBadge count={count} title="live mice in cage" />
+            <CountBadge
+                count={count}
+                title="live mice in cage"
+            />
         </button>
     );
 }
@@ -1419,7 +1659,10 @@ function SlotLabel({
             >
                 {label}
             </span>
-            <CountBadge count={count} title="live mice in slot" />
+            <CountBadge
+                count={count}
+                title="live mice in slot"
+            />
             {over ? (
                 <span className="rounded-sm bg-red-600 px-1 text-[8px] leading-tight font-bold text-white">
                     {adults}/{cap}
@@ -1515,11 +1758,11 @@ const isLiveMouse = (m: MouseCell): boolean =>
     m.isAlive !== false && m.signal !== 'dead';
 
 const countSlotAdults = (mice: MouseCell[]): number =>
-    mice.filter(
-        (m) => isLiveMouse(m) && lifeStage(m.dob, m.sex) !== 'baby'
-    ).length;
+    mice.filter((m) => isLiveMouse(m) && lifeStage(m.dob, m.sex) !== 'baby')
+        .length;
 
-const countSlotMice = (mice: MouseCell[]): number => mice.filter(isLiveMouse).length;
+const countSlotMice = (mice: MouseCell[]): number =>
+    mice.filter(isLiveMouse).length;
 const countCageMice = (c: GridCage): number =>
     c.slots.reduce((n, s) => n + countSlotMice(s.mice), 0);
 const countLineMice = (l: GridLine): number =>
@@ -1649,7 +1892,8 @@ function MouseRow({
                                 type="button"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (idClickTimerRef.current) clearTimeout(idClickTimerRef.current);
+                                    if (idClickTimerRef.current)
+                                        clearTimeout(idClickTimerRef.current);
                                     idClickTimerRef.current = setTimeout(() => {
                                         idClickTimerRef.current = null;
                                         onOpen();
@@ -1680,13 +1924,17 @@ function MouseRow({
                             className={cn(CELL, 'min-w-0')}
                             style={
                                 !dead && mouse.genotypeColor
-                                    ? { backgroundColor: `${mouse.genotypeColor}22` }
+                                    ? {
+                                          backgroundColor: `${mouse.genotypeColor}22`,
+                                      }
                                     : undefined
                             }
                         >
                             <EditableCell
                                 value={mouse.genotype}
-                                onCommit={(next) => onUpdate({ genotype: next })}
+                                onCommit={(next) =>
+                                    onUpdate({ genotype: next })
+                                }
                                 className="w-full"
                             >
                                 <button
@@ -1742,14 +1990,20 @@ function MouseRow({
                                     // Never array order: a server query without an
                                     // ORDER BY would then surface the wrong partner
                                     // with no error to notice.
-                                    const byLatest = [...mouse.mates].sort((x, y) => {
-                                        if (x.matedOn === y.matedOn) return 0;
-                                        if (x.matedOn == null) return 1;
-                                        if (y.matedOn == null) return -1;
-                                        return y.matedOn.localeCompare(x.matedOn);
-                                    });
+                                    const byLatest = [...mouse.mates].sort(
+                                        (x, y) => {
+                                            if (x.matedOn === y.matedOn)
+                                                return 0;
+                                            if (x.matedOn == null) return 1;
+                                            if (y.matedOn == null) return -1;
+                                            return y.matedOn.localeCompare(
+                                                x.matedOn
+                                            );
+                                        }
+                                    );
                                     const latest = byLatest[0]!;
-                                    const clickable = latest.partnerMetaId != null;
+                                    const clickable =
+                                        latest.partnerMetaId != null;
                                     return (
                                         <>
                                             {/* Top half = the LATEST mate only. Ids are
@@ -1764,8 +2018,13 @@ function MouseRow({
                                                     disabled={!clickable}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (latest.partnerMetaId != null)
-                                                            onJumpMouse(latest.partnerMetaId);
+                                                        if (
+                                                            latest.partnerMetaId !=
+                                                            null
+                                                        )
+                                                            onJumpMouse(
+                                                                latest.partnerMetaId
+                                                            );
                                                     }}
                                                     title={
                                                         byLatest.length > 1
@@ -1802,7 +2061,10 @@ function MouseRow({
                                                             onMate(mt.color);
                                                         }}
                                                         className="size-3 shrink-0 cursor-pointer rounded-sm border border-black/10 hover:ring-1 hover:ring-primary"
-                                                        style={{ background: mt.color }}
+                                                        style={{
+                                                            background:
+                                                                mt.color,
+                                                        }}
                                                         title={
                                                             mt.matedOn
                                                                 ? `${mt.partnerId} · ${fmtDate(mt.matedOn)} — highlight mate group`
@@ -1836,32 +2098,35 @@ function MouseRow({
                             />
                         </div>
 
-                        {(['plug', 'deliv', 'tissue', 'genotyping'] as const).map(
-                            (col) => {
-                                const na =
-                                    (col === 'plug' || col === 'deliv') &&
-                                    mouse.sex !== 'F';
-                                const hit = na ? undefined : dateHits?.[col];
-                                return (
-                                    <div
-                                        key={col}
-                                        className={cn(
-                                            CELL,
-                                            'px-1.5 font-mono text-[10px]',
-                                            hit
-                                                ? dateColorOf(hit.status, hit.signal)
-                                                : 'text-muted-foreground'
-                                        )}
-                                    >
-                                        {na
-                                            ? ''
-                                            : hit
-                                              ? fmtDate(hit.date)
-                                              : fmtDate(mouse.dates?.[col])}
-                                    </div>
-                                );
-                            }
-                        )}
+                        {(
+                            ['plug', 'deliv', 'tissue', 'genotyping'] as const
+                        ).map((col) => {
+                            const na =
+                                (col === 'plug' || col === 'deliv') &&
+                                mouse.sex !== 'F';
+                            const hit = na ? undefined : dateHits?.[col];
+                            return (
+                                <div
+                                    key={col}
+                                    className={cn(
+                                        CELL,
+                                        'px-1.5 font-mono text-[10px]',
+                                        hit
+                                            ? dateColorOf(
+                                                  hit.status,
+                                                  hit.signal
+                                              )
+                                            : 'text-muted-foreground'
+                                    )}
+                                >
+                                    {na
+                                        ? ''
+                                        : hit
+                                          ? fmtDate(hit.date)
+                                          : fmtDate(mouse.dates?.[col])}
+                                </div>
+                            );
+                        })}
 
                         <div className="flex items-center px-2">
                             <Button
@@ -1899,7 +2164,12 @@ function MouseRow({
                                             aria-label={`${g.count} ${g.signal} task(s): ${g.types.join(', ')} — click to view cases`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onOpenCases({ kind: 'focus', metaId: mouse.metaId, label: composedLabel, signal: g.signal });
+                                                onOpenCases({
+                                                    kind: 'focus',
+                                                    metaId: mouse.metaId,
+                                                    label: composedLabel,
+                                                    signal: g.signal,
+                                                });
                                             }}
                                             className={cn(
                                                 'flex size-3.5 items-center justify-center rounded-sm border text-[8px] leading-none font-bold cursor-pointer hover:ring-1 hover:ring-primary',

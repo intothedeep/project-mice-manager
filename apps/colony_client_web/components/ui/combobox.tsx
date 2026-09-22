@@ -76,7 +76,9 @@ export function Combobox({
                     setQuery('');
                 }}
                 onChange={(e) =>
-                    setQuery(transform ? transform(e.target.value) : e.target.value)
+                    setQuery(
+                        transform ? transform(e.target.value) : e.target.value
+                    )
                 }
                 // Close on blur; list items use onMouseDown-preventDefault below
                 // so a click commits before this fires.
@@ -88,7 +90,10 @@ export function Combobox({
                     onMouseDown={(e) => e.preventDefault()}
                 >
                     {emptyLabel !== undefined ? (
-                        <Row onClick={() => commit('')} muted>
+                        <Row
+                            onClick={() => commit('')}
+                            muted
+                        >
                             {emptyLabel}
                         </Row>
                     ) : null}
@@ -96,13 +101,17 @@ export function Combobox({
                         <Row
                             key={o.value}
                             onClick={() => commit(o.value)}
-                            active={o.value.toLowerCase() === value.toLowerCase()}
+                            active={
+                                o.value.toLowerCase() === value.toLowerCase()
+                            }
                         >
                             {o.label ?? o.value}
                         </Row>
                     ))}
                     {filtered.length === 0 && !showAdd ? (
-                        <li className="px-3 py-1.5 text-muted-foreground">No matches</li>
+                        <li className="px-3 py-1.5 text-muted-foreground">
+                            No matches
+                        </li>
                     ) : null}
                     {showAdd ? (
                         <Row onClick={() => commit(query.trim())}>

@@ -6,7 +6,11 @@
 // Follows the project convention: raw SQL, thin abstraction.
 
 import type { Executor } from '@repo/db';
-import type { MateHeadRow, MouseGenotypeRow, CandidateCaseSpec } from '../domain/sopGenerators';
+import type {
+    MateHeadRow,
+    MouseGenotypeRow,
+    CandidateCaseSpec,
+} from '../domain/sopGenerators';
 
 // ---------------------------------------------------------------------------
 // Reads — supply data slices to the pure generators
@@ -38,8 +42,8 @@ export async function fetchCohousedMateHeads(
     // Filter to cohoused after the query so the query stays index-friendly
     // (mates_origin_idx covers origin_mate_id, occurred_at DESC, id DESC).
     return rows
-        .filter(r => r.status === 'cohoused')
-        .map(r => ({
+        .filter((r) => r.status === 'cohoused')
+        .map((r) => ({
             originMateId: BigInt(r.origin_mate_id),
             status: r.status,
             occurredAt: r.occurred_at,
@@ -85,7 +89,7 @@ export async function fetchMiceGenotypeStatus(
          GROUP BY mm.id, mm.dob, mh.is_alive`
     );
 
-    return rows.map(r => ({
+    return rows.map((r) => ({
         mouseMetaId: BigInt(r.mouse_meta_id),
         dob: r.dob,
         isAlive: r.is_alive,
@@ -111,7 +115,9 @@ export async function resolveSignalId(
         [signalType]
     );
     if (rows.length === 0) {
-        throw new Error(`Signal type '${signalType}' not found in signals table.`);
+        throw new Error(
+            `Signal type '${signalType}' not found in signals table.`
+        );
     }
     return BigInt(rows[0].id);
 }
@@ -170,8 +176,12 @@ export async function insertCaseIdempotent(
             params.genKey,
             params.signalId.toString(),
             params.subjectKind,
-            params.subjectMateId != null ? params.subjectMateId.toString() : null,
-            params.subjectMouseId != null ? params.subjectMouseId.toString() : null,
+            params.subjectMateId != null
+                ? params.subjectMateId.toString()
+                : null,
+            params.subjectMouseId != null
+                ? params.subjectMouseId.toString()
+                : null,
             params.dueDate,
             params.systemUserId.toString(),
         ]

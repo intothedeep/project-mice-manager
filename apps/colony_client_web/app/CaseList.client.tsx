@@ -201,7 +201,10 @@ function CaseItem({
                         </p>
                     ) : null}
 
-                    <CaseResponsibility caseId={c.id} assignee={c.assignee} />
+                    <CaseResponsibility
+                        caseId={c.id}
+                        assignee={c.assignee}
+                    />
 
                     <CaseTimeline caseId={c.id} />
 

@@ -115,7 +115,8 @@ const DETAILS: Record<number, MouseDetail> = {
             {
                 at: '2026-09-06',
                 actor: 'Sam',
-                summary: 'second tissue collection (.2) — re-genotype scheduled',
+                summary:
+                    'second tissue collection (.2) — re-genotype scheduled',
             },
             {
                 at: '2026-06-01',

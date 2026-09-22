@@ -26,7 +26,7 @@ const GENERATED_CASE_SIGNAL_TYPE = 'plan';
 
 export interface SopRunSummary {
     plug_check: { generated: number; skipped: number };
-    genotype:   { generated: number; skipped: number };
+    genotype: { generated: number; skipped: number };
 }
 
 /**
@@ -44,7 +44,9 @@ function defaultDueDate(asOf: Date): string {
     return d.toISOString().slice(0, 10);
 }
 
-export async function runSopChecks(asOf: Date = new Date()): Promise<SopRunSummary> {
+export async function runSopChecks(
+    asOf: Date = new Date()
+): Promise<SopRunSummary> {
     const systemUserId = await resolveSystemUserId();
     const dueDate = defaultDueDate(asOf);
 
@@ -52,13 +54,16 @@ export async function runSopChecks(asOf: Date = new Date()): Promise<SopRunSumma
         // ----------------------------------------------------------------
         // 1. Resolve signal id (read inside tx — consistent snapshot)
         // ----------------------------------------------------------------
-        const signalId = await resolveSignalId(client, GENERATED_CASE_SIGNAL_TYPE);
+        const signalId = await resolveSignalId(
+            client,
+            GENERATED_CASE_SIGNAL_TYPE
+        );
 
         // ----------------------------------------------------------------
         // 2. Fetch data slices
         // ----------------------------------------------------------------
-        const mateHeads  = await fetchCohousedMateHeads(client);
-        const mouseRows  = await fetchMiceGenotypeStatus(client);
+        const mateHeads = await fetchCohousedMateHeads(client);
+        const mouseRows = await fetchMiceGenotypeStatus(client);
 
         // ----------------------------------------------------------------
         // 3. Generate candidates (pure — no I/O)
@@ -94,7 +99,7 @@ export async function runSopChecks(asOf: Date = new Date()): Promise<SopRunSumma
 
         return {
             plug_check: plugResult,
-            genotype:   genoResult,
+            genotype: genoResult,
         };
     });
 }

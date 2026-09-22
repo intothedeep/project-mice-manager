@@ -12,7 +12,14 @@
 // state/counters (not the tentative ones), so a failed addLine never leaves a
 // dangling cages: [] line behind.
 
-import type { ColonyGrid, GridCage, GridLine, MouseCell, Sex, SignalColor } from '@repo/types';
+import type {
+    ColonyGrid,
+    GridCage,
+    GridLine,
+    MouseCell,
+    Sex,
+    SignalColor,
+} from '@repo/types';
 import { extractLitterCode, parseLitterCode } from '@/lib/litterCode';
 import { buildMouseLabel } from '@/lib/mouseIdentity';
 import { slotLabelSet, cageNumberSet, mouseLabelSet } from '@/lib/colonySeed';
@@ -74,14 +81,19 @@ export interface UpdateMousePatch {
 
 export type AddMouseResult = { ok: true } | { ok: false; error: string };
 
-export type AddLineResult = { ok: true; lineId: number } | { ok: false; error: string };
+export type AddLineResult =
+    { ok: true; lineId: number } | { ok: false; error: string };
 
 // ---- helpers ----------------------------------------------------------------
 
 // litterCode is the trimmed value the caller resolved (may differ in casing
 // from spec.litterCode before trimming) — mouseLabel and the stored
 // litterCode field must agree, so both derive from this same param.
-export function buildMouseCell(spec: MouseSpec, litterCode: string, metaId: number): MouseCell {
+export function buildMouseCell(
+    spec: MouseSpec,
+    litterCode: string,
+    metaId: number
+): MouseCell {
     const pupOffsets: number[] = [];
     return {
         metaId,
@@ -108,7 +120,10 @@ export function buildMouseCell(spec: MouseSpec, litterCode: string, metaId: numb
 
 // WHY max: a manually-typed code above peek keeps the auto option from proposing
 // a code that already exists as a real litter.
-export function advanceLitterCounter(litterCode: string, nextLitterOrd: number): number {
+export function advanceLitterCounter(
+    litterCode: string,
+    nextLitterOrd: number
+): number {
     const ord = parseLitterCode(litterCode);
     if (ord !== null) return Math.max(nextLitterOrd, ord + 1);
     return nextLitterOrd;
@@ -128,7 +143,9 @@ function findCage(state: ColonyGrid, cageId: number): GridCage | undefined {
 // isn't purely numeric — guessing past a non-numeric scheme would silently
 // propose a wrong sequence.
 export function suggestNextCageNumber(state: ColonyGrid): string {
-    const cageNumbers = state.lines.flatMap((l) => l.cages.map((c) => c.cageNumber));
+    const cageNumbers = state.lines.flatMap((l) =>
+        l.cages.map((c) => c.cageNumber)
+    );
     if (cageNumbers.length === 0) return '';
     let max = 0;
     for (const n of cageNumbers) {
@@ -148,16 +165,27 @@ export function addMouse(
 ): { state: ColonyGrid; counters: Counters; result: AddMouseResult } {
     const cage = findCage(state, input.cageId);
     if (!cage) {
-        return { state, counters, result: { ok: false, error: 'Selected cage no longer exists.' } };
+        return {
+            state,
+            counters,
+            result: { ok: false, error: 'Selected cage no longer exists.' },
+        };
     }
     if (!cage.slots.some((s) => s.slotId === input.slotId)) {
-        return { state, counters, result: { ok: false, error: 'Selected slot no longer exists.' } };
+        return {
+            state,
+            counters,
+            result: { ok: false, error: 'Selected slot no longer exists.' },
+        };
     }
 
     const litterCode = input.litterCode.trim();
     const nextMeta = counters.nextMetaId;
     const mouse = buildMouseCell(input, litterCode, nextMeta);
-    const newLitterOrd = advanceLitterCounter(litterCode, counters.nextLitterOrd);
+    const newLitterOrd = advanceLitterCounter(
+        litterCode,
+        counters.nextLitterOrd
+    );
 
     const newState: ColonyGrid = {
         ...state,
@@ -168,7 +196,9 @@ export function addMouse(
                 return {
                     ...c,
                     slots: c.slots.map((s) =>
-                        s.slotId === input.slotId ? { ...s, mice: [...s.mice, mouse] } : s
+                        s.slotId === input.slotId
+                            ? { ...s, mice: [...s.mice, mouse] }
+                            : s
                     ),
                 };
             }),
@@ -177,7 +207,11 @@ export function addMouse(
 
     return {
         state: newState,
-        counters: { ...counters, nextMetaId: nextMeta + 1, nextLitterOrd: newLitterOrd },
+        counters: {
+            ...counters,
+            nextMetaId: nextMeta + 1,
+            nextLitterOrd: newLitterOrd,
+        },
         result: { ok: true },
     };
 }
@@ -190,14 +224,32 @@ export function addSlot(
 ): { state: ColonyGrid; counters: Counters; result: AddMouseResult } {
     const label = input.slotLabel.trim();
     if (!label) {
-        return { state, counters, result: { ok: false, error: 'A new cage requires a slot label — provide a new slot label.' } };
+        return {
+            state,
+            counters,
+            result: {
+                ok: false,
+                error: 'A new cage requires a slot label — provide a new slot label.',
+            },
+        };
     }
     if (slotLabelSet(state).has(label.toLowerCase())) {
-        return { state, counters, result: { ok: false, error: `Slot label "${label}" already exists — labels are unique colony-wide.` } };
+        return {
+            state,
+            counters,
+            result: {
+                ok: false,
+                error: `Slot label "${label}" already exists — labels are unique colony-wide.`,
+            },
+        };
     }
     const cage = findCage(state, input.cageId);
     if (!cage) {
-        return { state, counters, result: { ok: false, error: 'Selected cage no longer exists.' } };
+        return {
+            state,
+            counters,
+            result: { ok: false, error: 'Selected cage no longer exists.' },
+        };
     }
 
     const slotId = counters.nextSlotId;
@@ -215,7 +267,11 @@ export function addSlot(
     const countersWithSlot: Counters = { ...counters, nextSlotId: slotId + 1 };
 
     if (!input.mouse) {
-        return { state: stateWithSlot, counters: countersWithSlot, result: { ok: true } };
+        return {
+            state: stateWithSlot,
+            counters: countersWithSlot,
+            result: { ok: true },
+        };
     }
 
     const inner = addMouse(stateWithSlot, countersWithSlot, {
@@ -237,11 +293,22 @@ export function addCage(
 ): { state: ColonyGrid; counters: Counters; result: AddMouseResult } {
     const cageNumStr = String(input.cageNumber);
     if (cageNumberSet(state).has(cageNumStr)) {
-        return { state, counters, result: { ok: false, error: `Cage number "${input.cageNumber}" already exists — cage numbers are unique colony-wide.` } };
+        return {
+            state,
+            counters,
+            result: {
+                ok: false,
+                error: `Cage number "${input.cageNumber}" already exists — cage numbers are unique colony-wide.`,
+            },
+        };
     }
     const line = state.lines.find((l) => l.lineId === input.lineId);
     if (!line) {
-        return { state, counters, result: { ok: false, error: 'Selected line no longer exists.' } };
+        return {
+            state,
+            counters,
+            result: { ok: false, error: 'Selected line no longer exists.' },
+        };
     }
 
     const cageId = counters.nextCageId;
@@ -250,7 +317,18 @@ export function addCage(
         lines: state.lines.map((l) =>
             l.lineId !== input.lineId
                 ? l
-                : { ...l, cages: [...l.cages, { cageId, cageNumber: cageNumStr, location: null, slots: [] }] }
+                : {
+                      ...l,
+                      cages: [
+                          ...l.cages,
+                          {
+                              cageId,
+                              cageNumber: cageNumStr,
+                              location: null,
+                              slots: [],
+                          },
+                      ],
+                  }
         ),
     };
     const countersWithCage: Counters = { ...counters, nextCageId: cageId + 1 };
@@ -274,12 +352,23 @@ export function addLine(
 ): { state: ColonyGrid; counters: Counters; result: AddLineResult } {
     const name = input.lineName.trim();
     if (!name) {
-        return { state, counters, result: { ok: false, error: 'Line name cannot be empty.' } };
+        return {
+            state,
+            counters,
+            result: { ok: false, error: 'Line name cannot be empty.' },
+        };
     }
 
     const nameLower = name.toLowerCase();
     if (state.lines.some((l) => l.lineName.toLowerCase() === nameLower)) {
-        return { state, counters, result: { ok: false, error: `Line "${name}" already exists — line names are unique colony-wide.` } };
+        return {
+            state,
+            counters,
+            result: {
+                ok: false,
+                error: `Line "${name}" already exists — line names are unique colony-wide.`,
+            },
+        };
     }
 
     const lineId = counters.nextLineId;
@@ -289,7 +378,10 @@ export function addLine(
         nominalGenotypeColor: input.nominalGenotypeColor ?? null,
         cages: [],
     };
-    const stateWithLine: ColonyGrid = { ...state, lines: [...state.lines, newLine] };
+    const stateWithLine: ColonyGrid = {
+        ...state,
+        lines: [...state.lines, newLine],
+    };
     const countersWithLine: Counters = { ...counters, nextLineId: lineId + 1 };
 
     const inner = addCage(stateWithLine, countersWithLine, {
@@ -301,7 +393,11 @@ export function addLine(
     if (!inner.result.ok) {
         return { state, counters, result: inner.result };
     }
-    return { state: inner.state, counters: inner.counters, result: { ok: true, lineId } };
+    return {
+        state: inner.state,
+        counters: inner.counters,
+        result: { ok: true, lineId },
+    };
 }
 
 export function updateMouse(
@@ -315,10 +411,17 @@ export function updateMouse(
         for (const c of l.cages)
             for (const s of c.slots)
                 for (const m of s.mice)
-                    if (m.metaId === metaId) { current = m; break; }
+                    if (m.metaId === metaId) {
+                        current = m;
+                        break;
+                    }
 
     if (!current) {
-        return { state, counters, result: { ok: false, error: `Mouse ${metaId} not found.` } };
+        return {
+            state,
+            counters,
+            result: { ok: false, error: `Mouse ${metaId} not found.` },
+        };
     }
 
     if (patch.mouseLabel !== undefined) {
@@ -327,7 +430,14 @@ export function updateMouse(
             const ids = mouseLabelSet(state);
             ids.delete(current.mouseLabel.toLowerCase());
             if (ids.has(newId.toLowerCase())) {
-                return { state, counters, result: { ok: false, error: `ID "${newId}" already exists — mouse IDs are unique colony-wide.` } };
+                return {
+                    state,
+                    counters,
+                    result: {
+                        ok: false,
+                        error: `ID "${newId}" already exists — mouse IDs are unique colony-wide.`,
+                    },
+                };
             }
         }
     }
@@ -380,7 +490,12 @@ export function updateMouse(
     }
 
     // No-op: return same state reference so the wrapper skips emit.
-    if (!changed) return { state, counters: { ...counters, nextLitterOrd: newLitterOrd }, result: { ok: true } };
+    if (!changed)
+        return {
+            state,
+            counters: { ...counters, nextLitterOrd: newLitterOrd },
+            result: { ok: true },
+        };
 
     const newState: ColonyGrid = {
         ...state,
@@ -390,11 +505,17 @@ export function updateMouse(
                 ...c,
                 slots: c.slots.map((s) => ({
                     ...s,
-                    mice: s.mice.map((m) => (m.metaId === metaId ? updated : m)),
+                    mice: s.mice.map((m) =>
+                        m.metaId === metaId ? updated : m
+                    ),
                 })),
             })),
         })),
     };
 
-    return { state: newState, counters: { ...counters, nextLitterOrd: newLitterOrd }, result: { ok: true } };
+    return {
+        state: newState,
+        counters: { ...counters, nextLitterOrd: newLitterOrd },
+        result: { ok: true },
+    };
 }

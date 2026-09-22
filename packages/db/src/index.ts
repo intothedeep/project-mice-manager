@@ -5,7 +5,7 @@
 // The raw Pool is deliberately NOT exported: exposing it would let a controller
 // call pool.query directly and bypass the repository layer entirely.
 
-import type { Pool, PoolClient } from "pg";
+import type { Pool, PoolClient } from 'pg';
 
 /**
  * What every repository function accepts as its first argument, so the same
@@ -14,4 +14,4 @@ import type { Pool, PoolClient } from "pg";
  */
 export type Executor = Pool | PoolClient;
 
-export { query, withTransaction, closePool } from "./pool";
+export { query, withTransaction, closePool } from './pool';

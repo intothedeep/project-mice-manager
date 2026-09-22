@@ -1,25 +1,25 @@
-import { Pool, PoolClient } from "pg";
-import { databaseUrl } from "./config";
+import { Pool, PoolClient } from 'pg';
+import { databaseUrl } from './config';
 
 // Module-level singleton — created once per process lifetime, never per request.
 const pool = new Pool({
-  connectionString: databaseUrl,
-  max: 10,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
+    connectionString: databaseUrl,
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
 });
 
 // A dropped idle backend must not crash the process.
-pool.on("error", (err) => {
-  console.error("[db] idle client error:", err.message);
+pool.on('error', (err) => {
+    console.error('[db] idle client error:', err.message);
 });
 
 /** One-shot query. Use for reads and fire-and-forget writes outside a tx. */
 async function query<T extends object = Record<string, unknown>>(
-  sql: string,
-  params?: unknown[]
+    sql: string,
+    params?: unknown[]
 ): Promise<{ rows: T[] }> {
-  return pool.query<T>(sql, params);
+    return pool.query<T>(sql, params);
 }
 
 /**
@@ -27,27 +27,27 @@ async function query<T extends object = Record<string, unknown>>(
  * Called by the SERVICE layer only — never call from repositories directly.
  */
 async function withTransaction<T>(
-  fn: (client: PoolClient) => Promise<T>
+    fn: (client: PoolClient) => Promise<T>
 ): Promise<T> {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const result = await fn(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (err) {
-    // Swallow a ROLLBACK failure: if the connection died, the rollback throws
-    // and would replace the real error with a misleading one.
-    await client.query("ROLLBACK").catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const result = await fn(client);
+        await client.query('COMMIT');
+        return result;
+    } catch (err) {
+        // Swallow a ROLLBACK failure: if the connection died, the rollback throws
+        // and would replace the real error with a misleading one.
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+    } finally {
+        client.release();
+    }
 }
 
 /** Graceful shutdown — drains connections; call before process.exit(). */
 async function closePool(): Promise<void> {
-  await pool.end();
+    await pool.end();
 }
 
 export { pool, query, withTransaction, closePool };

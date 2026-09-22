@@ -113,7 +113,10 @@ export function signalSwatchClass(signal: SignalColor): string {
 //   5. todo | doing + note        → text-foreground         (informational — normal ink)
 //
 // Callers: ColonyGridView.client.tsx date cells (PLUG/DELIV/TISSUE/GENOTYPING).
-export function dateColorOf(status: CaseTaskStatus, signal: TaskSignal): string {
+export function dateColorOf(
+    status: CaseTaskStatus,
+    signal: TaskSignal
+): string {
     if (status === 'cancelled') return 'text-muted-foreground line-through';
     if (status === 'done' || status === 'verified') return 'text-foreground';
     // open (todo | doing)

@@ -138,7 +138,10 @@ function TaskItem({
     // a single mouse (subjectKind='mouse'). Batch/litter/cage labels stay as-is.
     const displaySubjectLabel = task.subjectLabel
         ? task.subjectMouseId != null
-            ? composeMouseLabel(task.subjectLabel, reclipIndex.get(task.subjectMouseId) ?? 0)
+            ? composeMouseLabel(
+                  task.subjectLabel,
+                  reclipIndex.get(task.subjectMouseId) ?? 0
+              )
             : task.subjectLabel
         : null;
 
@@ -150,9 +153,7 @@ function TaskItem({
                 // Overdue: coral-red thick border overrides the signal thin border.
                 // Uses --signal-instruction (#d40000) — consistent with the existing
                 // overdue text treatment and the overcrowding red in the grid.
-                overdue
-                    ? 'border-2 border-signal-instruction'
-                    : 'border',
+                overdue ? 'border-2 border-signal-instruction' : 'border',
                 cancelled && 'opacity-50'
             )}
         >

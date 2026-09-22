@@ -121,7 +121,10 @@ export function MouseCaseDrawer({
                                 </span>
                             </SheetTitle>
                             <div className="pt-1">
-                                <RoleSwitch role={role} onChange={setRole} />
+                                <RoleSwitch
+                                    role={role}
+                                    onChange={setRole}
+                                />
                             </div>
                         </SheetHeader>
 

@@ -23,7 +23,10 @@ export function CaseTimeline({ caseId }: { caseId: number }) {
     return (
         <ol className="relative space-y-3 border-l border-border pl-4">
             {rows.map((t) => (
-                <li key={t.id} className="relative">
+                <li
+                    key={t.id}
+                    className="relative"
+                >
                     <span className="absolute top-1 -left-[21px] size-2 rounded-full border border-background bg-primary/70" />
                     <div className="flex items-baseline gap-2">
                         <span className="font-mono text-[11px] text-muted-foreground">

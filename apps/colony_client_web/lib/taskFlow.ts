@@ -48,6 +48,9 @@ const ACTIONS: TaskAction[] = [
 ];
 
 // The actions a given role may take from a given status — drives the buttons.
-export function availableActions(role: Role, from: CaseTaskStatus): TaskAction[] {
+export function availableActions(
+    role: Role,
+    from: CaseTaskStatus
+): TaskAction[] {
     return ACTIONS.filter((a) => canTransition(role, from, a.to));
 }

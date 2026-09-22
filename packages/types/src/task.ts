@@ -11,7 +11,8 @@ export type Role = 'staff' | 'professor' | 'admin';
 
 // Subject kinds match the cases.subject_kind DB column (0023: 'room' removed,
 // 'slot' and 'line' added; 0024: 'mice' added for batch cases).
-export type TaskSubjectKind = 'mouse' | 'cage' | 'slot' | 'litter' | 'mate' | 'line' | 'mice';
+export type TaskSubjectKind =
+    'mouse' | 'cage' | 'slot' | 'litter' | 'mate' | 'line' | 'mice';
 
 // Intent marker, mirrored from the Excel font-colour semantics:
 //   instruction = must-do (red), plan = planned (blue), note = informational.

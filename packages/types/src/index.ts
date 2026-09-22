@@ -32,11 +32,7 @@ export type {
 // as CaseTaskStatus to avoid shadowing the old TaskStatus above. Role,
 // TaskSubjectKind, TaskSignal are NOT re-exported here — they are already
 // exported from task.ts above (single definition, same values).
-export type {
-    TaskStatus as CaseTaskStatus,
-    CaseCard,
-    Task,
-} from './case';
+export type { TaskStatus as CaseTaskStatus, CaseCard, Task } from './case';
 
 // isOverdue is a value export (pure function), not a type — needs its own line.
 export { isOverdue } from './case';

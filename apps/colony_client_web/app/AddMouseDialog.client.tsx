@@ -75,7 +75,8 @@ export function resolveAddMode(prefill: {
     cageId?: number;
     slotId?: number;
 }): AddMode {
-    if (prefill.cageId !== undefined && prefill.slotId !== undefined) return 'mouse';
+    if (prefill.cageId !== undefined && prefill.slotId !== undefined)
+        return 'mouse';
     if (prefill.cageId !== undefined) return 'slot';
     if (prefill.lineId !== undefined) return 'cage';
     return 'mouse';
@@ -136,7 +137,10 @@ export function buildSubmitAction(params: {
     if (!needsMouse || cageId === undefined || existingSlotId === undefined) {
         return { kind: 'none' };
     }
-    return { kind: 'mouse', input: { ...mouse, cageId, slotId: existingSlotId } };
+    return {
+        kind: 'mouse',
+        input: { ...mouse, cageId, slotId: existingSlotId },
+    };
 }
 
 export function AddMouseDialog({
@@ -161,7 +165,10 @@ export function AddMouseDialog({
                 cages: l.cages.map((c) => ({
                     cageId: c.cageId,
                     cageNumber: c.cageNumber,
-                    slots: c.slots.map((s) => ({ slotId: s.slotId, label: s.label })),
+                    slots: c.slots.map((s) => ({
+                        slotId: s.slotId,
+                        label: s.label,
+                    })),
                 })),
             })),
         [colony]
@@ -174,7 +181,12 @@ export function AddMouseDialog({
     // key) on every open, so deriving it straight from props is equivalent
     // to (and simpler than) tracking it in the open-effect below.
     const mode = useMemo(
-        () => resolveAddMode({ lineId: initialLineId, cageId: initialCageId, slotId: initialSlotId }),
+        () =>
+            resolveAddMode({
+                lineId: initialLineId,
+                cageId: initialCageId,
+                slotId: initialSlotId,
+            }),
         [initialLineId, initialCageId, initialSlotId]
     );
 
@@ -218,7 +230,9 @@ export function AddMouseDialog({
                     resolvedLineId = l.lineId;
                     resolvedCageValue = cage.cageNumber;
                     if (initialSlotId !== undefined) {
-                        const slot = cage.slots.find((s) => s.slotId === initialSlotId);
+                        const slot = cage.slots.find(
+                            (s) => s.slotId === initialSlotId
+                        );
                         if (slot) resolvedSlotValue = slot.label;
                     }
                     break;
@@ -265,7 +279,8 @@ export function AddMouseDialog({
     const slotMatch = slots.find(
         (s) => s.label.toLowerCase() === slotValue.trim().toLowerCase()
     );
-    const isNewSlot = isNewCage || mode === 'slot' || (slotValue.trim() !== '' && !slotMatch);
+    const isNewSlot =
+        isNewCage || mode === 'slot' || (slotValue.trim() !== '' && !slotMatch);
 
     const litterOptions: ComboOption[] = [
         { value: nextAutoCode, label: `auto next: ${nextAutoCode}` },
@@ -279,7 +294,8 @@ export function AddMouseDialog({
     const litterOk = parseLitterCode(litterValue.trim()) !== null;
     const newCageNum = isNewCage ? parseInt(cageValue.trim(), 10) : NaN;
     const mouseMissing =
-        needsMouse && (!litterOk || !pupNumber || isNaN(pupNum) || pupNum < 1 || !dob);
+        needsMouse &&
+        (!litterOk || !pupNumber || isNaN(pupNum) || pupNum < 1 || !dob);
     const containerMissing =
         cageValue.trim() === '' ||
         (isNewCage && (isNaN(newCageNum) || newCageNum < 1)) ||
@@ -344,7 +360,9 @@ export function AddMouseDialog({
                 result = addMouse(action.input);
                 break;
             case 'none':
-                setError('Cage has no slot — create a new slot label to place the mouse.');
+                setError(
+                    'Cage has no slot — create a new slot label to place the mouse.'
+                );
                 return;
         }
         if (!result.ok) {
@@ -387,8 +405,15 @@ export function AddMouseDialog({
                                 onChange={(e) => setSex(e.target.value as Sex)}
                             >
                                 {SEX_OPTIONS.map((s) => (
-                                    <option key={s} value={s}>
-                                        {s === 'M' ? 'M — male' : s === 'F' ? 'F — female' : 'U — unsexed'}
+                                    <option
+                                        key={s}
+                                        value={s}
+                                    >
+                                        {s === 'M'
+                                            ? 'M — male'
+                                            : s === 'F'
+                                              ? 'F — female'
+                                              : 'U — unsexed'}
                                     </option>
                                 ))}
                             </select>
@@ -432,10 +457,15 @@ export function AddMouseDialog({
                     <select
                         className={SELECT_CLASS}
                         value={lineId}
-                        onChange={(e) => handleLineChange(Number(e.target.value))}
+                        onChange={(e) =>
+                            handleLineChange(Number(e.target.value))
+                        }
                     >
                         {lineOptions.map((l) => (
-                            <option key={l.lineId} value={l.lineId}>
+                            <option
+                                key={l.lineId}
+                                value={l.lineId}
+                            >
                                 {l.lineName}
                             </option>
                         ))}
@@ -468,7 +498,11 @@ export function AddMouseDialog({
                         options={slotOptions}
                         placeholder="search or add slot"
                         addLabel={(t) => `+ Add slot ${t}`}
-                        emptyLabel={isNewCage || mode === 'slot' ? undefined : '— first slot —'}
+                        emptyLabel={
+                            isNewCage || mode === 'slot'
+                                ? undefined
+                                : '— first slot —'
+                        }
                     />
                 </Label>
 
@@ -489,10 +523,18 @@ export function AddMouseDialog({
                 ) : null}
 
                 <DialogFooter>
-                    <Button variant="outline" size="sm" onClick={onClose}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onClose}
+                    >
                         Cancel
                     </Button>
-                    <Button size="sm" disabled={isMissing} onClick={submit}>
+                    <Button
+                        size="sm"
+                        disabled={isMissing}
+                        onClick={submit}
+                    >
                         {MODE_TITLE[mode]}
                     </Button>
                 </DialogFooter>

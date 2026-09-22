@@ -13,8 +13,7 @@ export function maxMetaId(grid: ColonyGrid): number {
     for (const l of grid.lines)
         for (const c of l.cages)
             for (const s of c.slots)
-                for (const m of s.mice)
-                    if (m.metaId > max) max = m.metaId;
+                for (const m of s.mice) if (m.metaId > max) max = m.metaId;
     return max;
 }
 
@@ -31,16 +30,14 @@ export function maxSlotId(grid: ColonyGrid): number {
 export function maxCageId(grid: ColonyGrid): number {
     let max = 0;
     for (const l of grid.lines)
-        for (const c of l.cages)
-            if (c.cageId > max) max = c.cageId;
+        for (const c of l.cages) if (c.cageId > max) max = c.cageId;
     return max;
 }
 
 /** Highest lineId currently in the grid — new-line counter seeds above it. */
 export function maxLineId(grid: ColonyGrid): number {
     let max = 0;
-    for (const l of grid.lines)
-        if (l.lineId > max) max = l.lineId;
+    for (const l of grid.lines) if (l.lineId > max) max = l.lineId;
     return max;
 }
 
@@ -64,8 +61,7 @@ export function slotLabelSet(grid: ColonyGrid): Set<string> {
  */
 export function cageNumberSet(grid: ColonyGrid): Set<string> {
     const set = new Set<string>();
-    for (const l of grid.lines)
-        for (const c of l.cages) set.add(c.cageNumber);
+    for (const l of grid.lines) for (const c of l.cages) set.add(c.cageNumber);
     return set;
 }
 

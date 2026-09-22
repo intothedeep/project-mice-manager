@@ -62,10 +62,7 @@ export function StatusBadge({ status }: { status: CaseTaskStatus }) {
         status === 'todo'
             ? ['todo', 'border-border text-muted-foreground']
             : status === 'doing'
-              ? [
-                    'doing',
-                    'border-primary bg-primary text-primary-foreground',
-                ]
+              ? ['doing', 'border-primary bg-primary text-primary-foreground']
               : status === 'done'
                 ? ['done', 'border-border bg-muted text-muted-foreground']
                 : status === 'verified'

@@ -50,7 +50,8 @@ export function buildDateCaseIndex(
     for (const t of taskLog) {
         if (t.status === 'done' || t.status === 'verified') {
             const prev = doneDate.get(t.caseId);
-            if (!prev || t.createdAt > prev) doneDate.set(t.caseId, t.createdAt);
+            if (!prev || t.createdAt > prev)
+                doneDate.set(t.caseId, t.createdAt);
         }
     }
 
@@ -60,7 +61,7 @@ export function buildDateCaseIndex(
         if (!col) continue;
         const date =
             c.status === 'done' || c.status === 'verified'
-                ? doneDate.get(c.id) ?? c.dueDate
+                ? (doneDate.get(c.id) ?? c.dueDate)
                 : c.dueDate;
         const hit: DateCaseHit = { date, status: c.status, signal: c.signal };
 

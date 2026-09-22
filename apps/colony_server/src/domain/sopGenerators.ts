@@ -111,7 +111,7 @@ export interface MouseGenotypeRow {
     mouseMetaId: bigint;
     dob: Date | null;
     isAlive: boolean;
-    geneCount: number;   // count of live mice_genes rows with gene_id IS NOT NULL
+    geneCount: number; // count of live mice_genes rows with gene_id IS NOT NULL
 }
 
 export function generateGenotypeCandidates(

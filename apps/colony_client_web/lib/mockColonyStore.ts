@@ -152,7 +152,10 @@ export function addLine(input: AddLineInput): AddLineResult {
     return commitIfOk(pureAddLine(state, counters, input));
 }
 
-export function updateMouse(metaId: number, patch: UpdateMousePatch): AddMouseResult {
+export function updateMouse(
+    metaId: number,
+    patch: UpdateMousePatch
+): AddMouseResult {
     const r = pureUpdateMouse(state, counters, metaId, patch);
     counters = r.counters;
     // Only emit when state reference actually changed (no-op guard).

@@ -218,8 +218,7 @@ const SEED: PaletteEntry[] = [
         token: 'overdue-overdue',
         hex: 'var(--signal-instruction)',
         channel: 'overdue',
-        usage:
-            'REUSES signal-instruction · TasksView: thick border-2; UpcomingView: border/40 + text-signal-instruction',
+        usage: 'REUSES signal-instruction · TasksView: thick border-2; UpcomingView: border/40 + text-signal-instruction',
         kind: 'css-var',
         futureSource: 'rule_legend',
     },
@@ -230,8 +229,7 @@ const SEED: PaletteEntry[] = [
         // Tailwind opacity modifiers are class-level so the full class is the SSOT.
         hex: 'bg-signal-flag-fill/50 text-amber-700',
         channel: 'overdue',
-        usage:
-            'UpcomingView today + soon rows · flag-fill bg at 50% opacity + amber-700 text',
+        usage: 'UpcomingView today + soon rows · flag-fill bg at 50% opacity + amber-700 text',
         kind: 'tw-class',
         futureSource: 'rule_legend',
     },

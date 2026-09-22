@@ -39,10 +39,7 @@ export const LEVEL_RANK: Record<SelLevel, number> = {
 
 // Walk the tree to resolve a selection to its full ancestor coordinates. A
 // selected mouse does not know its cage/slot, so this one walk supplies them.
-export function resolvePath(
-    colony: ColonyGrid,
-    sel: NodeSel | null
-): SelPath {
+export function resolvePath(colony: ColonyGrid, sel: NodeSel | null): SelPath {
     if (!sel) return {};
     for (const l of colony.lines) {
         if (sel.level === 'line') {

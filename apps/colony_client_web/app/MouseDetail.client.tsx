@@ -133,7 +133,8 @@ export function MouseDetailDrawer({
                                     <ul className="space-y-1">
                                         {(['mother', 'father'] as const).map(
                                             (parentRole) => {
-                                                const p = m.parents?.[parentRole];
+                                                const p =
+                                                    m.parents?.[parentRole];
                                                 if (!p) return null;
                                                 return (
                                                     <li
@@ -182,7 +183,10 @@ export function MouseDetailDrawer({
 
                             <Section label="Cases">
                                 <div className="pt-1 pb-2">
-                                    <RoleSwitch role={role} onChange={setRole} />
+                                    <RoleSwitch
+                                        role={role}
+                                        onChange={setRole}
+                                    />
                                 </div>
                                 {mouseCases.length > 0 ? (
                                     <div className="space-y-5">
@@ -224,8 +228,8 @@ export function MouseDetailDrawer({
                                                         </span>
                                                     </div>
                                                     <p className="text-[13px]">
-                                                        {c?.caseType ?? 'case'} →{' '}
-                                                        {h.status}
+                                                        {c?.caseType ?? 'case'}{' '}
+                                                        → {h.status}
                                                     </p>
                                                 </li>
                                             );

@@ -20,12 +20,12 @@ export type TaskStatus = 'todo' | 'doing' | 'done' | 'verified' | 'cancelled';
 import type { TaskSubjectKind, TaskSignal } from './task';
 
 export interface CaseCard {
-    id: number;                          // cases.id
-    caseType: string;                    // e.g. 'genotype', 'plug_check', 'wean'
-    signal: TaskSignal;                  // resolved from cases.signal_id -> signals.type
-    status: TaskStatus;                  // cases.current_status (denorm cache)
+    id: number; // cases.id
+    caseType: string; // e.g. 'genotype', 'plug_check', 'wean'
+    signal: TaskSignal; // resolved from cases.signal_id -> signals.type
+    status: TaskStatus; // cases.current_status (denorm cache)
     subjectKind: TaskSubjectKind | null; // null when no specific subject entity
-    subjectLabel: string | null;         // e.g. 'M4BCW', 'cage 2413', 'litter BCW'
+    subjectLabel: string | null; // e.g. 'M4BCW', 'cage 2413', 'litter BCW'
     // subjectMouseId: the resolved mouse_meta.id for single-subject 'mouse' cases.
     // Also present on 'mice' batch cases (always null — membership is in case_mice).
     // Optional for backward compat — consumers that only read subject_kind='mouse'
@@ -34,8 +34,8 @@ export interface CaseCard {
     // mice: metaIds of all members for 'mice' batch cases. Populated by the server
     // JOIN on case_mice; absent for all other subject kinds.
     mice?: number[];
-    createdAt: string;                   // ISO datetime (cases.created_at)
-    dueDate: string | null;              // ISO date (cases.due_date)
+    createdAt: string; // ISO datetime (cases.created_at)
+    dueDate: string | null; // ISO date (cases.due_date)
     // OPEN QUESTION: assigned_to absent from cases spec — flagged for architect
     // review (see 0021 header). Will be added as a FK column when decided.
 }
@@ -50,11 +50,11 @@ import type { Role } from './task';
 export interface Task {
     id: number;
     caseId: number;
-    status: TaskStatus;   // the state the case MOVED TO with this task record
+    status: TaskStatus; // the state the case MOVED TO with this task record
     actorId: number;
     actorRole: Role;
     note: string | null;
-    createdAt: string;    // ISO datetime
+    createdAt: string; // ISO datetime
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ export interface Task {
 // ---------------------------------------------------------------------------
 export function isOverdue(
     c: Pick<CaseCard, 'status' | 'dueDate'>,
-    today: string           // ISO date 'YYYY-MM-DD'
+    today: string // ISO date 'YYYY-MM-DD'
 ): boolean {
     if (c.dueDate === null) return false;
     if (c.status !== 'todo' && c.status !== 'doing') return false;

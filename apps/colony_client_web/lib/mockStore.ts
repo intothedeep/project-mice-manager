@@ -42,7 +42,7 @@ let upcoming: UpcomingItem[] = SEED_UPCOMING;
 
 let nextCaseId = Math.max(0, ...cases.map((c) => c.id)) + 1;
 let nextTaskId = Math.max(0, ...taskLog.map((t) => t.id)) + 1;
-let nextUpId   = Math.max(0, ...upcoming.map((u) => u.id)) + 1;
+let nextUpId = Math.max(0, ...upcoming.map((u) => u.id)) + 1;
 
 // Cached projection — recomputed on every write, returned as-is on reads.
 let projectedCases: ClientCaseCard[] = reproject();
@@ -95,11 +95,13 @@ export function useTaskLog(): ClientTask[] {
 // setTaskStatus: dual write — appends a child task-log row AND updates the
 // case's current_status cache. Mirrors the real server's ADVANCE transaction
 // (INSERT child tasks row + UPDATE cases.current_status).
-export function setTaskStatus(caseId: number, to: CaseTaskStatus, role: Role): void {
+export function setTaskStatus(
+    caseId: number,
+    to: CaseTaskStatus,
+    role: Role
+): void {
     // 1. Update the case's mutable status cache.
-    cases = cases.map((c) =>
-        c.id !== caseId ? c : { ...c, status: to }
-    );
+    cases = cases.map((c) => (c.id !== caseId ? c : { ...c, status: to }));
 
     // 2. Append an immutable child task-log row.
     const taskRow: ClientTask = {
