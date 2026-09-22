@@ -5,7 +5,7 @@
 // reflect the live colony tree.
 
 import type { ColonyGrid } from '@repo/types';
-import { extractLitterCode, parseLitterCode } from '@/lib/litterCode';
+import { parseLitterCode } from '@/lib/litterCode';
 
 /** Highest metaId currently in the grid — new-mouse counter seeds above it. */
 export function maxMetaId(grid: ColonyGrid): number {
@@ -66,12 +66,9 @@ export function cageNumberSet(grid: ColonyGrid): Set<string> {
 }
 
 /**
- * Scan every mouse mouseLabel in the grid, extract its litter code, and return
- * the ordinal of the maximum code found. Pup-number-offset "+N" notation and
- * punch-mark suffixes ARE tolerated (fixed 2026-09-16) — extractLitterCode
- * used to return null for those, so ear-punched and offset-labeled mice were
- * silently skipped here and a generated code could collide with one already
- * in data.
+ * Scan every mouse's litterCode field in the grid and return the ordinal of
+ * the maximum code found. litterCode is a first-class MouseCell field — read
+ * it directly, never parsed back out of the rendered label.
  * WHY: the first generated code is nextLitterOrd+1, so seeding from the max
  * avoids re-issuing a code that already exists in data.
  */
@@ -81,9 +78,7 @@ export function maxSeedLitterOrdinal(grid: ColonyGrid): number {
         for (const c of l.cages)
             for (const s of c.slots)
                 for (const m of s.mice) {
-                    const code = extractLitterCode(m.mouseLabel);
-                    if (code === null) continue;
-                    const ord = parseLitterCode(code);
+                    const ord = parseLitterCode(m.litterCode);
                     if (ord !== null && ord > max) max = ord;
                 }
     return max;

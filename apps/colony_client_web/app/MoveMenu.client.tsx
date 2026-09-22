@@ -4,6 +4,7 @@ import type { ColonyGrid, MouseCell } from '@repo/types';
 import { useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import type { MoveTarget } from '@/lib/gridMove';
+import { mouseLabelOf } from '@/lib/mouseIdentity';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -57,6 +58,7 @@ export function MoveMenu({
     const [cageId, setCageId] = useState<number | null>(null);
     const [slotChoice, setSlotChoice] = useState<string | null>(null);
     const [newLabel, setNewLabel] = useState('');
+    const mouseLabel = mouseLabelOf(mouse);
 
     const line = colony.lines.find((l) => l.lineId === lineId);
     const cage = line?.cages.find((c) => c.cageId === cageId) ?? null;
@@ -105,7 +107,7 @@ export function MoveMenu({
                     <DialogTitle>
                         Move{' '}
                         <span className="font-mono text-signal-instruction">
-                            {mouse.mouseLabel}
+                            {mouseLabel}
                         </span>
                     </DialogTitle>
                 </DialogHeader>
@@ -220,8 +222,8 @@ export function MoveMenu({
                 {isCrossLine ? (
                     <p className="mt-3 flex items-start gap-2 rounded-md border border-signal-instruction/30 bg-signal-instruction/5 px-3 py-2 text-xs text-signal-instruction">
                         <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-                        Cross-line move — {mouse.mouseLabel} would leave its
-                        line. Allowed, but confirm this is intended.
+                        Cross-line move — {mouseLabel} would leave its line.
+                        Allowed, but confirm this is intended.
                     </p>
                 ) : null}
 

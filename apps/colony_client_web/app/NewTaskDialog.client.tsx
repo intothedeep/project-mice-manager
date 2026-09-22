@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { TaskSignal } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import { addTask } from '@/lib/mockStore';
+import { mouseLabelOf } from '@/lib/mouseIdentity';
 import {
     GENE_CODES,
     LITTER_CODES,
@@ -33,7 +34,7 @@ const MOUSE_OPTIONS = Array.from(
     new Set(
         SEED_COLONY.lines.flatMap((l) =>
             l.cages.flatMap((c) =>
-                c.slots.flatMap((s) => s.mice.map((m) => m.mouseLabel))
+                c.slots.flatMap((s) => s.mice.map((m) => mouseLabelOf(m)))
             )
         )
     )

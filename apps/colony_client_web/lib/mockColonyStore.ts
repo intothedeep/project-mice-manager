@@ -5,11 +5,7 @@ import { useSyncExternalStore } from 'react';
 import type { ColonyGrid } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import { moveMouse, type MoveTarget } from '@/lib/gridMove';
-import {
-    extractLitterCode,
-    formatLitterCode,
-    parseLitterCode,
-} from '@/lib/litterCode';
+import { formatLitterCode, parseLitterCode } from '@/lib/litterCode';
 import {
     maxMetaId,
     maxSlotId,
@@ -97,10 +93,10 @@ export function useLitterCodes(): string[] {
             for (const c of l.cages)
                 for (const s of c.slots)
                     for (const m of s.mice) {
-                        const code = extractLitterCode(m.mouseLabel);
-                        if (code === null) continue;
-                        const ord = parseLitterCode(code);
-                        if (ord !== null) seen.set(ord, code);
+                        // litterCode is a first-class field now — read it
+                        // directly instead of parsing it back out of a label.
+                        const ord = parseLitterCode(m.litterCode);
+                        if (ord !== null) seen.set(ord, m.litterCode);
                     }
         return [...seen.entries()]
             .sort((a, b) => b[0] - a[0])

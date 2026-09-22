@@ -92,13 +92,12 @@ export interface MouseDates {
 
 export interface MouseCell {
     metaId: number;
-    mouseLabel: string; // sex+number+litter-code+tag, e.g. "M4BCW", "U3BCX", "F10BEVe"
-    // Parts the label above is composed FROM (see lib/mouseIdentity.ts
-    // buildMouseLabel) — mouseLabel is a READ-TIME projection of these, never
-    // parsed back apart (same rule as punches below). Required: every
-    // mouse-creation path (AddMouseInput) already carries pupNumber and
-    // litterCode, so there is no partial-data caller to accommodate the way
-    // punches?/mouse-creation not yet minting punches does.
+    // The rendered label ("M4BCW", "U3BCX", "F10BEVe") is NOT stored here — it
+    // is a READ-TIME projection composed from the parts below (see
+    // lib/mouseIdentity.ts buildMouseLabel), never parsed back apart (same
+    // rule as punches below). Required: every mouse-creation path
+    // (AddMouseInput) already carries pupNumber and litterCode, so there is
+    // no partial-data caller to accommodate.
     pupNumber: number; // BIRTH number, immutable (mouse_meta.pup_number)
     litterCode: string; // denormalized on mouse_meta
     // ACTIVE pup-number offsets in CHAIN order; [] = never renumbered. Order is
@@ -116,7 +115,7 @@ export interface MouseCell {
     dob: string | null; // ISO date of birth; the "age" colour is computed from dob + sex at read (never stored — it changes daily)
     genotypeColor: string | null; // resolved identity hex for this mouse's genotype; null = unknown '?' → neutral. Server resolves from color_assignments(channel='genotype').
     mates: MateRef[]; // current mate(s): partner id + group colour badge. [] if not breeding; several when mated to multiple partners.
-    punches?: PunchRef[]; // ACTIVE punches only (deleted rows masked upstream); read-time projection, never parsed from mouseLabel. Optional: mouse-creation (lib/colonyMutations.ts) does not mint punches yet — a later step.
+    punches: PunchRef[]; // ACTIVE punches only (deleted rows masked upstream); read-time projection, never parsed from the rendered label.
     parents?: MouseParents; // father/mother refs for the parents column; omitted when unknown (founders)
     dates?: MouseDates; // breeding/lifecycle dates (last mating, plug, deliv, tissue, genotyping)
 }

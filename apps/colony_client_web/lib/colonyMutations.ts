@@ -21,7 +21,6 @@ import type {
     SignalColor,
 } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
-import { buildMouseLabel } from '@/lib/mouseIdentity';
 import { slotLabelSet, cageNumberSet } from '@/lib/colonySeed';
 
 // ---- types ------------------------------------------------------------------
@@ -86,8 +85,9 @@ export type AddLineResult =
 // ---- helpers ----------------------------------------------------------------
 
 // litterCode is the trimmed value the caller resolved (may differ in casing
-// from spec.litterCode before trimming) — mouseLabel and the stored
-// litterCode field must agree, so both derive from this same param.
+// from spec.litterCode before trimming) — the stored litterCode field is the
+// one true source; the rendered label composes from it at read time
+// (lib/mouseIdentity.ts), never stored here.
 export function buildMouseCell(
     spec: MouseSpec,
     litterCode: string,
@@ -96,13 +96,6 @@ export function buildMouseCell(
     const pupOffsets: number[] = [];
     return {
         metaId,
-        mouseLabel: buildMouseLabel({
-            sex: spec.sex,
-            pupNumber: spec.pupNumber,
-            pupOffsets,
-            litterCode,
-            earPunchCount: 0, // punches not minted here yet (later step)
-        }),
         pupNumber: spec.pupNumber,
         litterCode,
         pupOffsets,
@@ -114,6 +107,10 @@ export function buildMouseCell(
         dob: spec.dob,
         genotypeColor: null,
         mates: [],
+        // Toe-punch minting on creation is step 8's own AC, still unmet
+        // (tracked as its own gap, not this task's scope) — [] keeps today's
+        // behaviour (no punch minted) legal under the now-required field.
+        punches: [],
     };
 }
 

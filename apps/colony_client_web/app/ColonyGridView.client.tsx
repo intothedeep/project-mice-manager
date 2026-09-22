@@ -50,6 +50,7 @@ import {
     type UpdateMousePatch,
 } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
+import { mouseLabelOf } from '@/lib/mouseIdentity';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -161,7 +162,7 @@ export function ColonyGridView() {
         [allCases, taskLog]
     );
     const composed = (m: MouseCell) =>
-        composeMouseLabel(m.mouseLabel, reclipIndex.get(m.metaId) ?? 0);
+        composeMouseLabel(mouseLabelOf(m), reclipIndex.get(m.metaId) ?? 0);
 
     const on = isFilterActive(filter);
     const match = useMemo(
@@ -284,8 +285,11 @@ export function ColonyGridView() {
                                         (mt) => mt.color === selection.color
                                     );
                         if (inSel)
-                            // WHY mouseLabel (not composedLabel): addTask uses the BASE label; .N suffix is a read-time projection.
-                            out.push({ metaId: m.metaId, label: m.mouseLabel });
+                            // WHY the BASE label (not composedLabel): addTask uses the BASE label; .N suffix is a read-time projection.
+                            out.push({
+                                metaId: m.metaId,
+                                label: mouseLabelOf(m),
+                            });
                     })
                 )
             )
@@ -308,7 +312,7 @@ export function ColonyGridView() {
                     s.mice.forEach((m) =>
                         m.mates.forEach((mt) => {
                             if (mt.color === selection.color) {
-                                names.add(m.mouseLabel);
+                                names.add(mouseLabelOf(m));
                                 names.add(mt.partnerId);
                             }
                         })
@@ -323,7 +327,7 @@ export function ColonyGridView() {
             selCage ? `cage: ${selCage.cageNumber}` : undefined,
             selSlot ? `slot ${selSlot.label}` : undefined,
             selMouse
-                ? `mouse: ${composeMouseLabel(selMouse.mouseLabel, reclipIndex.get(selMouse.metaId) ?? 0)}`
+                ? `mouse: ${composeMouseLabel(mouseLabelOf(selMouse), reclipIndex.get(selMouse.metaId) ?? 0)}`
                 : undefined,
         ].filter((s): s is string => !!s);
     }
@@ -379,7 +383,7 @@ export function ColonyGridView() {
         setSelected((prev) => {
             const next = { ...prev };
             if (next[m.metaId]) delete next[m.metaId];
-            else next[m.metaId] = m.mouseLabel;
+            else next[m.metaId] = mouseLabelOf(m);
             return next;
         });
     }
@@ -886,7 +890,9 @@ export function ColonyGridView() {
                                                                                                     mouse: {
                                                                                                         metaId: m.metaId,
                                                                                                         mouseLabel:
-                                                                                                            m.mouseLabel,
+                                                                                                            mouseLabelOf(
+                                                                                                                m
+                                                                                                            ),
                                                                                                     },
                                                                                                 }
                                                                                             );
@@ -1878,8 +1884,8 @@ function MouseRow({
                     <div className={cn('grid items-stretch', MOUSE_COLS)}>
                         {/* id cell — READ-ONLY (P0.7-b step 9a): the label is
                             SPECIFIED as a read-time projection of parts, so it must
-                            not be typed over. Still read from the stored
-                            MouseCell.mouseLabel until step 9b deletes that field.
+                            not be typed over. Composed via mouseLabelOf/composed()
+                            (step 9b) — MouseCell has no stored label to read.
                             Single-click opens drawer. */}
                         <div
                             className={cn(

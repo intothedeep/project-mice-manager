@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { signalIdClass } from '@/lib/signal';
 import { useTasks, useTaskLog } from '@/lib/mockStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
+import { mouseLabelOf } from '@/lib/mouseIdentity';
 import { formatDate } from '@/lib/dueDates';
 import { RoleSwitch } from '@/components/task-status';
 import { CaseList } from './CaseList.client';
@@ -57,7 +58,7 @@ export function MouseDetailDrawer({
     // .N re-clip label (read-time derived, same as the grid).
     const label = m
         ? composeMouseLabel(
-              m.mouseLabel,
+              mouseLabelOf(m),
               buildReclipIndex(cases).get(metaId) ?? 0
           )
         : '';

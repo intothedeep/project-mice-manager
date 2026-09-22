@@ -31,3 +31,24 @@ export function buildMouseLabel(parts: MouseLabelParts): string {
     const earMarks = 'e'.repeat(Math.max(0, parts.earPunchCount));
     return `${parts.sex}${parts.pupNumber}${offsets}${parts.litterCode}${earMarks}`;
 }
+
+// Convenience for render sites that already hold a MouseCell: extracts the
+// same MouseLabelParts from its fields (earPunchCount counted from ACTIVE
+// 'ear' punches) and composes through buildMouseLabel above. Not a second
+// builder — this is the ONE place a MouseCell's fields are read into parts,
+// so every call site stays a one-line composition instead of repeating the
+// punch-filter logic (grid.ts MouseCell has NO stored label to read instead).
+export function mouseLabelOf(
+    mouse: Pick<
+        MouseCell,
+        'sex' | 'pupNumber' | 'pupOffsets' | 'litterCode' | 'punches'
+    >
+): string {
+    return buildMouseLabel({
+        sex: mouse.sex,
+        pupNumber: mouse.pupNumber,
+        pupOffsets: mouse.pupOffsets,
+        litterCode: mouse.litterCode,
+        earPunchCount: mouse.punches.filter((p) => p.location === 'ear').length,
+    });
+}
