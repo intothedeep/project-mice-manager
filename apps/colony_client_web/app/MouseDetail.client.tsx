@@ -1,9 +1,10 @@
 'use client';
 
-import type { MouseCell, Role } from '@repo/types';
+import type { ColonyGrid, MouseCell, Role, Sex } from '@repo/types';
 import { useState } from 'react';
 import { signalIdClass } from '@/lib/signal';
 import { useTasks, useTaskLog } from '@/lib/mockStore';
+import { updateMouse, useColonyGrid } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
 import { formatDate } from '@/lib/dueDates';
@@ -16,7 +17,30 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { EditableCell } from '@/components/ui/editable-cell';
 import { cn } from '@/lib/utils';
+
+const SEX_OPTIONS = [
+    { value: 'M', label: 'M' },
+    { value: 'F', label: 'F' },
+    { value: 'U', label: 'U' },
+];
+
+// metaId -> MouseCell over the whole colony. `selected.mouse` is a snapshot
+// captured at click-time by ColonyGridView, so it goes stale the moment the
+// drawer itself writes a patch (e.g. sex) via the store — look the live cell
+// up fresh on every render instead of trusting the snapshot for anything that
+// can change while the drawer stays open.
+function findMouseByMetaId(
+    colony: ColonyGrid,
+    metaId: number
+): MouseCell | undefined {
+    for (const l of colony.lines)
+        for (const c of l.cages)
+            for (const s of c.slots)
+                for (const m of s.mice) if (m.metaId === metaId) return m;
+    return undefined;
+}
 
 export interface SelectedMouse {
     mouse: MouseCell;
@@ -42,10 +66,15 @@ export function MouseDetailDrawer({
 }) {
     const cases = useTasks();
     const taskLog = useTaskLog();
+    const colony = useColonyGrid();
     const [role, setRole] = useState<Role>('staff');
     const [expandedCaseId, setExpandedCaseId] = useState<number | null>(null);
 
-    const m = selected?.mouse;
+    // Not-found fallback (e.g. mid-transition) keeps the stale snapshot rather
+    // than crashing; the sex editor below never fires for a mouse it can't find.
+    const m = selected
+        ? (findMouseByMetaId(colony, selected.mouse.metaId) ?? selected.mouse)
+        : undefined;
     const metaId = m?.metaId ?? -1;
 
     // This mouse's cases (single-subject or batch membership).
@@ -127,10 +156,32 @@ export function MouseDetailDrawer({
                                     k="dob"
                                     v={formatDate(m.dob)}
                                 />
-                                <Field
-                                    k="sex"
-                                    v={m.isAlive ? m.sex : `${m.sex} (dead)`}
-                                />
+                                <div className="flex items-baseline gap-2 text-sm">
+                                    <span className="w-14 shrink-0 text-xs text-muted-foreground">
+                                        sex
+                                    </span>
+                                    <EditableCell
+                                        type="select"
+                                        options={SEX_OPTIONS}
+                                        value={m.sex}
+                                        title="double-click to edit"
+                                        onCommit={(next) => {
+                                            const result = updateMouse(
+                                                m.metaId,
+                                                { sex: next as Sex }
+                                            );
+                                            return result.ok
+                                                ? null
+                                                : result.error;
+                                        }}
+                                    >
+                                        <span className="font-mono">
+                                            {m.isAlive
+                                                ? m.sex
+                                                : `${m.sex} (dead)`}
+                                        </span>
+                                    </EditableCell>
+                                </div>
                             </Section>
 
                             {m.parents &&
