@@ -10,12 +10,6 @@ export interface GeneCall {
     allele: string; // e.g. "f/+", "+/+", "hmo"
 }
 
-export interface ParentRef {
-    role: 'mother' | 'father';
-    label: string; // rendered id, e.g. "F5AYL"
-    genotype: string;
-}
-
 export interface HistoryEvent {
     at: string; // ISO date of the version row
     actor: string; // who made the change
@@ -27,6 +21,5 @@ export interface MouseDetail {
     dob: string | null;
     litterCode: string;
     genes: GeneCall[];
-    parents: ParentRef[];
     history: HistoryEvent[]; // newest first
 }

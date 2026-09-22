@@ -54,13 +54,26 @@ export interface MouseCaseTag {
 }
 
 // A parent reference shown in the grid's parents column. metaId lets the UI jump
-// to that parent's row; null = the parent is not shown here (outside / unknown).
-export interface ParentCell {
-    mouseLabel: string;
-    metaId: number | null;
+// to that parent's row. Discriminated union on metaId (plan §5 Q46 option C):
+// an in-grid parent (metaId non-null) carries NO label — the UI resolves that
+// parent's MouseCell by metaId and composes the label the same way every other
+// surface does (see lib/mouseIdentity.ts + lib/mouseLabel.ts), so it never drifts from the
+// live punch/reclip state. An outside/unknown parent (metaId null) has no
+// MouseCell to resolve, so it keeps a plain snapshot string instead.
+export interface InGridParentCell {
+    metaId: number;
     genotype: string | null;
     genotypeColor: string | null; // tint for the parent's genotype sub-cell (same palette as MouseCell.genotypeColor)
 }
+
+export interface OutsideParentCell {
+    metaId: null;
+    snapshotLabel: string; // text snapshot only — nobody can recompose this parent's identity
+    genotype: string | null;
+    genotypeColor: string | null;
+}
+
+export type ParentCell = InGridParentCell | OutsideParentCell;
 
 export interface MouseParents {
     father: ParentCell | null; // ♂ (rendered blue)

@@ -12,10 +12,6 @@ const DETAILS: Record<number, MouseDetail> = {
         dob: '2026-06-01',
         litterCode: 'BCW',
         genes: [{ code: 'Nf1', allele: 'f/+' }],
-        parents: [
-            { role: 'mother', label: 'F5AYL', genotype: 'WT' },
-            { role: 'father', label: 'M5AUV', genotype: 'PlpCre;Nf1 f/+' },
-        ],
         history: [
             {
                 at: '2026-08-20',
@@ -43,7 +39,6 @@ const DETAILS: Record<number, MouseDetail> = {
             { code: 'PlpCre', allele: 'hmo' },
             { code: 'Nf1', allele: 'f/+' },
         ],
-        parents: [{ role: 'mother', label: 'F5AYL', genotype: 'WT' }],
         history: [
             {
                 at: '2026-09-02',
@@ -64,10 +59,6 @@ const DETAILS: Record<number, MouseDetail> = {
         dob: '2026-08-28',
         litterCode: 'BCX',
         genes: [],
-        parents: [
-            { role: 'mother', label: 'F10BEVe', genotype: 'Nf1 +/+' },
-            { role: 'father', label: 'M4BCW', genotype: 'Nf1 f/+' },
-        ],
         history: [
             {
                 at: '2026-08-28',
@@ -82,7 +73,6 @@ const DETAILS: Record<number, MouseDetail> = {
         dob: '2026-05-02',
         litterCode: 'BGX',
         genes: [{ code: 'Ai14', allele: 'f/f' }],
-        parents: [],
         history: [
             {
                 at: '2026-09-05',
@@ -110,7 +100,6 @@ const DETAILS: Record<number, MouseDetail> = {
             { code: 'PlpCre', allele: '+/-' },
             { code: 'Ai14', allele: '+/-' },
         ],
-        parents: [{ role: 'mother', label: 'F5AYL', genotype: 'PlpCre;Ai14' }],
         history: [
             {
                 at: '2026-09-06',
@@ -133,7 +122,6 @@ function fallback(metaId: number): MouseDetail {
         dob: null,
         litterCode: '—',
         genes: [],
-        parents: [],
         history: [
             { at: '—', actor: 'system', summary: 'no recorded history yet' },
         ],

@@ -157,13 +157,11 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         father: {
-                                            mouseLabel: 'M4BCW',
                                             metaId: 101,
                                             genotype: 'Nf1 f/+',
                                             genotypeColor: geno('Nf1 f/+'),
                                         },
                                         mother: {
-                                            mouseLabel: 'F5AYL',
                                             metaId: 102,
                                             genotype: 'WT',
                                             genotypeColor: geno('WT'),
@@ -211,13 +209,13 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         father: {
-                                            mouseLabel: 'M0AAA',
+                                            snapshotLabel: 'M0AAA',
                                             metaId: null,
                                             genotype: 'Nf1 f/+',
                                             genotypeColor: geno('Nf1 f/+'),
                                         },
                                         mother: {
-                                            mouseLabel: 'F0AAA',
+                                            snapshotLabel: 'F0AAA',
                                             metaId: null,
                                             genotype: 'Nf1 +/+',
                                             genotypeColor: geno('Nf1 +/+'),
@@ -247,17 +245,15 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         // Father is M4BCW (metaId 101) — the reclipped animal.
-                                        // mouseLabel stored as base; grid composes .N suffix at
-                                        // read time. ParentRow renders this field directly
-                                        // (secondary surface — known bare-label limitation).
+                                        // In-grid arm carries no label: ParentRow resolves 101's
+                                        // MouseCell and composes it (base + .N), so it renders
+                                        // M4BCW.2 here instead of the bare M4BCW.
                                         father: {
-                                            mouseLabel: 'M4BCW',
                                             metaId: 101,
                                             genotype: 'Nf1 f/+',
                                             genotypeColor: geno('Nf1 f/+'),
                                         },
                                         mother: {
-                                            mouseLabel: 'F5AYL',
                                             metaId: 402,
                                             genotype: 'PlpCre;Ai14 +/+',
                                             genotypeColor:
@@ -586,13 +582,11 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         father: {
-                                            mouseLabel: 'M2WT',
                                             metaId: 601,
                                             genotype: 'WT',
                                             genotypeColor: geno('WT'),
                                         },
                                         mother: {
-                                            mouseLabel: 'F3WT',
                                             metaId: 602,
                                             genotype: 'WT',
                                             genotypeColor: geno('WT'),

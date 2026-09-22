@@ -31,9 +31,14 @@ export interface SelectedMouse {
 export function MouseDetailDrawer({
     selected,
     onClose,
+    resolveParentLabel,
 }: {
     selected: SelectedMouse | null;
     onClose: () => void;
+    // Resolves an in-grid ParentCell's label from its own MouseCell (plan §5
+    // Q46 option C) — same resolver ColonyGridView hands to ParentRow. null =
+    // the parent's metaId has no row in this payload (not-found fallback).
+    resolveParentLabel: (metaId: number) => string | null;
 }) {
     const cases = useTasks();
     const taskLog = useTaskLog();
@@ -137,6 +142,16 @@ export function MouseDetailDrawer({
                                                 const p =
                                                     m.parents?.[parentRole];
                                                 if (!p) return null;
+                                                // plan §5 Q46 option C: in-grid
+                                                // parent -> resolve + compose its
+                                                // own MouseCell; outside parent ->
+                                                // its snapshot string.
+                                                const pLabel =
+                                                    p.metaId == null
+                                                        ? p.snapshotLabel
+                                                        : (resolveParentLabel(
+                                                              p.metaId
+                                                          ) ?? '(unresolved)');
                                                 return (
                                                     <li
                                                         key={parentRole}
@@ -146,7 +161,7 @@ export function MouseDetailDrawer({
                                                             {parentRole}
                                                         </span>
                                                         <span className="font-mono">
-                                                            {p.mouseLabel}
+                                                            {pLabel}
                                                         </span>
                                                         <span className="font-mono text-[11px] text-muted-foreground">
                                                             {p.genotype ?? ''}

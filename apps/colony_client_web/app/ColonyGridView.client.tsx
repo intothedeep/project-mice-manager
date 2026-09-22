@@ -164,6 +164,30 @@ export function ColonyGridView() {
     const composed = (m: MouseCell) =>
         composeMouseLabel(mouseLabelOf(m), reclipIndex.get(m.metaId) ?? 0);
 
+    // metaId -> MouseCell over the whole payload, so an in-grid ParentCell
+    // (plan §5 Q46 option C) can resolve its OWN row and compose through the
+    // same base+.N path as every other surface, instead of carrying a label
+    // that can drift from live punch/reclip state.
+    const mouseByMetaId = useMemo(() => {
+        const index = new Map<number, MouseCell>();
+        colony.lines.forEach((l) =>
+            l.cages.forEach((c) =>
+                c.slots.forEach((s) =>
+                    s.mice.forEach((m) => index.set(m.metaId, m))
+                )
+            )
+        );
+        return index;
+    }, [colony]);
+
+    // null = the metaId has no row in this payload (not reachable today since
+    // ColonyGrid is whole-colony — becomes reachable if the grid is ever
+    // paginated/fetched per line). Callers render a placeholder, never throw.
+    const resolveParentLabel = (metaId: number): string | null => {
+        const mouse = mouseByMetaId.get(metaId);
+        return mouse ? composed(mouse) : null;
+    };
+
     const on = isFilterActive(filter);
     const match = useMemo(
         () => (m: MouseCell) => matchesMouse(m, filter),
@@ -835,6 +859,9 @@ export function ColonyGridView() {
                                                                                                 mid
                                                                                             )
                                                                                         }
+                                                                                        resolveParentLabel={
+                                                                                            resolveParentLabel
+                                                                                        }
                                                                                         onOpen={() => {
                                                                                             setCaseDrawer(
                                                                                                 null
@@ -987,6 +1014,7 @@ export function ColonyGridView() {
             <MouseDetailDrawer
                 selected={detail}
                 onClose={() => setDetail(null)}
+                resolveParentLabel={resolveParentLabel}
             />
 
             <MouseCaseDrawer
@@ -1682,11 +1710,16 @@ function ParentRow({
     tint,
     parent,
     onJump,
+    resolveLabel,
     divider,
 }: {
     tint: string;
     parent?: ParentCell | null;
     onJump: (metaId: number) => void;
+    // plan §5 Q46 option C: in-grid parents carry no label — this resolves
+    // that parent's own MouseCell and composes it. null = the metaId has no
+    // row in this payload (not-found fallback, §19), never a throw.
+    resolveLabel: (metaId: number) => string | null;
     divider?: boolean;
 }) {
     // min-h-0 + no flex-1: the parent cell is now a 2-row grid, so the track
@@ -1706,6 +1739,13 @@ function ParentRow({
         );
     }
     const clickable = parent.metaId != null;
+    const resolved = parent.metaId != null ? resolveLabel(parent.metaId) : null;
+    // Outside/unknown parent -> its snapshot; in-grid parent -> the resolved,
+    // composed label; in-grid parent whose metaId has no row -> placeholder.
+    const label =
+        parent.metaId == null
+            ? parent.snapshotLabel
+            : (resolved ?? '(unresolved)');
     return (
         <div className={base}>
             <button
@@ -1716,9 +1756,7 @@ function ParentRow({
                     if (parent.metaId != null) onJump(parent.metaId);
                 }}
                 title={
-                    clickable
-                        ? `go to ${parent.mouseLabel}`
-                        : `${parent.mouseLabel} (not shown here)`
+                    clickable ? `go to ${label}` : `${label} (not shown here)`
                 }
                 className={cn(
                     'flex items-center truncate px-1 text-left font-mono text-[10px] font-semibold',
@@ -1728,7 +1766,7 @@ function ParentRow({
                         : 'cursor-default opacity-60'
                 )}
             >
-                {parent.mouseLabel}
+                {label}
             </button>
             <span
                 title={parent.genotype ?? undefined}
@@ -1791,6 +1829,7 @@ function MouseRow({
     onOpen,
     onMove,
     onJumpMouse,
+    resolveParentLabel,
     onGenotype,
     onMate,
     onOpenCases,
@@ -1814,6 +1853,9 @@ function MouseRow({
     onOpen: () => void;
     onMove: () => void;
     onJumpMouse: (metaId: number) => void;
+    // Resolves an in-grid ParentCell's label from its own MouseCell (plan §5
+    // Q46 option C) — forwarded to ParentRow.
+    resolveParentLabel: (metaId: number) => string | null;
     onGenotype: () => void;
     onMate: (color: string) => void;
     onOpenCases: (target: CaseDrawerTarget) => void;
@@ -2083,11 +2125,13 @@ function MouseRow({
                                 tint="bg-sky-100"
                                 parent={mouse.parents?.father}
                                 onJump={onJumpMouse}
+                                resolveLabel={resolveParentLabel}
                             />
                             <ParentRow
                                 tint="bg-pink-100"
                                 parent={mouse.parents?.mother}
                                 onJump={onJumpMouse}
+                                resolveLabel={resolveParentLabel}
                                 divider
                             />
                         </div>

@@ -37,9 +37,4 @@ export type { TaskStatus as CaseTaskStatus, CaseCard, Task } from './case';
 // isOverdue is a value export (pure function), not a type — needs its own line.
 export { isOverdue } from './case';
 
-export type {
-    GeneCall,
-    ParentRef,
-    HistoryEvent,
-    MouseDetail,
-} from './mouseDetail';
+export type { GeneCall, HistoryEvent, MouseDetail } from './mouseDetail';
