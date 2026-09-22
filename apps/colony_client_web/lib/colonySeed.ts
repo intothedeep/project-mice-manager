@@ -17,6 +17,18 @@ export function maxMetaId(grid: ColonyGrid): number {
     return max;
 }
 
+/** Highest punchId currently in the grid — new-punch counter seeds above it. */
+export function maxPunchId(grid: ColonyGrid): number {
+    let max = 0;
+    for (const l of grid.lines)
+        for (const c of l.cages)
+            for (const s of c.slots)
+                for (const m of s.mice)
+                    for (const p of m.punches)
+                        if (p.punchId > max) max = p.punchId;
+    return max;
+}
+
 /** Highest slotId currently in the grid — new-slot counter seeds above it. */
 export function maxSlotId(grid: ColonyGrid): number {
     let max = 0;

@@ -17,6 +17,7 @@ import type {
     GridCage,
     GridLine,
     MouseCell,
+    PunchRef,
     Sex,
     SignalColor,
 } from '@repo/types';
@@ -27,6 +28,7 @@ import { slotLabelSet, cageNumberSet } from '@/lib/colonySeed';
 
 export interface Counters {
     nextMetaId: number;
+    nextPunchId: number;
     nextSlotId: number;
     nextCageId: number;
     nextLitterOrd: number;
@@ -41,6 +43,10 @@ export interface MouseSpec {
     pupNumber: number;
     dob: string;
     genotype?: string;
+    // WHEN the implicit toe punch (minted in addMouse) physically happened —
+    // distinct from dob: a mouse entered weeks after birth must not have its
+    // punch dated to its birthday. Callers pass TODAY (@/lib/dueDates).
+    punchEffectiveAt: string; // ISO date
 }
 
 export interface AddMouseInput extends MouseSpec {
@@ -91,9 +97,17 @@ export type AddLineResult =
 export function buildMouseCell(
     spec: MouseSpec,
     litterCode: string,
-    metaId: number
+    metaId: number,
+    punchId: number
 ): MouseCell {
     const pupOffsets: number[] = [];
+    // Creating a mouse mints an implicit 'toe' punch — addMouse is the SOLE
+    // mint site (plan §7); once-and-only-once is structural, not a DB trigger.
+    const toePunch: PunchRef = {
+        punchId,
+        location: 'toe',
+        effectiveAt: spec.punchEffectiveAt,
+    };
     return {
         metaId,
         pupNumber: spec.pupNumber,
@@ -107,10 +121,7 @@ export function buildMouseCell(
         dob: spec.dob,
         genotypeColor: null,
         mates: [],
-        // Toe-punch minting on creation is step 8's own AC, still unmet
-        // (tracked as its own gap, not this task's scope) — [] keeps today's
-        // behaviour (no punch minted) legal under the now-required field.
-        punches: [],
+        punches: [toePunch],
     };
 }
 
@@ -177,7 +188,8 @@ export function addMouse(
 
     const litterCode = input.litterCode.trim();
     const nextMeta = counters.nextMetaId;
-    const mouse = buildMouseCell(input, litterCode, nextMeta);
+    const nextPunch = counters.nextPunchId;
+    const mouse = buildMouseCell(input, litterCode, nextMeta, nextPunch);
     const newLitterOrd = advanceLitterCounter(
         litterCode,
         counters.nextLitterOrd
@@ -206,6 +218,7 @@ export function addMouse(
         counters: {
             ...counters,
             nextMetaId: nextMeta + 1,
+            nextPunchId: nextPunch + 1,
             nextLitterOrd: newLitterOrd,
         },
         result: { ok: true },

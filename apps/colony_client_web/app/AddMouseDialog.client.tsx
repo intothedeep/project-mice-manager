@@ -334,6 +334,10 @@ export function AddMouseDialog({
             pupNumber: pupNum,
             dob,
             genotype: genotype.trim() || undefined,
+            // The implicit toe punch is dated to now (when it physically
+            // happens), never to dob — a mouse entered weeks after birth
+            // must not inherit a birthday-dated punch.
+            punchEffectiveAt: TODAY,
         };
 
         const action = buildSubmitAction({

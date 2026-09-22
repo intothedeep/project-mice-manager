@@ -8,6 +8,7 @@ import { moveMouse, type MoveTarget } from '@/lib/gridMove';
 import { formatLitterCode, parseLitterCode } from '@/lib/litterCode';
 import {
     maxMetaId,
+    maxPunchId,
     maxSlotId,
     maxCageId,
     maxLineId,
@@ -54,6 +55,7 @@ export type {
 let state: ColonyGrid = SEED_COLONY;
 let counters: Counters = {
     nextMetaId: maxMetaId(SEED_COLONY) + 1,
+    nextPunchId: maxPunchId(SEED_COLONY) + 1,
     nextSlotId: maxSlotId(SEED_COLONY) + 1,
     nextCageId: maxCageId(SEED_COLONY) + 1,
     nextLitterOrd: maxSeedLitterOrdinal(SEED_COLONY) + 1,
