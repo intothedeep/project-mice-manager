@@ -1024,6 +1024,37 @@ enforced at DB level.
     (Q23), so it cannot just overwrite pup_number. Storage design is IN
     FLIGHT as a separate task; no column name is decided here. Rendering
     that label form is BLOCKED on that design landing.
+46. **`ParentCell` label — projected string or compose parts? (added
+    2026-09-22; architect recommendation, OWNER PICKS — NOT resolved.)**
+    P0.7-b step 9b deletes the stored `MouseCell.mouseLabel` so every mouse
+    label becomes a read-time projection, but `ParentCell` (`grid.ts:65`)
+    carries a `mouseLabel` STRING and has no parts to compose from, so it is
+    left out of scope and the drift is already visible in the fixture
+    (`getColonyGrid.mock.api.ts:254-257`: "ParentRow renders this field
+    directly (secondary surface — known bare-label limitation)" — the stored
+    parent label misses the `.N` suffix the grid composes).
+    **ARCHITECT RECOMMENDATION = option C, a DISCRIMINATED UNION** (recorded
+    from the architect's hand-back summary, not quoted verbatim): an
+    IN-GRID parent carries NO label and is composed at read from the
+    `MouseCell` found by its `metaId`, so it can never drift from the grid;
+    an OUTSIDE/UNKNOWN parent keeps a string, RENAMED `snapshotLabel` to say
+    what it is — a snapshot of text nobody can recompose — sourced from
+    `mates.mate_raw_label` (`0002_core_tables.sql:459-461`).
+    COST of C: "renderable" becomes tied to "present in the payload". That
+    only bites if `ColonyGrid` ever stops being whole-colony (pagination,
+    per-line fetch), at which point an in-grid parent outside the page has
+    neither a label nor a `MouseCell` to compose from.
+    CONSEQUENCE to weigh: `mates.mate_raw_label` is FATHER-ONLY (verified —
+    its comment says "kept when the FATHER cannot be resolved to a row"), so
+    an outside MOTHER has no `snapshotLabel` source under C.
+    Alternatives the owner may still pick instead: keep the projected string
+    permanently (accept the drift, document it), or give `ParentCell` the full
+    compose parts (duplicates mouse fields into the parent shape).
+    NOT BLOCKING: P0.7-b steps 9a/9b do not depend on the answer.
+    RELATED, decide with it: `@repo/types MouseDetail.parents` is DEAD —
+    `getMouseDetail` has zero callers and the drawer reads `MouseCell.parents`.
+    Delete it or retarget it to whichever option lands (quality gate: no dead
+    exports).
 
 ### Schema redesign R11–R25 (2026-09-05 → 09-07) — SHIPPED
 

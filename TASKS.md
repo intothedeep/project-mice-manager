@@ -104,17 +104,23 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8 [x], 4 = GATE, 6–7 + 9a–9b + 10 [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,9a [x], 4 = GATE, 6–7 + 8b + 9b + sex-editor + 10 [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, `extractLitterCode` blocker fix and the FOUR
 > add mutations are DONE; step 4 is the professor GATE — Q39/Q41/Q44 answered,
 > Q40 dissolved, Q42 + Q45 OPEN, Q43 resolved EXCEPT its narrower sub-question
 > (does a Tissue-collection case also mint a `toe` punch row?) which gates step 10.
-> Step 5 `buildMouseLabel` DONE (0027 `pup_number_offsets` = Q45 storage). Remaining:
-> punch mutations (6, 7), label-projection cleanup (9a mutation-side / 9b type +
-> call-site — SPLIT 2026-09-22: deleting the stored `MouseCell.mouseLabel` field
-> had no task), punch UI (10, now BLOCKED-BY 9b). Base P0-b: litter-code
+> Step 5 `buildMouseLabel` DONE (0027 `pup_number_offsets` = Q45 storage). Step 9a
+> DONE 2026-09-22 (`a4c4089`): `UpdateMousePatch.mouseLabel` + the label-uniqueness
+> check + `mouseLabelSet` gone, grid label cell read-only. Remaining:
+> punch mutations (6, 7), 9b (type + call-site migration — deleting the stored
+> `MouseCell.mouseLabel` field had no task before the 2026-09-22 SPLIT; its
+> "inline sex edit" AC was IMPOSSIBLE, rewritten as a store-level probe), NEW
+> 8b (step 8's unmet `colonyMutations.ts < 300 lines` criterion — 488 lines,
+> past the 400 hard line) and NEW inline sex editor (no UI control exists;
+> both BLOCKED-BY 9b), punch UI (10, BLOCKED-BY 7 + 9b). `ParentCell` label
+> question routed and answered → plan §5 Q46, OWNER HAS NOT PICKED. Base P0-b: litter-code
 > generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
 > Record-Litter tx, surface cols I–N.
 > <!-- DETAIL: active, read on demand -->
