@@ -1831,8 +1831,6 @@ function MouseRow({
         bySignal.get(s)!
     );
     const hasSubRow = taskGroups.length > 0 || mouse.attention;
-    // A4 id-cell: single-click opens drawer (200ms delay), dblclick enters edit.
-    const idClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     return (
         <div
             id={id}
@@ -1878,10 +1876,12 @@ function MouseRow({
 
                 <div className="min-w-0 flex-1">
                     <div className={cn('grid items-stretch', MOUSE_COLS)}>
-                        {/* id cell — A4: single-click opens drawer (200ms), dblclick edits */}
-                        <EditableCell
-                            value={mouse.mouseLabel}
-                            onCommit={(next) => onUpdate({ mouseLabel: next })}
+                        {/* id cell — READ-ONLY (P0.7-b step 9a): the label is
+                            SPECIFIED as a read-time projection of parts, so it must
+                            not be typed over. Still read from the stored
+                            MouseCell.mouseLabel until step 9b deletes that field.
+                            Single-click opens drawer. */}
+                        <div
                             className={cn(
                                 CELL,
                                 !dead && SEX_TINT[mouse.sex],
@@ -1892,21 +1892,9 @@ function MouseRow({
                                 type="button"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (idClickTimerRef.current)
-                                        clearTimeout(idClickTimerRef.current);
-                                    idClickTimerRef.current = setTimeout(() => {
-                                        idClickTimerRef.current = null;
-                                        onOpen();
-                                    }, 200);
+                                    onOpen();
                                 }}
-                                onDoubleClick={(e) => {
-                                    if (idClickTimerRef.current) {
-                                        clearTimeout(idClickTimerRef.current);
-                                        idClickTimerRef.current = null;
-                                    }
-                                    // Must bubble to EditableCell — do NOT stopPropagation.
-                                }}
-                                title={`sex: ${mouse.sex} — double-click to edit id`}
+                                title={`sex: ${mouse.sex}`}
                                 className="w-full text-left hover:underline"
                             >
                                 <span
@@ -1918,7 +1906,7 @@ function MouseRow({
                                     {composedLabel}
                                 </span>
                             </button>
-                        </EditableCell>
+                        </div>
 
                         <div
                             className={cn(CELL, 'min-w-0')}

@@ -88,16 +88,3 @@ export function maxSeedLitterOrdinal(grid: ColonyGrid): number {
                 }
     return max;
 }
-
-/**
- * Set of all mouseLabels currently in the grid (case-insensitive lowercase).
- * Used by updateMouse to reject duplicate id edits colony-wide.
- */
-export function mouseLabelSet(grid: ColonyGrid): Set<string> {
-    const set = new Set<string>();
-    for (const l of grid.lines)
-        for (const c of l.cages)
-            for (const s of c.slots)
-                for (const m of s.mice) set.add(m.mouseLabel.toLowerCase());
-    return set;
-}

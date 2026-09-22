@@ -20,9 +20,9 @@ import type {
     Sex,
     SignalColor,
 } from '@repo/types';
-import { extractLitterCode, parseLitterCode } from '@/lib/litterCode';
+import { parseLitterCode } from '@/lib/litterCode';
 import { buildMouseLabel } from '@/lib/mouseIdentity';
-import { slotLabelSet, cageNumberSet, mouseLabelSet } from '@/lib/colonySeed';
+import { slotLabelSet, cageNumberSet } from '@/lib/colonySeed';
 
 // ---- types ------------------------------------------------------------------
 
@@ -71,7 +71,6 @@ export interface AddLineInput {
 }
 
 export interface UpdateMousePatch {
-    mouseLabel?: string;
     sex?: Sex;
     genotype?: string;
     dob?: string;
@@ -424,41 +423,9 @@ export function updateMouse(
         };
     }
 
-    if (patch.mouseLabel !== undefined) {
-        const newId = patch.mouseLabel.trim();
-        if (newId.toLowerCase() !== current.mouseLabel.toLowerCase()) {
-            const ids = mouseLabelSet(state);
-            ids.delete(current.mouseLabel.toLowerCase());
-            if (ids.has(newId.toLowerCase())) {
-                return {
-                    state,
-                    counters,
-                    result: {
-                        ok: false,
-                        error: `ID "${newId}" already exists — mouse IDs are unique colony-wide.`,
-                    },
-                };
-            }
-        }
-    }
-
     const updated: MouseCell = { ...current };
     let changed = false;
-    let newLitterOrd = counters.nextLitterOrd;
-
-    if (patch.mouseLabel !== undefined) {
-        const newId = patch.mouseLabel.trim();
-        if (newId.toLowerCase() !== current.mouseLabel.toLowerCase()) {
-            updated.mouseLabel = newId;
-            changed = true;
-            const firstChar = newId[0]?.toUpperCase();
-            if (firstChar === 'M' || firstChar === 'F' || firstChar === 'U') {
-                updated.sex = firstChar as Sex;
-            }
-            const code = extractLitterCode(newId);
-            if (code) newLitterOrd = advanceLitterCounter(code, newLitterOrd);
-        }
-    }
+    const newLitterOrd = counters.nextLitterOrd;
 
     if (patch.sex !== undefined && patch.sex !== current.sex) {
         updated.sex = patch.sex;
