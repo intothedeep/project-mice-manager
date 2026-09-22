@@ -18,19 +18,23 @@ import {
     addMouse as pureAddMouse,
     addSlot as pureAddSlot,
     addCage as pureAddCage,
-    updateMouse as pureUpdateMouse,
     addLine as pureAddLine,
-    suggestNextCageNumber as pureSuggestNextCageNumber,
-    type MouseSpec,
     type AddMouseInput,
     type AddSlotInput,
     type AddCageInput,
-    type UpdateMousePatch,
-    type AddMouseResult,
     type AddLineInput,
     type AddLineResult,
-    type Counters,
 } from '@/lib/colonyMutations';
+import {
+    updateMouse as pureUpdateMouse,
+    type UpdateMousePatch,
+} from '@/lib/updateMouse';
+import {
+    suggestNextCageNumber as pureSuggestNextCageNumber,
+    type MouseSpec,
+    type AddMouseResult,
+    type Counters,
+} from '@/lib/colonyMutationHelpers';
 
 // Mock-era colony store. Seeded from SEED_COLONY (the static fixture); all
 // writes produce a new tree (immutable — never mutate SEED_COLONY arrays).

@@ -8,8 +8,7 @@ import { cn } from '@/lib/utils';
 // grid edit mode. Callers get onCommit(next) → string|null (null = ok; string
 // = error message). Esc cancels without committing.
 //
-// Double-click activation is wired by the PARENT (not here), so this atom
-// stays unaware of the click-timer vs. dblclick conflict on the id cell.
+// Double-click activation is wired by the PARENT (not here).
 
 interface BaseProps {
     /** Current stored value (used to seed draft on activate). */

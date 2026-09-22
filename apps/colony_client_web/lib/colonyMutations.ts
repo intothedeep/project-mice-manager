@@ -6,48 +6,29 @@
 // Layering (line ≥ 1 cage, cage ≥ 1 slot, slot MAY be empty): addLine creates
 // the line then delegates to addCage; addCage creates the cage then delegates
 // to addSlot; addSlot creates the slot then calls addMouse only when a mouse
-// was supplied. addMouse is the SOLE mouse-creating primitive — a later step
-// mints an implicit toe punch inside it and must not have two branches to
-// patch. A rejection anywhere in the chain returns the CALLER's original
-// state/counters (not the tentative ones), so a failed addLine never leaves a
-// dangling cages: [] line behind.
+// was supplied. addMouse is the SOLE mouse-creating primitive — it mints the
+// implicit toe punch (colonyMutationHelpers.ts:buildMouseCell) and must not
+// have two branches to patch. A rejection anywhere in the chain returns the
+// CALLER's original state/counters (not the tentative ones), so a failed
+// addLine never leaves a dangling cages: [] line behind.
+//
+// Split out of this file (P0.7-b 8b): updateMouse.ts (edits an existing
+// mouse — no call chain with the four add mutations below) and
+// colonyMutationHelpers.ts (buildMouseCell, advanceLitterCounter, findCage,
+// suggestNextCageNumber — pure helpers shared by both).
 
-import type {
-    ColonyGrid,
-    GridCage,
-    GridLine,
-    MouseCell,
-    PunchRef,
-    Sex,
-    SignalColor,
-} from '@repo/types';
-import { parseLitterCode } from '@/lib/litterCode';
+import type { ColonyGrid, GridLine } from '@repo/types';
 import { slotLabelSet, cageNumberSet } from '@/lib/colonySeed';
+import {
+    buildMouseCell,
+    advanceLitterCounter,
+    findCage,
+    type AddMouseResult,
+    type Counters,
+    type MouseSpec,
+} from '@/lib/colonyMutationHelpers';
 
 // ---- types ------------------------------------------------------------------
-
-export interface Counters {
-    nextMetaId: number;
-    nextPunchId: number;
-    nextSlotId: number;
-    nextCageId: number;
-    nextLitterOrd: number;
-    nextLineId: number;
-}
-
-// Fields needed to build a MouseCell — shared by every level's optional
-// `mouse` param and by addMouse's own required input.
-export interface MouseSpec {
-    sex: Sex;
-    litterCode: string;
-    pupNumber: number;
-    dob: string;
-    genotype?: string;
-    // WHEN the implicit toe punch (minted in addMouse) physically happened —
-    // distinct from dob: a mouse entered weeks after birth must not have its
-    // punch dated to its birthday. Callers pass TODAY (@/lib/dueDates).
-    punchEffectiveAt: string; // ISO date
-}
 
 export interface AddMouseInput extends MouseSpec {
     cageId: number;
@@ -75,92 +56,8 @@ export interface AddLineInput {
     mouse?: MouseSpec;
 }
 
-export interface UpdateMousePatch {
-    sex?: Sex;
-    genotype?: string;
-    dob?: string;
-    signal?: SignalColor;
-    isAlive?: boolean;
-}
-
-export type AddMouseResult = { ok: true } | { ok: false; error: string };
-
 export type AddLineResult =
     { ok: true; lineId: number } | { ok: false; error: string };
-
-// ---- helpers ----------------------------------------------------------------
-
-// litterCode is the trimmed value the caller resolved (may differ in casing
-// from spec.litterCode before trimming) — the stored litterCode field is the
-// one true source; the rendered label composes from it at read time
-// (lib/mouseIdentity.ts), never stored here.
-export function buildMouseCell(
-    spec: MouseSpec,
-    litterCode: string,
-    metaId: number,
-    punchId: number
-): MouseCell {
-    const pupOffsets: number[] = [];
-    // Creating a mouse mints an implicit 'toe' punch — addMouse is the SOLE
-    // mint site (plan §7); once-and-only-once is structural, not a DB trigger.
-    const toePunch: PunchRef = {
-        punchId,
-        location: 'toe',
-        effectiveAt: spec.punchEffectiveAt,
-    };
-    return {
-        metaId,
-        pupNumber: spec.pupNumber,
-        litterCode,
-        pupOffsets,
-        sex: spec.sex,
-        genotype: spec.genotype?.trim() || '?',
-        signal: 'done',
-        isAlive: true,
-        attention: null,
-        dob: spec.dob,
-        genotypeColor: null,
-        mates: [],
-        punches: [toePunch],
-    };
-}
-
-// WHY max: a manually-typed code above peek keeps the auto option from proposing
-// a code that already exists as a real litter.
-export function advanceLitterCounter(
-    litterCode: string,
-    nextLitterOrd: number
-): number {
-    const ord = parseLitterCode(litterCode);
-    if (ord !== null) return Math.max(nextLitterOrd, ord + 1);
-    return nextLitterOrd;
-}
-
-function findCage(state: ColonyGrid, cageId: number): GridCage | undefined {
-    for (const l of state.lines) {
-        const cage = l.cages.find((c) => c.cageId === cageId);
-        if (cage) return cage;
-    }
-    return undefined;
-}
-
-// Suggested next cage number for a fresh "new cage" field. Cage numbers are a
-// global integer sequence the lab already tracks by hand; this only pre-fills
-// a freely-editable guess. Falls back to '' when any existing cage number
-// isn't purely numeric — guessing past a non-numeric scheme would silently
-// propose a wrong sequence.
-export function suggestNextCageNumber(state: ColonyGrid): string {
-    const cageNumbers = state.lines.flatMap((l) =>
-        l.cages.map((c) => c.cageNumber)
-    );
-    if (cageNumbers.length === 0) return '';
-    let max = 0;
-    for (const n of cageNumbers) {
-        if (!/^\d+$/.test(n)) return '';
-        max = Math.max(max, parseInt(n, 10));
-    }
-    return String(max + 1);
-}
 
 // ---- pure mutations ---------------------------------------------------------
 
@@ -406,93 +303,5 @@ export function addLine(
         state: inner.state,
         counters: inner.counters,
         result: { ok: true, lineId },
-    };
-}
-
-export function updateMouse(
-    state: ColonyGrid,
-    counters: Counters,
-    metaId: number,
-    patch: UpdateMousePatch
-): { state: ColonyGrid; counters: Counters; result: AddMouseResult } {
-    let current: MouseCell | undefined;
-    for (const l of state.lines)
-        for (const c of l.cages)
-            for (const s of c.slots)
-                for (const m of s.mice)
-                    if (m.metaId === metaId) {
-                        current = m;
-                        break;
-                    }
-
-    if (!current) {
-        return {
-            state,
-            counters,
-            result: { ok: false, error: `Mouse ${metaId} not found.` },
-        };
-    }
-
-    const updated: MouseCell = { ...current };
-    let changed = false;
-    const newLitterOrd = counters.nextLitterOrd;
-
-    if (patch.sex !== undefined && patch.sex !== current.sex) {
-        updated.sex = patch.sex;
-        changed = true;
-    }
-
-    if (patch.genotype !== undefined) {
-        const newGeno = patch.genotype.trim() || '?';
-        if (newGeno !== current.genotype) {
-            updated.genotype = newGeno;
-            updated.genotypeColor = null; // old color is a lie for new genotype
-            changed = true;
-        }
-    }
-
-    if (patch.dob !== undefined && patch.dob !== current.dob) {
-        updated.dob = patch.dob || null;
-        changed = true;
-    }
-
-    if (patch.signal !== undefined && patch.signal !== current.signal) {
-        updated.signal = patch.signal;
-        changed = true;
-    }
-
-    if (patch.isAlive !== undefined && patch.isAlive !== current.isAlive) {
-        updated.isAlive = patch.isAlive;
-        changed = true;
-    }
-
-    // No-op: return same state reference so the wrapper skips emit.
-    if (!changed)
-        return {
-            state,
-            counters: { ...counters, nextLitterOrd: newLitterOrd },
-            result: { ok: true },
-        };
-
-    const newState: ColonyGrid = {
-        ...state,
-        lines: state.lines.map((l) => ({
-            ...l,
-            cages: l.cages.map((c) => ({
-                ...c,
-                slots: c.slots.map((s) => ({
-                    ...s,
-                    mice: s.mice.map((m) =>
-                        m.metaId === metaId ? updated : m
-                    ),
-                })),
-            })),
-        })),
-    };
-
-    return {
-        state: newState,
-        counters: { ...counters, nextLitterOrd: newLitterOrd },
-        result: { ok: true },
     };
 }
