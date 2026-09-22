@@ -1,13 +1,13 @@
 # 00.tasks — Lopez-Juarez Mouse-Colony Automation
 
-> Completed items live in `_docs/archive/` (cold storage — do not read unless
+> Completed items live in `_archive/` (cold storage — do not read unless
 > investigating history). Active per-sub-phase detail lives in `docs/phases/`
 > (read ON DEMAND when a stub below is insufficient; the stub is the truth).
 > This doc holds the index + cross-cutting content + planned work only.
 
 Task legend: `[ ]` TODO · `[~]` IN PROGRESS · `[x]` DONE.
 Each task lists AC = deterministic acceptance criteria.
-> Schema-evolution fold history (P0 re-scope + R1–R15) rolled off → _docs/archive/tasks.schema-fold-preamble.md  <!-- ARCHIVE: history-only -->
+> Schema-evolution fold history (P0 re-scope + R1–R15) rolled off → _archive/tasks.schema-fold-preamble.md  <!-- ARCHIVE: history-only -->
 > Current schema is authoritative in packages/db/SCHEMA.md (generated from live DB), NOT restated here.
 
 ## P0 — Prototype (LOCAL ONLY)
@@ -16,7 +16,7 @@ Each task lists AC = deterministic acceptance criteria.
 
 > Monorepo scaffold (pnpm+turbo, colony_client_web + colony_server + packages)
 > and local Postgres + checksum-guarded migration runner shipped. <!-- ARCHIVE: history-only -->
-> Detail: [_docs/archive/tasks.p0-scaffold-and-mock-ui.md](./_docs/archive/tasks.p0-scaffold-and-mock-ui.md)
+> Detail: [_archive/tasks.p0-scaffold-and-mock-ui.md](./_archive/tasks.p0-scaffold-and-mock-ui.md)
 
 ### P0.2 Schema (`packages/db`) — P0-a — DONE, then SUPERSEDED (2026-09-05)
 
@@ -24,7 +24,7 @@ Each task lists AC = deterministic acceptance criteria.
 > mates + litters, denormalized litter_code). The original P0.2 and P0.2-R
 > acceptance criteria describe tables that no longer exist and are history only.
 > <!-- ARCHIVE: history-only -->
-> Detail: [_docs/archive/tasks.p0.2-schema.md](./_docs/archive/tasks.p0.2-schema.md)
+> Detail: [_archive/tasks.p0.2-schema.md](./_archive/tasks.p0.2-schema.md)
 >
 > **CURRENT SCHEMA IS NOT DESCRIBED IN THIS DOC.** It is generated from the live
 > database into [packages/db/SCHEMA.md](./packages/db/SCHEMA.md) (with
@@ -40,7 +40,7 @@ Each task lists AC = deterministic acceptance criteria.
 > `packages/db/SCHEMA.md` + ERD. Tests stay SUSPENDED.
 
 > Migrations `0009`–`0019` (drop import-provenance cols, mothball import machinery, sex ENUM, line_id→mice, slots.label global-unique, genes + mice_genes, drop mouse_events, prev_id CAS, notes reach, audit_logs immutable) + SCHEMA.md/ERD regen — all DONE. <!-- ARCHIVE: history-only -->
-> Detail: [_docs/archive/tasks.p0.2-r25-migrations.md](./_docs/archive/tasks.p0.2-r25-migrations.md)
+> Detail: [_archive/tasks.p0.2-r25-migrations.md](./_archive/tasks.p0.2-r25-migrations.md)
 
 - [ ] NOTE — audit_logs REAL immutability: 0019's `REVOKE UPDATE,DELETE FROM PUBLIC`
       is bypassed by the table OWNER (scenarios PROBE 11 proved it). For true
@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8 [x], 4 = GATE, 6–7 + 9–10 [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8 [x], 4 = GATE, 6–7 + 9a–9b + 10 [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, `extractLitterCode` blocker fix and the FOUR
@@ -112,7 +112,9 @@ Each task lists AC = deterministic acceptance criteria.
 > Q40 dissolved, Q42 + Q45 OPEN, Q43 resolved EXCEPT its narrower sub-question
 > (does a Tissue-collection case also mint a `toe` punch row?) which gates step 10.
 > Step 5 `buildMouseLabel` DONE (0027 `pup_number_offsets` = Q45 storage). Remaining:
-> punch mutations (6, 7), label-projection cleanup (9), punch UI (10). Base P0-b: litter-code
+> punch mutations (6, 7), label-projection cleanup (9a mutation-side / 9b type +
+> call-site — SPLIT 2026-09-22: deleting the stored `MouseCell.mouseLabel` field
+> had no task), punch UI (10, now BLOCKED-BY 9b). Base P0-b: litter-code
 > generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
 > Record-Litter tx, surface cols I–N.
 > <!-- DETAIL: active, read on demand -->

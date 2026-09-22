@@ -40,11 +40,11 @@ dist/
 *.env
 packages/assets/posts
 z_*
-# doc archive — COMPLETED/frozen docs live here, never committed (see .claude/rules/docs.md).
-# FOOTGUN: `_docs/` (leading underscore, IGNORED) vs `docs/` (no underscore, COMMITTED —
-# holds ACTIVE per-sub-phase detail in docs/phases/). The underscore is the whole
-# difference between "local-only cold storage" and "committed truth". Do NOT add `docs/`
-# here, and do NOT drop the underscore from this line.
+# Soft-delete staging (rules/core.md): `rm` is forbidden, so a retired file is
+# RENAMED with an `x_` prefix and the owner removes it manually.
+# NOTE: `_archive/` is COMMITTED, not ignored (rules/docs.md §0, reversed
+# 2026-09-20 — two x_-prefixed rule files were unrecoverable because they were
+# ignored). Do NOT add `_archive/` or `docs/` here.
 x_*
 
 # real lab data — the source workbook holds REAL colony records; never committed.

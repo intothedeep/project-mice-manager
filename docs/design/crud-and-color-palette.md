@@ -1,14 +1,14 @@
 # DESIGN — CRUD + Colour assignment/admin + Colour-free-on-delete
 
 > Standalone RFC / review artifact (cold storage, gitignored). NOT one of the three living
-> docs. Nothing here changes app code, `00.plan.md`, `00.tasks.md`, or `01.status.md`.
+> docs. Nothing here changes app code, `PLAN.md`, `TASKS.md`, or `STATUS.md`.
 > Research date 2026-09-12. Cites the live schema (`packages/db/SCHEMA.md`), plan §2/§4/§5,
 > and the mock client seam.
 
 ## 0. Ground truth used (files read)
 
 - `packages/db/SCHEMA.md` — the LIVE schema (regenerated from `colony_dev`).
-- `00.plan.md` §2 (identity colours, palette/assignment tables — DESIGN-STAGE), §4 (R7/R10
+- `PLAN.md` §2 (identity colours, palette/assignment tables — DESIGN-STAGE), §4 (R7/R10
   versioning), §5 (Q34 slot-vs-cage, Q35 allocation scope).
 - `apps/colony_client_web/lib/mockStore.ts`, `lib/gridMove.ts`,
   `apis/getColonyGrid.mock.api.ts` — the current mutation + DTO seam.

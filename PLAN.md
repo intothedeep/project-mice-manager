@@ -1,6 +1,6 @@
 # 00.plan — Lopez-Juarez Mouse-Colony Automation
 
-> Completed items live in `_docs/archive/` (cold storage — do not read unless
+> Completed items live in `_archive/` (cold storage — do not read unless
 > investigating history). Active per-sub-phase detail lives in `docs/phases/`
 > (read ON DEMAND when a stub below is insufficient; the stub is the truth).
 > This doc holds the index + cross-cutting content + planned work only.
@@ -213,7 +213,7 @@ Recorded here for traceability; owned by the architect, not this doc.
     per-channel** — one hex is used by at most one live assignment across ALL
     channels, so the `[AND a.channel = :channel]` clause is DROPPED (a genotype
     and a mate-group may NOT reuse the same hex). Rationale:
-    `_docs/design/crud-and-color-palette.md` Topic 2/Q35.
+    `docs/design/crud-and-color-palette.md` Topic 2/Q35.
     **Colour FREES EAGERLY on last-live-user delete (decision 2026-09-12,
     user).** Both live channels are keyed by a CATEGORY shared across many rows,
     so a colour returns to the free pool via eager-with-count-check: after the
@@ -223,7 +223,7 @@ Recorded here for traceability; owned by the architect, not this doc.
     deleted; mate frees when the father-fanout group's LAST live mating is
     deleted. The allocation query above already filters `deleted_at IS NULL`, so
     a freed hex is immediately re-allocatable. Rationale:
-    `_docs/design/crud-and-color-palette.md` Topic 3. These tables are
+    `docs/design/crud-and-color-palette.md` Topic 3. These tables are
     still DESIGN-STAGE (not yet in `packages/db/SCHEMA.md`); the mock seeds
     resolved hex directly.
   - **Rule/legend REFERENCE table (decision 2026-09-12, user — "a table so
@@ -358,7 +358,7 @@ stored (sexing U→M changes the label, metaId stays stable); genotype renders
   combobox for litter/cage/slot (inline-create w/ global dedupe), inline cell
   edit (`updateMouse`/`EditableCell` + Sac), selection-tail `[+]` incl.
   `AddLineDialog`, store split (pure `lib/colonyMutations.ts`). Detail:
-  00.tasks P0.7 stub → `_docs/archive/tasks.p0.7-add-mouse-v1.md`.
+  00.tasks P0.7 stub → `_archive/tasks.p0.7-add-mouse-v1.md`.
 - **v1.1 — add-flow split into FOUR mutations (AGREED 2026-09-16, user; NOT
   built — 00.tasks P0.7-b step 8).** Replaces today's `addMouse` + `addLine`
   in `lib/colonyMutations.ts`:
@@ -600,7 +600,7 @@ enforced at DB level.
     versioning SUPERSEDED for tasks (Task model v2 — resolves this block's "no
     UNIQUE on mutable fields" cost line), LIVE for notes/mates/mice.
   <!-- ARCHIVE: history-only -->
-  Detail: [_docs/archive/plan.r1-r10-schema-refinements.md](./_docs/archive/plan.r1-r10-schema-refinements.md)
+  Detail: [_archive/plan.r1-r10-schema-refinements.md](./_archive/plan.r1-r10-schema-refinements.md)
 
 - **Breeding-cycle dates + tissue/genotyping placement (RATIFIED 2026-09-12,
   user — consistent with the shipped schema, not a change):**
@@ -653,7 +653,9 @@ enforced at DB level.
   is the sole minter of the implicit `toe` punch; label = read-time projection
   `sex · pupNumber · [+offset] · litterCode · [e…]` (mid position abolished, Q39);
   pure `lib/mouseIdentity.ts` + `lib/punchMutations.ts`; five recorded conflicts
-  actioned in P0.7-b steps 3/9. <!-- DETAIL: active, read on demand -->
+  actioned in P0.7-b steps 3/9a/9b (9 SPLIT 2026-09-22: the stored
+  `MouseCell.mouseLabel` field deletion had no task → 9b).
+  <!-- DETAIL: active, read on demand -->
   Detail: [docs/phases/p0.7.plan.md](./docs/phases/p0.7.plan.md)
 
 ## 5. Open Questions
@@ -814,7 +816,7 @@ enforced at DB level.
     finding stands, but is handled by an IMPORT-TIME dedupe/relabel step
     (cage-number-qualified labels) BEFORE insert — see 00.tasks P0.4 (new task)
     and the P0.2-R25 MEMO. Rationale:
-    `_docs/design/crud-and-color-palette.md` Topic 1 / Q-slot-label.
+    `docs/design/crud-and-color-palette.md` Topic 1 / Q-slot-label.
 20. RESOLVED 2026-09-04: ZZZ→AAAA (4-letter) rollover confirmed — the derived
     length-first sort (R9) orders it correctly (shorter before longer); the
     base-26 codec in packages/domain generates the rollover.
@@ -906,7 +908,7 @@ enforced at DB level.
     is used by at most one live assignment across ALL channels; a genotype and a
     mate-group may NOT reuse the same hex. The `[AND a.channel = :channel]`
     clause is DROPPED from the allocation query (see §2 allocation bullet).
-    Rationale: `_docs/design/crud-and-color-palette.md` Topic 2/Q35.
+    Rationale: `docs/design/crud-and-color-palette.md` Topic 2/Q35.
     RELATED RESOLUTION (colour-free timing, no prior numbered Q): a genotype/mate
     colour FREES EAGERLY when its LAST live user is deleted (eager-with-count-
     check; allocation query filters `deleted_at IS NULL`) — recorded in the §2
@@ -1030,5 +1032,5 @@ enforced at DB level.
 > transit_status, prev_id CAS on the 4 versioned tables, genes/mice_genes,
 > audit_logs immutability, notes reach. Migrations 0001–0020 shipped; SCHEMA.md
 > regenerated. <!-- ARCHIVE: history-only -->
-> Detail: [_docs/archive/plan.r11-r25-schema-redesign.md](./_docs/archive/plan.r11-r25-schema-redesign.md)
+> Detail: [_archive/plan.r11-r25-schema-redesign.md](./_archive/plan.r11-r25-schema-redesign.md)
 > Current schema is authoritative in [packages/db/SCHEMA.md](./packages/db/SCHEMA.md).
