@@ -47,7 +47,11 @@ packages/{eslint,jest,typescript}-config
 Lifecycle rules are owned by `.claude/rules/docs.md`. Paths only:
 
 ```
-PLAN.md      intent, architecture decisions, roadmap, open questions
+PLAN.md      intent, roadmap, data/ETL scope + stubs for the split-out
+             §2 architecture decisions (docs/phases/architecture.plan.md)
+             and §5 open questions (docs/phases/open-questions.plan.md);
+             section/Q numbering is preserved there, so `plan §2` and
+             `plan §5 Q43` citations still resolve
 TASKS.md     task list with acceptance criteria (stubs → docs/phases/)
 STATUS.md    append-only progress log
 docs/phases/    ACTIVE per-sub-phase detail, split per docs.md §1

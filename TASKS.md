@@ -104,12 +104,14 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,9a,9b [x], 4 = GATE, 6–7 + 8b + 8c + 9c + sex-editor + 10 + SEED_COLONY note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,9a,9b [x], 4 = GATE, 6–7 + 8b + 8c + 9c + 9d + sex-editor + 10 + SEED_COLONY note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, `extractLitterCode` blocker fix and the FOUR
 > add mutations are DONE; step 4 is the professor GATE — Q39/Q41/Q44 answered,
-> Q40 dissolved, Q42 + Q45 OPEN, Q43 resolved EXCEPT its narrower sub-question
+> Q40 dissolved, **Q45 RESOLVED 2026-09-18** (migration 0027
+> `pup_number_offsets` + `MouseCell.pupOffsets`), Q42 still OPEN, Q43 resolved
+> EXCEPT its narrower sub-question
 > (does a Tissue-collection case also mint a `toe` punch row?) which gates step 10.
 > Step 5 `buildMouseLabel` DONE (0027 `pup_number_offsets` = Q45 storage). Step 9a
 > DONE 2026-09-22 (`a4c4089`): `UpdateMousePatch.mouseLabel` + the label-uniqueness
@@ -118,22 +120,32 @@ Each task lists AC = deterministic acceptance criteria.
 > `punches` now REQUIRED, ten render sites + `gridFilter` compose via a new
 > `mouseLabelOf()` helper, 21 fixture label lines gone (the 8 `ParentCell` ones
 > stay); all 21 seed mice verified byte-identical. Remaining:
-> punch mutations (6, 7); 8b (step 8's unmet `colonyMutations.ts < 300 lines`
-> criterion — 485 lines after 9b, past the 400 hard line) and the inline sex
-> editor (no UI control exists) — both UNBLOCKED now that 9b is closed; punch UI
-> (10, BLOCKED-BY 7 only). NEW 8c — step 8's OTHER unmet criterion: `addMouse`
-> mints NO `toe` punch (reviewer ran it, got `punches: []`); step 5's
-> "toe-only renders like zero-punch" AC masked it BY CONSTRUCTION, so only field
-> inspection catches it; its dependency on step 7's `nextPunchId` (and the 8b↔8c
-> ordering) is an OPEN architect ruling. NEW 9c — `extractLitterCode` has ZERO
-> consumers after 9b but steps 3/5 forbid deleting it; an `x_` rename is NOT a
-> soft delete here (both `tsconfig.json` `exclude: ["**/x_*"]` = removed from the
-> build); intended consumer OPEN, architect naming it. Also recorded, not
+> punch mutations (6, 7 — BLOCKERS RULED 2026-09-22: 6 is gated by nothing (Q40
+> DISSOLVED), only SEQUENCED after 8c, which now owns `Counters.nextPunchId`;
+> 7 no longer claims that counter, it consumes it); 8b (step 8's unmet
+> `colonyMutations.ts < 300 lines` criterion — 485 lines after 9b, past the 400
+> hard line) and the inline sex editor (no UI control exists) — both UNBLOCKED
+> now that 9b is closed; punch UI (10, BLOCKED-BY 7 only). NEW 8c — step 8's
+> OTHER unmet criterion: `addMouse` mints NO `toe` punch (reviewer ran it, got
+> `punches: []`); step 5's "toe-only renders like zero-punch" AC masked it BY
+> CONSTRUCTION, so only field inspection catches it. **8c is BLOCKED-BY NOTHING**
+> (no open gate question touches a punch-id counter) and runs BEFORE 8b (same
+> file; content change first, split second). Its headline AC is the owner's
+> formulation: every mouse in the colony has at least one punch, therefore every
+> mouse has a punchId. NEW 9c — **RETIRE `extractLitterCode` (owner decided
+> 2026-09-22)**: zero consumers since 9b, and the legacy-parse justification has
+> no live path (inline edit deleted by 9a; no TS import path exists). Its comment
+> block moves VERBATIM to `docs/phases/p0.7.plan.md` as the future import
+> parser's acceptance spec BEFORE the cut; `parseLitterCode` ring-fenced.
+> NEW 9d — plan §5 **Q46 DECIDED 2026-09-22 (owner): option C** — `ParentCell`
+> becomes a union: in-grid parent (`metaId` non-null) carries NO label and
+> composes from its `MouseCell`; outside parent keeps a string renamed
+> `snapshotLabel`; the 8 fixture lines split 6 deleted / 2 renamed; dead
+> `MouseDetail.parents` goes with it. Blocked by nothing. Also recorded, not
 > actioned: `NewTaskDialog.client.tsx` imports `SEED_COLONY` instead of reading
 > the live store (`:5`, consumed at `:35` + `:42`; the only UI file doing so) —
 > mock module feeding a real UI list, MVP-ladder L3, pre-existing —
-> OPEN, architect. `ParentCell` label
-> question routed and answered → plan §5 Q46, OWNER HAS NOT PICKED. Base P0-b: litter-code
+> OPEN, architect. Base P0-b: litter-code
 > generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
 > Record-Litter tx, surface cols I–N.
 > <!-- DETAIL: active, read on demand -->
