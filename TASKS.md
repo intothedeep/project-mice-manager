@@ -1,4 +1,4 @@
-# 00.tasks — Lopez-Juarez Mouse-Colony Automation
+# TASKS — Lopez-Juarez Mouse-Colony Automation
 
 > Completed items live in `_archive/` (cold storage — do not read unless
 > investigating history). Active per-sub-phase detail lives in `docs/phases/`
@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,9a [x], 4 = GATE, 6–7 + 8b + 9b + sex-editor + 10 [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,9a,9b [x], 4 = GATE, 6–7 + 8b + 8c + 9c + sex-editor + 10 + SEED_COLONY note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, `extractLitterCode` blocker fix and the FOUR
@@ -113,13 +113,26 @@ Each task lists AC = deterministic acceptance criteria.
 > (does a Tissue-collection case also mint a `toe` punch row?) which gates step 10.
 > Step 5 `buildMouseLabel` DONE (0027 `pup_number_offsets` = Q45 storage). Step 9a
 > DONE 2026-09-22 (`a4c4089`): `UpdateMousePatch.mouseLabel` + the label-uniqueness
-> check + `mouseLabelSet` gone, grid label cell read-only. Remaining:
-> punch mutations (6, 7), 9b (type + call-site migration — deleting the stored
-> `MouseCell.mouseLabel` field had no task before the 2026-09-22 SPLIT; its
-> "inline sex edit" AC was IMPOSSIBLE, rewritten as a store-level probe), NEW
-> 8b (step 8's unmet `colonyMutations.ts < 300 lines` criterion — 488 lines,
-> past the 400 hard line) and NEW inline sex editor (no UI control exists;
-> both BLOCKED-BY 9b), punch UI (10, BLOCKED-BY 7 + 9b). `ParentCell` label
+> check + `mouseLabelSet` gone, grid label cell read-only. Step 9b DONE
+> 2026-09-22 (`8ae117e`), reviewer PASS: `MouseCell.mouseLabel` deleted,
+> `punches` now REQUIRED, ten render sites + `gridFilter` compose via a new
+> `mouseLabelOf()` helper, 21 fixture label lines gone (the 8 `ParentCell` ones
+> stay); all 21 seed mice verified byte-identical. Remaining:
+> punch mutations (6, 7); 8b (step 8's unmet `colonyMutations.ts < 300 lines`
+> criterion — 485 lines after 9b, past the 400 hard line) and the inline sex
+> editor (no UI control exists) — both UNBLOCKED now that 9b is closed; punch UI
+> (10, BLOCKED-BY 7 only). NEW 8c — step 8's OTHER unmet criterion: `addMouse`
+> mints NO `toe` punch (reviewer ran it, got `punches: []`); step 5's
+> "toe-only renders like zero-punch" AC masked it BY CONSTRUCTION, so only field
+> inspection catches it; its dependency on step 7's `nextPunchId` (and the 8b↔8c
+> ordering) is an OPEN architect ruling. NEW 9c — `extractLitterCode` has ZERO
+> consumers after 9b but steps 3/5 forbid deleting it; an `x_` rename is NOT a
+> soft delete here (both `tsconfig.json` `exclude: ["**/x_*"]` = removed from the
+> build); intended consumer OPEN, architect naming it. Also recorded, not
+> actioned: `NewTaskDialog.client.tsx` imports `SEED_COLONY` instead of reading
+> the live store (`:5`, consumed at `:35` + `:42`; the only UI file doing so) —
+> mock module feeding a real UI list, MVP-ladder L3, pre-existing —
+> OPEN, architect. `ParentCell` label
 > question routed and answered → plan §5 Q46, OWNER HAS NOT PICKED. Base P0-b: litter-code
 > generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
 > Record-Litter tx, surface cols I–N.

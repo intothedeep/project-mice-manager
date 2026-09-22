@@ -1,4 +1,4 @@
-# 00.plan — Lopez-Juarez Mouse-Colony Automation
+# PLAN — Lopez-Juarez Mouse-Colony Automation
 
 > Completed items live in `_archive/` (cold storage — do not read unless
 > investigating history). Active per-sub-phase detail lives in `docs/phases/`
@@ -163,7 +163,7 @@ Recorded here for traceability; owned by the architect, not this doc.
   inspection — the standard the P0.2 DB guards were held to. See CLAUDE.md §19.
 - **Enum count = SIX (2026-09-04, R10):** the R10 redesign adds
   `mouse_event_kind`, so the P0.2 "exactly 5 enums" AC is superseded (see
-  00.tasks P0.2 REOPENED). Testing remains SUSPENDED per the directive above —
+  TASKS P0.2 REOPENED). Testing remains SUSPENDED per the directive above —
   the redesign does not reopen it.
 - **Test-tooling note (CLOSED 2026-09-04):** ml brief specified pytest for the
   core parsers, but the fixed stack is a TS monorepo and `packages/domain` is
@@ -300,7 +300,7 @@ sub-milestones **P0-a / P0-b / P0-c** (scope fixed per sub-milestone).
 mock APIs**. No server, no real persistence. **Server + persistence = Phase 2.**
 This RESOLVES the contradiction between this section (which listed server
 endpoints under P0-a) and the standing "MVP = mock+UI workflow fidelity"
-directive — the directive wins. Consequence: `00.tasks` **P0.6's server-side
+directive — the directive wins. Consequence: `TASKS` **P0.6's server-side
 items are NOT on the MVP path** (endpoints, MOVE transaction, repositories,
 `appendVersion`, audit writes); its mock-UI work IS. Same for P0.3/P0.4 (parsers
 + ETL) — they exist to feed a database. What MVP must prove is the WORKFLOW in
@@ -353,14 +353,14 @@ stored (sexing U→M changes the label, metaId stays stable); genotype renders
   creation is ALLOWED (user 2026-09-14) with a GLOBAL uniqueness dedupe
   (slots.label is globally unique) — or pick an existing slot / leave
   unplaced. The full mouse_meta+mice+litter write tx is the SERVER-era swap;
-  DTOs unchanged. See 00.tasks P0.7. Shipped with extensions (2026-09-16):
+  DTOs unchanged. See TASKS P0.7. Shipped with extensions (2026-09-16):
   litter-code auto-gen (`lib/litterCode.ts` + store counter), searchable
   combobox for litter/cage/slot (inline-create w/ global dedupe), inline cell
   edit (`updateMouse`/`EditableCell` + Sac), selection-tail `[+]` incl.
   `AddLineDialog`, store split (pure `lib/colonyMutations.ts`). Detail:
-  00.tasks P0.7 stub → `_archive/tasks.p0.7-add-mouse-v1.md`.
+  TASKS P0.7 stub → `_archive/tasks.p0.7-add-mouse-v1.md`.
 - **v1.1 — add-flow split into FOUR mutations (AGREED 2026-09-16, user; NOT
-  built — 00.tasks P0.7-b step 8).** Replaces today's `addMouse` + `addLine`
+  built — TASKS P0.7-b step 8).** Replaces today's `addMouse` + `addLine`
   in `lib/colonyMutations.ts`:
   `addLine(lineName, cageNumber, slotLabel, mouse?)` → line+cage+slot(+mouse);
   `addCage(lineId, cageNumber, slotLabel, mouse?)` → cage+slot(+mouse);
@@ -394,7 +394,7 @@ step, so a pending transfer is just a row that has not reached `verified` yet.
 
 (OLD P0 "Breeders + Genotyping edit UIs" and "Excel round-trip / export" are
 SUPERSEDED — the genotyping subsystem now lands **P1** (promoted 2026-09-04);
-xlsx export stays deferred, see P2 and 00.tasks DEFERRED section.)
+xlsx export stays deferred, see P2 and TASKS DEFERRED section.)
 
 **P0-a gate:** import of the real workbook produces 0 silently dropped rows (all
 rejects in `import_error` with provenance); re-import of the identical file (same
@@ -428,7 +428,7 @@ live file; every mutation audit-logged.
   `genotype_label` writeback (R6, §4). Built ON ticket/role/
   marker/line_marker_panel/genotyping_run/
   genotyping_result. Includes GENOTYPING sheet normalization + genotype
-  tokenizer (moved from DEFERRED — see 00.tasks P1).
+  tokenizer (moved from DEFERRED — see TASKS P1).
 - **Per-gene 2-allele genotype model (POLICY + design, user 2026-09-15; architect
   designed):** `genes.code` = bare gene + `genes.kind`; `mice_genes.allele_a/b`
   TEXT (nullable → backfill → NOT NULL `'?'`); canonical order `f < + < - < G < … < ?`;
@@ -510,7 +510,7 @@ Excel files.
   recommendation: dedicated phase after auth unless professor demand pulls it
   earlier). The genotyping subsystem that used to share this bullet was
   promoted to P1 on 2026-09-04; the color→enum mapper + calibration pass
-  remain deferred, DECOUPLED from it (see 00.tasks DEFERRED).
+  remain deferred, DECOUPLED from it (see TASKS DEFERRED).
 
 **P2 gate:** staff can complete a weekday cycle offline and sync; role matrix
 enforced at DB level.
@@ -591,7 +591,7 @@ enforced at DB level.
     `litter_code_counter` singleton exception.
   - R9 base-26 codec stays a pure fn for GENERATION (rollover); "litter seq" =
     lab vocabulary, persisted as `pup_number` (R14 later persisted
-    `litters.seq` — 00.tasks P0.3).
+    `litters.seq` — TASKS P0.3).
   - R10 live patterns: approximate dates = DATE + `is_*_approx` + `*_raw`;
     unresolved refs = nullable FK + raw text + import_errors warn (never drop a
     row); parents live on `litters`, not `mice`; tasks = WORK vs mates = FACT;
@@ -648,7 +648,7 @@ enforced at DB level.
   Detail: [docs/phases/p0.9.plan.md](./docs/phases/p0.9.plan.md)
 
 - **Punch records + mouse-identity label composition (architect design
-  2026-09-16 — GATED on §5 Q39–Q45; steps in 00.tasks P0.7-b):** `punches` table
+  2026-09-16 — GATED on §5 Q39–Q45; steps in TASKS P0.7-b):** `punches` table
   (0026, FK → mouse_meta, CHECK toe|ear|other, no UNIQUE, soft-delete); `addMouse`
   is the sole minter of the implicit `toe` punch; label = read-time projection
   `sex · pupNumber · [+offset] · litterCode · [e…]` (mid position abolished, Q39);
@@ -814,7 +814,7 @@ enforced at DB level.
     DB is already global-unique (SCHEMA.md `slots_label_key`, shipped by
     migration 0013), so NO migration is needed. The empirical 'F5'-in-two-cages
     finding stands, but is handled by an IMPORT-TIME dedupe/relabel step
-    (cage-number-qualified labels) BEFORE insert — see 00.tasks P0.4 (new task)
+    (cage-number-qualified labels) BEFORE insert — see TASKS P0.4 (new task)
     and the P0.2-R25 MEMO. Rationale:
     `docs/design/crud-and-color-palette.md` Topic 1 / Q-slot-label.
 20. RESOLVED 2026-09-04: ZZZ→AAAA (4-letter) rollover confirmed — the derived
