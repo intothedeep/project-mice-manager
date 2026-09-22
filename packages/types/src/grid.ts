@@ -24,11 +24,12 @@ export type SignalColor = 'done' | 'instruction' | 'plan' | 'dead' | 'flag';
 export type Sex = 'M' | 'F' | 'U';
 
 // Punch = a physical ear/toe mark used for genotyping/identification tracking.
-// The rendered id (mouseLabel) is the READ-TIME projection of a mouse's label;
-// punches are NOT folded into it — they live BESIDE the mouse as their own
-// field, so the UI never has to parse punch state back out of a label (the
-// position of the 'e' suffix in a rendered id is an OPEN QUESTION to the lab
-// owner — see apps/colony_client_web/lib/litterCode.ts).
+// The rendered id is a READ-TIME projection composed from a mouse's parts (9b
+// deleted the stored field); punches are NOT folded into it — they live BESIDE
+// the mouse as their own field, so the UI never has to parse punch state back
+// out of a label (the position of the 'e' suffix in a rendered id is an OPEN
+// QUESTION to the lab owner — see the retired parse contract in
+// docs/phases/p0.7.plan.md).
 export type PunchLocation = 'toe' | 'ear' | 'other';
 
 export interface PunchRef {

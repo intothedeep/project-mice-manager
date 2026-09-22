@@ -50,7 +50,8 @@ export function buildMouseCell(
 ): MouseCell {
     const pupOffsets: number[] = [];
     // Creating a mouse mints an implicit 'toe' punch — addMouse is the SOLE
-    // mint site (plan §7); once-and-only-once is structural, not a DB trigger.
+    // mint site (docs/phases/p0.7.plan.md, punch-records bullet: "in addMouse
+    // and NOWHERE else"); once-and-only-once is structural, not a DB trigger.
     const toePunch: PunchRef = {
         punchId,
         location: 'toe',
