@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,4,5,8,8b,8c,9a,9b,9c,9d + 11 (inline-edit removal) + 13 (mouse-editing drawer) [x] + inline sex editor [x] SUPERSEDED-not-shipped; 6a + 6 + 7 + 8d LANDED-IN-SOURCE but not yet ticked (close notes owed); NEW 8e (`punchLog` single source) → NEW 8f (`untagged` always, never removed) + 9e + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,4,5,8,8b,8c,9a,9b,9c,9d + 11 (inline-edit removal) + 13 (mouse-editing drawer) [x] + inline sex editor [x] SUPERSEDED-not-shipped; 6a + 6 + 7 + 8d LANDED-IN-SOURCE but not yet ticked (close notes owed); NEW 8e (`punches` single source) → NEW 8f (`untagged` always, never removed) + 9e + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -141,7 +141,7 @@ Each task lists AC = deterministic acceptance criteria.
 > task **6a (punch history contract)** carries the type/store work and BLOCKS 6;
 > step 6's AC was REWRITTEN (the old one is the defect — see below) and its
 > in-flight work REBASES rather than restarts; step 7 grows to own the
-> `punchLog` seed + `usePunchLog(metaId)`; old step 10's AC is unchanged and only
+> `punches` seed + `usePunches(metaId)`; old step 10's AC is unchanged and only
 > TIGHTENED to name the selector (it is now task 13's punch-half AC). SIXTH AC defect logged in the phase file's
 > PATTERN block, a NEW SUB-SHAPE: an AC that silently MANDATES a schema change
 > because the state shape it operates on has no room for what it demands.
@@ -233,8 +233,8 @@ Each task lists AC = deterministic acceptance criteria.
 > did) **but still show `[ ]`/`[~]` — their ticks and close notes are owed by the
 > pass carrying each reviewer verdict; this pass does not tick them.**
 > **NEW 2026-09-22, OWNER DECIDED, ONE developer in THIS ORDER — 8e THEN 8f:**
-> **8e `[ ]` — `punchLog` becomes the SINGLE SOURCE** (*"refactor this. I like
-> this simplification."*): `punchLog` holds every row active + tombstoned,
+> **8e `[ ]` — `punches` becomes the SINGLE SOURCE** (*"refactor this. I like
+> this simplification."*): `punches` holds every row active + tombstoned,
 > `grid.punches` becomes a projection off it (filter `deletedAt` → `PunchRef`),
 > and the SECOND WRITER — `mockColonyStore.commitIfOk`'s `findMintedPunch`
 > back-fill and its "`nextPunchId` advanced → find the punch at the pre-commit
