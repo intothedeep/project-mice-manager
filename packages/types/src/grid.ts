@@ -4,6 +4,9 @@
 // current state only. No version/prev_id/deleted_at leak to the client; the
 // server collapses the append-only history down to "latest" before serializing.
 // The mock fetcher and the future real fetcher both honour this contract.
+// HISTORY is out of scope for these DTOs: it lives in its own, explicitly-named
+// DTOs/selectors (e.g. PunchHistoryEntry in ./punchHistory) — `deleted_at`
+// appears only there, never here.
 //
 // Full hierarchy: colony › line › cage › slot › mouse.
 //   colony  → colonies
@@ -129,7 +132,7 @@ export interface MouseCell {
     dob: string | null; // ISO date of birth; the "age" colour is computed from dob + sex at read (never stored — it changes daily)
     genotypeColor: string | null; // resolved identity hex for this mouse's genotype; null = unknown '?' → neutral. Server resolves from color_assignments(channel='genotype').
     mates: MateRef[]; // current mate(s): partner id + group colour badge. [] if not breeding; several when mated to multiple partners.
-    punches: PunchRef[]; // ACTIVE punches only (deleted rows masked upstream); read-time projection, never parsed from the rendered label.
+    punches: PunchRef[]; // ACTIVE rows only (plan §4 "punches: PunchRef[] (active rows only)"). A removed row is tombstoned in the separate punch LOG (see ./punchHistory PunchHistoryEntry), not here — read-time projection, never parsed from the rendered label.
     parents?: MouseParents; // father/mother refs for the parents column; omitted when unknown (founders)
     dates?: MouseDates; // breeding/lifecycle dates (last mating, plug, deliv, tissue, genotyping)
 }

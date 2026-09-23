@@ -31,6 +31,7 @@ import {
 } from '@/lib/updateMouse';
 import {
     suggestNextCageNumber as pureSuggestNextCageNumber,
+    type ColonyState,
     type MouseSpec,
     type AddMouseResult,
     type Counters,
@@ -56,7 +57,11 @@ export type {
 
 // ---- state -----------------------------------------------------------------
 
-let state: ColonyGrid = SEED_COLONY;
+// Step 6a (owner option B): state widens from a bare ColonyGrid to { grid,
+// punchLog } so a removed punch can be tombstoned in the log without leaking
+// deletedAt into the grid DTO. punchLog starts empty here — seeding it from
+// SEED_COLONY is step 7's scope, not this one.
+let state: ColonyState = { grid: SEED_COLONY, punchLog: [] };
 let counters: Counters = {
     nextMetaId: maxMetaId(SEED_COLONY) + 1,
     nextPunchId: maxPunchId(SEED_COLONY) + 1,
@@ -84,8 +89,8 @@ function subscribe(fn: () => void): () => void {
 export function useColonyGrid(): ColonyGrid {
     return useSyncExternalStore(
         subscribe,
-        () => state,
-        () => state
+        () => state.grid,
+        () => state.grid
     );
 }
 
@@ -118,20 +123,22 @@ export function peekNextLitterCode(): string {
 // Suggested next cage number for the "new cage" field default — read-only,
 // derived from current state (no counter advance).
 export function suggestNextCageNumber(): string {
-    return pureSuggestNextCageNumber(state);
+    return pureSuggestNextCageNumber(state.grid);
 }
 
 // ---- public writes (thin wrappers) -----------------------------------------
 
 // Shared by every mutation below: commit state/counters only on success, emit
 // only when something actually changed.
+// These four + updateMouse operate on the grid only (punch history is step
+// 7's concern) — wrap the pure result back into { ...state, grid: r.state }.
 function commitIfOk<R extends { ok: boolean }>(r: {
     state: ColonyGrid;
     counters: Counters;
     result: R;
 }): R {
     if (r.result.ok) {
-        state = r.state;
+        state = { ...state, grid: r.state };
         counters = r.counters;
         emit();
     }
@@ -139,30 +146,30 @@ function commitIfOk<R extends { ok: boolean }>(r: {
 }
 
 export function addMouse(input: AddMouseInput): AddMouseResult {
-    return commitIfOk(pureAddMouse(state, counters, input));
+    return commitIfOk(pureAddMouse(state.grid, counters, input));
 }
 
 export function addSlot(input: AddSlotInput): AddMouseResult {
-    return commitIfOk(pureAddSlot(state, counters, input));
+    return commitIfOk(pureAddSlot(state.grid, counters, input));
 }
 
 export function addCage(input: AddCageInput): AddMouseResult {
-    return commitIfOk(pureAddCage(state, counters, input));
+    return commitIfOk(pureAddCage(state.grid, counters, input));
 }
 
 export function addLine(input: AddLineInput): AddLineResult {
-    return commitIfOk(pureAddLine(state, counters, input));
+    return commitIfOk(pureAddLine(state.grid, counters, input));
 }
 
 export function updateMouse(
     metaId: number,
     patch: UpdateMousePatch
 ): AddMouseResult {
-    const r = pureUpdateMouse(state, counters, metaId, patch);
+    const r = pureUpdateMouse(state.grid, counters, metaId, patch);
     counters = r.counters;
-    // Only emit when state reference actually changed (no-op guard).
-    if (r.state !== state) {
-        state = r.state;
+    // Only emit when the grid reference actually changed (no-op guard).
+    if (r.state !== state.grid) {
+        state = { ...state, grid: r.state };
         emit();
     }
     return r.result;
@@ -170,6 +177,6 @@ export function updateMouse(
 
 // applyColonyMove: wraps gridMove.moveMouse and emits so the grid re-renders.
 export function applyColonyMove(metaId: number, target: MoveTarget): void {
-    state = moveMouse(state, metaId, target);
+    state = { ...state, grid: moveMouse(state.grid, metaId, target) };
     emit();
 }

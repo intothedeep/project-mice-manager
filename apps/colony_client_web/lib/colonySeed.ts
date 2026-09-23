@@ -17,7 +17,16 @@ export function maxMetaId(grid: ColonyGrid): number {
     return max;
 }
 
-/** Highest punchId currently in the grid — new-punch counter seeds above it. */
+// Highest punchId currently in the grid — new-punch counter seeds above it.
+// Punch ids are NEVER reused (step 6a): once a punch is removed it is
+// tombstoned in the punch LOG, not deleted, so a counter re-derived from
+// ACTIVE rows alone would re-issue the removed punch's id the moment it drops
+// out of view. This scan is safe ONLY because it runs once at module init,
+// before any removal has happened, so the grid IS the full row set at that
+// instant (zero tombstones exist yet). Once step 7 seeds `punchLog` from this
+// same fixture, the counter's source of truth moves to the log (the set that
+// keeps holding every row, including tombstones) — this function stays for
+// that one-time seed scan, it does not become the ongoing source.
 export function maxPunchId(grid: ColonyGrid): number {
     let max = 0;
     for (const l of grid.lines)

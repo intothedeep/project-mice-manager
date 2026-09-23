@@ -17,6 +17,8 @@ export type {
     ColonyGrid,
 } from './grid';
 
+export type { PunchHistoryEntry } from './punchHistory';
+
 // task.ts: old 4-value TaskStatus ('open'|'done'|'verified'|'cancelled') and
 // TaskCard — kept intact while apps/colony_client_web (parallel wave) migrates
 // to the new Case model. Do NOT remove until that wave renames its imports.

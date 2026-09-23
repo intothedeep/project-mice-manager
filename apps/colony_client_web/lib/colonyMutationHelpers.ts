@@ -8,10 +8,21 @@ import type {
     ColonyGrid,
     GridCage,
     MouseCell,
+    PunchHistoryEntry,
     PunchRef,
     Sex,
 } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
+
+// Mock-store state (step 6a, owner option B): the live grid (ACTIVE punch
+// rows only, plan §4) plus the append-only punch LOG (tombstones live here,
+// never in the grid). This is mock-store state, not a DTO — it does not
+// belong in packages/types. Step 7 seeds `punchLog` from SEED_COLONY and adds
+// the usePunchLog(metaId) selector; this shape is 6a's contribution only.
+export interface ColonyState {
+    grid: ColonyGrid;
+    punchLog: PunchHistoryEntry[];
+}
 
 export interface Counters {
     nextMetaId: number;
