@@ -4,7 +4,7 @@
 // passes `state` to them at write time (not `SEED_COLONY`) so they always
 // reflect the live colony tree.
 
-import type { ColonyGrid } from '@repo/types';
+import type { ColonyGrid, PunchHistoryEntry } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
 
 /** Highest metaId currently in the grid — new-mouse counter seeds above it. */
@@ -36,6 +36,27 @@ export function maxPunchId(grid: ColonyGrid): number {
                     for (const p of m.punches)
                         if (p.punchId > max) max = p.punchId;
     return max;
+}
+
+// Projects every punch row in the seed grid into the punch-LOG shape (step
+// 7): SEED_COLONY carries only ACTIVE rows (plan §4), so every seeded entry
+// comes back with deletedAt unset — a seed fixture never ships pre-tombstoned.
+// Runs once at module init, same as maxPunchId above.
+export function seedPunchLog(grid: ColonyGrid): PunchHistoryEntry[] {
+    const log: PunchHistoryEntry[] = [];
+    for (const l of grid.lines)
+        for (const c of l.cages)
+            for (const s of c.slots)
+                for (const m of s.mice)
+                    for (const p of m.punches)
+                        log.push({
+                            punchId: p.punchId,
+                            metaId: m.metaId,
+                            location: p.location,
+                            effectiveAt: p.effectiveAt,
+                            ...(p.note !== undefined ? { note: p.note } : {}),
+                        });
+    return log;
 }
 
 /** Highest slotId currently in the grid — new-slot counter seeds above it. */
