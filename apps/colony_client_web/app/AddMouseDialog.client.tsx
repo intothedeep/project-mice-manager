@@ -28,6 +28,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox, type ComboOption } from '@/components/ui/combobox';
+import { CodeBadgeSelect } from '@/components/ui/code-badge-select';
+import { GENE_CATALOG_CODES } from '@/apis/getGenes.mock.api';
 
 // Dialog fields:
 //   sex       — M / F / U (default U)
@@ -37,7 +39,9 @@ import { Combobox, type ComboOption } from '@/components/ui/combobox';
 //   line      — pick from the live colony's lines (filters cage options)
 //   cage      — combobox over cage numbers; typing a new number creates a cage
 //   slot      — combobox over slot labels; empty = first slot; typing = new slot
-//   genotype  — free text, optional (defaults to '?')
+//   genotype  — gene badges (multi-select over the gene catalogue); picking
+//               NOTHING is valid and means "not genotyped" ('?'), which is what
+//               a later "check the genes" case is generated from
 //
 // Optional prefill props (Step 6): initialLineId / initialCageId / initialSlotId
 // seed the corresponding pickers on open. Prefill is resolved to display strings
@@ -210,7 +214,11 @@ export function AddMouseDialog({
     // (a cage is labelled and racked before an animal goes in). Not shown at
     // all on the mouse rail, where a mouse is always required.
     const [includeMouse, setIncludeMouse] = useState(false);
-    const [genotype, setGenotype] = useState('');
+    // Picked gene CODES, not a genotype string — the mouse's rows are minted
+    // from these on submit. Alleles are not chosen here: new rows are minted
+    // with both alleles NULL (zygosity not recorded), so a freshly added 'Nf1'
+    // reads "Nf1" and claims no wild-type pair (owner: zygosity logic later).
+    const [geneCodes, setGeneCodes] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const needsMouse = mode === 'mouse' || includeMouse;
@@ -258,7 +266,7 @@ export function AddMouseDialog({
         setCageValue(resolvedCageValue);
         setSlotValue(resolvedSlotValue);
         setIncludeMouse(false);
-        setGenotype('');
+        setGeneCodes([]);
         setError(null);
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -336,7 +344,7 @@ export function AddMouseDialog({
             litterCode: litterValue.trim(),
             pupNumber: pupNum,
             dob,
-            genotype: genotype.trim() || undefined,
+            geneCodes,
             // The initial punch is dated to now (when it physically
             // happens), never to dob — a mouse entered weeks after birth
             // must not inherit a birthday-dated punch. Creation always mints
@@ -522,11 +530,11 @@ export function AddMouseDialog({
                 ) : null}
 
                 {needsMouse ? (
-                    <Label text="Genotype (optional — defaults to ?)">
-                        <Input
-                            placeholder="e.g. Nf1 f/+"
-                            value={genotype}
-                            onChange={(e) => setGenotype(e.target.value)}
+                    <Label text="Genotype (optional — none selected = ?)">
+                        <CodeBadgeSelect
+                            options={GENE_CATALOG_CODES}
+                            selected={geneCodes}
+                            onChange={setGeneCodes}
                         />
                     </Label>
                 ) : null}

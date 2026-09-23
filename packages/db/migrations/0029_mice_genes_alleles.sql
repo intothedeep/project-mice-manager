@@ -1,0 +1,37 @@
+-- Zygosity moves OFF genes.code and ONTO the mouse↔gene link row.
+--
+-- SUPERSEDES 0014_genes.sql's header claim that "code holds the WHOLE marker
+-- including zygosity as written by the professor (e.g. 'Nf1 f/+')". That is no
+-- longer true (owner decision 2026-09-23): `genes.code` is now BARE — 'Nf1',
+-- 'PlpCre', 'Ai14', 'ccEGFP', 'WT' — one catalog row per GENE, not per
+-- gene×zygosity combination. 0014 is applied and therefore immutable, so the
+-- correction lives here instead of in an edit to it.
+--
+-- WHY: zygosity is a fact about THIS MOUSE's copy of the gene, not about the
+-- gene itself. Keeping it inside `code` multiplied the catalog by every
+-- observed allele pair and made "all mice carrying Nf1" a text-pattern query —
+-- the exact defect 0014 set out to fix, left half-done.
+--
+-- The two columns are the paternal and maternal allele, in that order: a
+-- rendered marker is `code allele_pat/allele_mat` (e.g. code 'Nf1' +
+-- ('f','+') -> "Nf1 f/+"). A mouse's genotype is its live mice_genes rows in
+-- order_index order, joined with ';'. It is COMPOSED AT READ TIME and never
+-- stored (same rule as the rendered mouse label).
+--
+-- BOTH NULLABLE, NO DEFAULT (owner 2026-09-23: "부, 모 모두 default null").
+-- NULL means zygosity IS NOT RECORDED for this row, which is the normal state
+-- for two different reasons: a marker that HAS no zygosity to record (a driver
+-- like 'PlpCre', or 'WT'), and a gene that simply has not been genotyped yet.
+-- A row with both NULL renders as the bare code ("PlpCre"); a recorded pair
+-- renders in full ("Nf1 +/+").
+--
+-- '+'/'+' IS THEREFORE NOT THE SAME FACT AS NULL/NULL: it is a RECORDED
+-- wild-type pair. Defaulting these columns to '+' would collapse the two and
+-- silently turn every un-assessed row into a positive wild-type claim — and
+-- would rewrite "PlpCre" as "PlpCre +/+" on screen.
+--
+-- DELIBERATELY no zygosity enum, no CHECK, no validation (owner: "I will add
+-- more logic later, at this time just add 2 columns").
+ALTER TABLE mice_genes
+    ADD COLUMN allele_pat TEXT,
+    ADD COLUMN allele_mat TEXT;

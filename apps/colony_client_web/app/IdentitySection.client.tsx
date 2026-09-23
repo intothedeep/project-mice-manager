@@ -7,8 +7,11 @@ import { updateMouse } from '@/lib/mockColonyStore';
 import { buildMouseLabel } from '@/lib/mouseIdentity';
 import { composeMouseLabel } from '@/lib/mouseLabel';
 import { formatDate } from '@/lib/dueDates';
+import { geneCodesOf, genotypeOf } from '@/lib/genotype';
+import { GENE_CATALOG_CODES } from '@/apis/getGenes.mock.api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CodeBadgeSelect } from '@/components/ui/code-badge-select';
 import { SELECT_CLASS, SEX_OPTIONS } from './AddMouseDialog.client';
 
 // Task 13, field-editing half. Mounted with `key={metaId}` by the drawer so
@@ -22,12 +25,16 @@ import { SELECT_CLASS, SEX_OPTIONS } from './AddMouseDialog.client';
 
 interface Draft {
     sex: Sex;
-    genotype: string;
+    // Picked gene CODES, never a genotype string: the genotype is composed from
+    // the mouse's gene rows at read time (lib/genotype.ts) and editing it means
+    // editing the ROWS. Deselecting everything is valid — that is '?', the
+    // not-genotyped state a "check the genes" case is generated from.
+    geneCodes: string[];
     dob: string; // '' stands in for MouseCell.dob === null while editing
 }
 
 function draftFrom(m: MouseCell): Draft {
-    return { sex: m.sex, genotype: m.genotype, dob: m.dob ?? '' };
+    return { sex: m.sex, geneCodes: geneCodesOf(m), dob: m.dob ?? '' };
 }
 
 export function IdentitySection({
@@ -55,7 +62,7 @@ export function IdentitySection({
     function save() {
         const result = updateMouse(mouse.metaId, {
             sex: draft.sex,
-            genotype: draft.genotype,
+            geneCodes: draft.geneCodes,
             dob: draft.dob,
         });
         if (!result.ok) {
@@ -164,13 +171,11 @@ export function IdentitySection({
                         </select>
                     </Row>
                     <Row label="genotype">
-                        <Input
-                            value={draft.genotype}
-                            onChange={(e) =>
-                                setDraft((d) => ({
-                                    ...d,
-                                    genotype: e.target.value,
-                                }))
+                        <CodeBadgeSelect
+                            options={GENE_CATALOG_CODES}
+                            selected={draft.geneCodes}
+                            onChange={(next) =>
+                                setDraft((d) => ({ ...d, geneCodes: next }))
                             }
                         />
                     </Row>
@@ -195,7 +200,7 @@ export function IdentitySection({
                     />
                     <Field
                         k="genotype"
-                        v={mouse.genotype}
+                        v={genotypeOf(mouse)}
                     />
                     <Field
                         k="dob"

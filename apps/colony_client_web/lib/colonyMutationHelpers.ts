@@ -14,6 +14,7 @@ import type {
     Sex,
 } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
+import { mintGeneRefs } from '@/lib/genotype';
 
 // Mock-store state: `punches` is the SINGLE SOURCE for every punch, active
 // or tombstoned (deletedAt set). `grid.MouseCell.punches` is not a second
@@ -52,7 +53,10 @@ export interface MouseSpec {
     litterCode: string;
     pupNumber: number;
     dob: string;
-    genotype?: string;
+    // Picked CATALOGUE CODES ('Nf1', 'WT'), not a genotype string: the mouse's
+    // rows are minted from these (mintGeneRefs), both alleles NULL = zygosity
+    // not recorded. Omitted or empty = not genotyped, which composes to '?'.
+    geneCodes?: string[];
     // WHEN the punch minted in addMouse physically happened — distinct from
     // dob: a mouse entered weeks after birth must not have its punch dated
     // to its birthday. Callers pass TODAY (@/lib/dueDates).
@@ -80,7 +84,7 @@ export function buildMouseCell(
         litterCode,
         pupOffsets,
         sex: spec.sex,
-        genotype: spec.genotype?.trim() || '?',
+        genes: mintGeneRefs(spec.geneCodes ?? []),
         signal: 'done',
         isAlive: true,
         attention: null,

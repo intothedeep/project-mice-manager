@@ -5,6 +5,7 @@ export type {
     Sex,
     PunchLocation,
     PunchRef,
+    GeneRef,
     MouseCaseTag,
     ParentCell,
     MouseParents,
@@ -18,6 +19,9 @@ export type {
 } from './grid';
 
 export type { PunchRow } from './punchRow';
+
+// gene.ts: the gene CATALOGUE row. What a mouse carries is GeneRef (grid.ts).
+export type { Gene } from './gene';
 
 // task.ts: old 4-value TaskStatus ('open'|'done'|'verified'|'cancelled') and
 // TaskCard — kept intact while apps/colony_client_web (parallel wave) migrates

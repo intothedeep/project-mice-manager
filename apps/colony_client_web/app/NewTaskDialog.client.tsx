@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { CodeBadgeSelect } from '@/components/ui/code-badge-select';
 
 type Values = Record<string, string | string[]>;
 
@@ -292,37 +292,16 @@ function FieldInput({
                 </select>
             );
         }
-        case 'genes': {
-            const selected = (value as string[]) ?? [];
+        case 'genes':
+            // GENE_CODES, not the gene catalogue: a "genes to check" list is
+            // about real markers, so it deliberately omits 'WT'.
             return (
-                <div className="flex flex-wrap gap-1.5">
-                    {GENE_CODES.map((g) => {
-                        const on = selected.includes(g);
-                        return (
-                            <button
-                                key={g}
-                                type="button"
-                                onClick={() =>
-                                    onChange(
-                                        on
-                                            ? selected.filter((x) => x !== g)
-                                            : [...selected, g]
-                                    )
-                                }
-                                className={cn(
-                                    'rounded-none border px-2.5 py-0.5 font-mono text-[11px] transition-colors',
-                                    on
-                                        ? 'border-primary bg-primary text-primary-foreground'
-                                        : 'border-border bg-background hover:bg-accent'
-                                )}
-                            >
-                                {g}
-                            </button>
-                        );
-                    })}
-                </div>
+                <CodeBadgeSelect
+                    options={GENE_CODES}
+                    selected={(value as string[]) ?? []}
+                    onChange={onChange}
+                />
             );
-        }
         case 'number':
             return (
                 <Input

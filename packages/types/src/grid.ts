@@ -45,6 +45,34 @@ export interface PunchRef {
     note?: string;
 }
 
+// One live `mice_genes` row: THIS mouse's copy of one gene from the catalogue
+// (see ./gene Gene), with the two alleles that row carries. `code` is the BARE
+// gene code ('Nf1', 'PlpCre', 'WT') — zygosity lives in the two allele fields,
+// never inside the code (migration 0029 supersedes 0014 on that point).
+//
+// The genotype string ("Nf1 f/+", "PlpCre +/+;Ai14 +/+") is a READ-TIME
+// projection composed from these rows and is NOT stored on MouseCell — same
+// rule as the mouse label and for the same reason. Compose with
+// lib/genotype.ts genotypeOf; never parse the result back apart.
+//
+// ACTIVE rows only, mirroring PunchRef: a removed gene row is tombstoned in
+// mice_genes, so no `deletedAt` appears here (grid.ts carries no tombstones).
+export interface GeneRef {
+    code: string;
+    // Paternal / maternal allele, rendered `code allelePat/alleleMat`.
+    // NULL = NOT RECORDED, which is what a marker with no zygosity to record
+    // ('PlpCre', 'WT') carries and what a new row is minted with. Both NULL
+    // renders the bare code. '+' is a RECORDED wild-type allele and is a
+    // DIFFERENT fact from NULL — "Nf1 +/+" vs "PlpCre" is that difference on
+    // screen. `| null` rather than `?` so every reader must handle it.
+    allelePat: string | null;
+    alleleMat: string | null;
+    // mice_genes.order_index — the ORDER the markers are written in. Significant
+    // for the rendered string ("PlpCre +/+;Nf1 f/+" vs the reverse), so the
+    // composer sorts on it instead of trusting array position.
+    orderIndex: number;
+}
+
 // Under Task model v2 the case is the primary entity and a task is a child
 // record (a case's detail/progress). This badge on a mouse cell represents
 // the CASE, not a task, hence "CaseTag" not "TaskTag". Colour reuses the
@@ -64,9 +92,11 @@ export interface MouseCaseTag {
 // surface does (see lib/mouseIdentity.ts + lib/mouseLabel.ts), so it never drifts from the
 // live punch/reclip state. An outside/unknown parent (metaId null) has no
 // MouseCell to resolve, so it keeps a plain snapshot string instead.
+// An in-grid parent carries NEITHER a label NOR a genotype: both are composed
+// from that parent's OWN MouseCell, resolved by metaId, so neither can drift
+// from the live rows (genotype: lib/genotype.ts genotypeOf over its GeneRef[]).
 export interface InGridParentCell {
     metaId: number;
-    genotype: string | null;
     genotypeColor: string | null; // tint for the parent's genotype sub-cell (same palette as MouseCell.genotypeColor)
 }
 
@@ -122,7 +152,7 @@ export interface MouseCell {
     // the sum is the same either way.
     pupOffsets: number[];
     sex: Sex;
-    genotype: string; // derived marker-combo label, e.g. "Nf1 f/+", "WT"
+    genes: GeneRef[]; // ACTIVE mice_genes rows only; [] = not genotyped, composes to '?'. The genotype STRING is composed at read time (lib/genotype.ts genotypeOf), never stored.
     signal: SignalColor;
     isAlive: boolean;
     attention: string | null; // short note surfaced on the cell (why it is flagged / planned)

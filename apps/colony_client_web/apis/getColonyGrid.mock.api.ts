@@ -1,4 +1,5 @@
-import type { ColonyGrid } from '@repo/types';
+import type { ColonyGrid, GeneRef } from '@repo/types';
+import { genotypeOf, UNKNOWN_GENOTYPE } from '@/lib/genotype';
 
 // Mock fetcher for the Cage Grid screen.
 //
@@ -40,6 +41,49 @@ const GENO: Record<string, string | null> = {
 
 // Resolve a genotype to its seed colour (missing/unknown → null = default background).
 const geno = (g: string): string | null => GENO[g] ?? null;
+
+// Hardcoded gene rows — the mock of `mice_genes`. Every set below is authored BY
+// HAND (owner: "mockdata hardcoding these values"); nothing here is derived by
+// parsing a genotype string, which is the defect this whole change removes.
+// Mice that carry the same markers share a set; a mouse with NO set (genes: [])
+// is NOT GENOTYPED and renders '?'.
+//
+// 'WT' is an ordinary row, not the empty state — see apis/getGenes.mock.api.ts.
+//
+// ALLELES: null = zygosity NOT RECORDED, which is what the markers that have no
+// zygosity to record carry ('WT', the 'PlpCre' driver) — those render as the
+// bare code. An explicit '+' is a RECORDED wild-type allele, which is why
+// G_NF1_PLUS_PLUS renders "Nf1 +/+" while G_WT renders "WT". The two are
+// different facts; see lib/genotype.ts.
+const G_WT: GeneRef[] = [
+    { code: 'WT', allelePat: null, alleleMat: null, orderIndex: 0 },
+];
+const G_NF1_F_PLUS: GeneRef[] = [
+    { code: 'Nf1', allelePat: 'f', alleleMat: '+', orderIndex: 0 },
+];
+const G_NF1_PLUS_PLUS: GeneRef[] = [
+    { code: 'Nf1', allelePat: '+', alleleMat: '+', orderIndex: 0 },
+];
+const G_NF1_F_F: GeneRef[] = [
+    { code: 'Nf1', allelePat: 'f', alleleMat: 'f', orderIndex: 0 },
+];
+const G_AI14_F_F: GeneRef[] = [
+    { code: 'Ai14', allelePat: 'f', alleleMat: 'f', orderIndex: 0 },
+];
+const G_PLPCRE_AI14_PLUS_PLUS: GeneRef[] = [
+    { code: 'PlpCre', allelePat: null, alleleMat: null, orderIndex: 0 },
+    { code: 'Ai14', allelePat: '+', alleleMat: '+', orderIndex: 1 },
+];
+const G_PLPCRE_NF1_F_PLUS: GeneRef[] = [
+    { code: 'PlpCre', allelePat: null, alleleMat: null, orderIndex: 0 },
+    { code: 'Nf1', allelePat: 'f', alleleMat: '+', orderIndex: 1 },
+];
+
+// Colour for a gene set, keyed through the SAME composer the grid renders with
+// (lib/genotype.ts) — never through a second hand-written string. A GENO key
+// that drifts from the composed form would silently fall back to "no fill" with
+// no compile error behind it, so there must be exactly one composer.
+const genoOf = (genes: GeneRef[]): string | null => geno(genotypeOf({ genes }));
 
 // Mate-group colours, keyed by the father-fanout group (color_assignments channel='mate').
 // A mouse carries one hex per group it belongs to; a female mated to two males → two hexes.
@@ -87,13 +131,13 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BCW',
                                     pupOffsets: [],
                                     sex: 'M',
-                                    genotype: 'Nf1 f/+',
+                                    genes: G_NF1_F_PLUS,
                                     signal: 'done',
                                     isAlive: true,
                                     attention:
                                         're-clip (.2) — re-genotype this week',
                                     dob: '2024-02-10',
-                                    genotypeColor: geno('Nf1 f/+'),
+                                    genotypeColor: genoOf(G_NF1_F_PLUS),
                                     // dates resolved from mates/tasks (plan §4). Migrated from
                                     // former separate-mouse record (metaId 401) — same animal.
                                     dates: {
@@ -130,12 +174,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'AYL',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2025-05-01',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                             ],
@@ -162,24 +206,22 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'AZZ',
                                     pupOffsets: [10],
                                     sex: 'M',
-                                    genotype: 'PlpCre;Nf1 f/+',
+                                    genes: G_PLPCRE_NF1_F_PLUS,
                                     signal: 'flag',
                                     isAlive: true,
                                     attention:
                                         "transfer offset '+10' — storage design pending (plan §5 Q45)",
                                     dob: '2026-05-20',
-                                    genotypeColor: geno('PlpCre;Nf1 f/+'),
+                                    genotypeColor: genoOf(G_PLPCRE_NF1_F_PLUS),
                                     mates: [],
                                     parents: {
                                         father: {
                                             metaId: 101,
-                                            genotype: 'Nf1 f/+',
-                                            genotypeColor: geno('Nf1 f/+'),
+                                            genotypeColor: genoOf(G_NF1_F_PLUS),
                                         },
                                         mother: {
                                             metaId: 102,
-                                            genotype: 'WT',
-                                            genotypeColor: geno('WT'),
+                                            genotypeColor: genoOf(G_WT),
                                         },
                                     },
                                 },
@@ -222,12 +264,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BEV',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'Nf1 +/+',
+                                    genes: G_NF1_PLUS_PLUS,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-02-01',
-                                    genotypeColor: geno('Nf1 +/+'),
+                                    genotypeColor: genoOf(G_NF1_PLUS_PLUS),
                                     mates: [],
                                     parents: {
                                         father: {
@@ -262,13 +304,13 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BCX',
                                     pupOffsets: [],
                                     sex: 'U',
-                                    genotype: '?',
+                                    genes: [],
                                     signal: 'plan',
                                     isAlive: true,
                                     attention:
                                         'unsexed pup — genotype + sex pending',
                                     dob: '2026-09-02',
-                                    genotypeColor: geno('?'),
+                                    genotypeColor: geno(UNKNOWN_GENOTYPE),
                                     mates: [],
                                     parents: {
                                         // Father is M4BCW (metaId 101) — the reclipped animal.
@@ -277,14 +319,13 @@ const COLONY_GRID: ColonyGrid = {
                                         // M4BCW.2 here instead of the bare M4BCW.
                                         father: {
                                             metaId: 101,
-                                            genotype: 'Nf1 f/+',
-                                            genotypeColor: geno('Nf1 f/+'),
+                                            genotypeColor: genoOf(G_NF1_F_PLUS),
                                         },
                                         mother: {
                                             metaId: 402,
-                                            genotype: 'PlpCre;Ai14 +/+',
-                                            genotypeColor:
-                                                geno('PlpCre;Ai14 +/+'),
+                                            genotypeColor: genoOf(
+                                                G_PLPCRE_AI14_PLUS_PLUS
+                                            ),
                                         },
                                     },
                                 },
@@ -306,12 +347,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BCX',
                                     pupOffsets: [],
                                     sex: 'U',
-                                    genotype: '?',
+                                    genes: [],
                                     signal: 'plan',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-09-02',
-                                    genotypeColor: geno('?'),
+                                    genotypeColor: geno(UNKNOWN_GENOTYPE),
                                     mates: [],
                                 },
                             ],
@@ -345,13 +386,13 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BCW',
                                     pupOffsets: [],
                                     sex: 'M',
-                                    genotype: 'Nf1 f/f',
+                                    genes: G_NF1_F_F,
                                     signal: 'instruction',
                                     isAlive: true,
                                     attention:
                                         're-genotype + set up mating this week',
                                     dob: '2024-03-01',
-                                    genotypeColor: geno('Nf1 f/f'),
+                                    genotypeColor: genoOf(G_NF1_F_F),
                                     mates: [
                                         {
                                             partnerId: 'F9AYL',
@@ -379,13 +420,13 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'AYL',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'Nf1 f/+',
+                                    genes: G_NF1_F_PLUS,
                                     signal: 'plan',
                                     isAlive: true,
                                     attention:
                                         'mated with two males (BEZ line-up)',
                                     dob: '2025-04-01',
-                                    genotypeColor: geno('Nf1 f/+'),
+                                    genotypeColor: genoOf(G_NF1_F_PLUS),
                                     mates: [
                                         {
                                             partnerId: 'M1BCW',
@@ -425,12 +466,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BEZ',
                                     pupOffsets: [],
                                     sex: 'M',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2024-06-01',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [
                                         {
                                             partnerId: 'F9AYL',
@@ -478,12 +519,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BGX',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'Ai14 f/f',
+                                    genes: G_AI14_F_F,
                                     signal: 'dead',
                                     isAlive: false,
                                     attention: "sac'd 09-05",
                                     dob: '2025-01-15',
-                                    genotypeColor: geno('Ai14 f/f'),
+                                    genotypeColor: genoOf(G_AI14_F_F),
                                     mates: [],
                                 },
                             ],
@@ -526,12 +567,14 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'AYL',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'PlpCre;Ai14 +/+',
+                                    genes: G_PLPCRE_AI14_PLUS_PLUS,
                                     signal: 'plan',
                                     isAlive: true,
                                     attention: 'set up mating with M4BCW',
                                     dob: '2025-06-15',
-                                    genotypeColor: geno('PlpCre;Ai14 +/+'),
+                                    genotypeColor: genoOf(
+                                        G_PLPCRE_AI14_PLUS_PLUS
+                                    ),
                                     dates: {
                                         lastMating: '2026-07-01',
                                         plug: '2026-07-03',
@@ -586,12 +629,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'M',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-03-01',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -612,12 +655,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'flag',
                                     isAlive: true,
                                     attention: 'small wound on flank — check',
                                     dob: '2025-02-01',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                             ],
@@ -644,24 +687,22 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'BFA',
                                     pupOffsets: [],
                                     sex: 'U',
-                                    genotype: '?',
+                                    genes: [],
                                     signal: 'plan',
                                     isAlive: true,
                                     attention:
                                         'new pup — sex + genotype pending',
                                     dob: '2026-08-20',
-                                    genotypeColor: geno('?'),
+                                    genotypeColor: geno(UNKNOWN_GENOTYPE),
                                     mates: [],
                                     parents: {
                                         father: {
                                             metaId: 601,
-                                            genotype: 'WT',
-                                            genotypeColor: geno('WT'),
+                                            genotypeColor: genoOf(G_WT),
                                         },
                                         mother: {
                                             metaId: 602,
-                                            genotype: 'WT',
-                                            genotypeColor: geno('WT'),
+                                            genotypeColor: genoOf(G_WT),
                                         },
                                     },
                                 },
@@ -692,12 +733,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'M',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-01-10',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -718,12 +759,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'M',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-02-15',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -744,12 +785,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-03-01',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -770,12 +811,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-03-20',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -796,12 +837,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'F',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-04-05',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -822,12 +863,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'M',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
                                     dob: '2026-05-01',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -848,12 +889,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'U',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'plan',
                                     isAlive: true,
                                     attention: 'litter pup — not yet weaned',
                                     dob: '2026-09-04',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                                 {
@@ -874,12 +915,12 @@ const COLONY_GRID: ColonyGrid = {
                                     litterCode: 'WT',
                                     pupOffsets: [],
                                     sex: 'U',
-                                    genotype: 'WT',
+                                    genes: G_WT,
                                     signal: 'plan',
                                     isAlive: true,
                                     attention: 'litter pup — not yet weaned',
                                     dob: '2026-09-10',
-                                    genotypeColor: geno('WT'),
+                                    genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
                             ],

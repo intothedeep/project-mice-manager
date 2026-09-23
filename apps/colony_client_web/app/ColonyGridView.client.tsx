@@ -50,6 +50,7 @@ import {
 } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
+import { genotypeOf } from '@/lib/genotype';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -186,6 +187,14 @@ export function ColonyGridView() {
         return mouse ? composed(mouse) : null;
     };
 
+    // Same contract for the parent's GENOTYPE: an in-grid parent no longer
+    // carries a copied string (9d did this for the label, step 9f for the
+    // genotype) — it resolves its own MouseCell and composes from its gene rows.
+    const resolveParentGenotype = (metaId: number): string | null => {
+        const mouse = mouseByMetaId.get(metaId);
+        return mouse ? genotypeOf(mouse) : null;
+    };
+
     const on = isFilterActive(filter);
     const match = useMemo(
         () => (m: MouseCell) => matchesMouse(m, filter),
@@ -222,7 +231,7 @@ export function ColonyGridView() {
             l.cages.forEach((c) =>
                 c.slots.forEach((s) =>
                     s.mice.forEach((m) => {
-                        if (m.genotype === hlGenotype) {
+                        if (genotypeOf(m) === hlGenotype) {
                             lines.add(l.lineId);
                             cages.add(c.cageId);
                             slots.add(s.slotId);
@@ -302,7 +311,7 @@ export function ColonyGridView() {
                                       mouseId: m.metaId,
                                   })
                                 : selection.kind === 'genotype'
-                                  ? m.genotype === selection.value
+                                  ? genotypeOf(m) === selection.value
                                   : m.mates.some(
                                         (mt) => mt.color === selection.color
                                     );
@@ -381,7 +390,7 @@ export function ColonyGridView() {
                 s.mice.map((m) => ({
                     id: m.metaId,
                     label: composed(m),
-                    hint: m.genotype,
+                    hint: genotypeOf(m),
                 }))
             )
         )
@@ -555,7 +564,7 @@ export function ColonyGridView() {
                                         slotId: s.slotId,
                                         mouseId: m.metaId,
                                     }) ||
-                                    genoMouse(m.genotype) ||
+                                    genoMouse(genotypeOf(m)) ||
                                     mateMouse(m);
                                 // Tail [+] anchors: per COLUMN, only the BOTTOM-MOST highlighted
                                 // cell within this line carries the icon (user rule). Prefill is
@@ -860,6 +869,9 @@ export function ColonyGridView() {
                                                                                         resolveParentLabel={
                                                                                             resolveParentLabel
                                                                                         }
+                                                                                        resolveParentGenotype={
+                                                                                            resolveParentGenotype
+                                                                                        }
                                                                                         onOpen={() => {
                                                                                             setCaseDrawer(
                                                                                                 null
@@ -888,7 +900,9 @@ export function ColonyGridView() {
                                                                                         }
                                                                                         onGenotype={() =>
                                                                                             pickGenotype(
-                                                                                                m.genotype
+                                                                                                genotypeOf(
+                                                                                                    m
+                                                                                                )
                                                                                             )
                                                                                         }
                                                                                         onMate={
@@ -1001,6 +1015,7 @@ export function ColonyGridView() {
                 selected={detail}
                 onClose={() => setDetail(null)}
                 resolveParentLabel={resolveParentLabel}
+                resolveParentGenotype={resolveParentGenotype}
             />
 
             <MouseCaseDrawer
@@ -1697,6 +1712,7 @@ function ParentRow({
     parent,
     onJump,
     resolveLabel,
+    resolveGenotype,
     divider,
 }: {
     tint: string;
@@ -1706,6 +1722,8 @@ function ParentRow({
     // that parent's own MouseCell and composes it. null = the metaId has no
     // row in this payload (not-found fallback, §19), never a throw.
     resolveLabel: (metaId: number) => string | null;
+    // Same for the genotype, which an in-grid parent likewise no longer carries.
+    resolveGenotype: (metaId: number) => string | null;
     divider?: boolean;
 }) {
     // min-h-0 + no flex-1: the parent cell is now a 2-row grid, so the track
@@ -1732,6 +1750,12 @@ function ParentRow({
         parent.metaId == null
             ? parent.snapshotLabel
             : (resolved ?? '(unresolved)');
+    // Outside parent -> its snapshot genotype (nothing to resolve); in-grid
+    // parent -> composed from its OWN gene rows, so it cannot drift.
+    const genotype =
+        parent.metaId == null
+            ? parent.genotype
+            : resolveGenotype(parent.metaId);
     return (
         <div className={base}>
             <button
@@ -1755,7 +1779,7 @@ function ParentRow({
                 {label}
             </button>
             <span
-                title={parent.genotype ?? undefined}
+                title={genotype ?? undefined}
                 style={
                     parent.genotypeColor
                         ? { backgroundColor: `${parent.genotypeColor}22` }
@@ -1763,7 +1787,7 @@ function ParentRow({
                 }
                 className="flex items-center truncate border-l border-border/40 px-1 font-mono text-[9px]"
             >
-                {parent.genotype ?? '—'}
+                {genotype ?? '—'}
             </span>
         </div>
     );
@@ -1816,6 +1840,7 @@ function MouseRow({
     onMove,
     onJumpMouse,
     resolveParentLabel,
+    resolveParentGenotype,
     onGenotype,
     onMate,
     onOpenCases,
@@ -1841,6 +1866,8 @@ function MouseRow({
     // Resolves an in-grid ParentCell's label from its own MouseCell (plan §5
     // Q46 option C) — forwarded to ParentRow.
     resolveParentLabel: (metaId: number) => string | null;
+    // Same, for the parent's composed genotype — forwarded to ParentRow.
+    resolveParentGenotype: (metaId: number) => string | null;
     onGenotype: () => void;
     onMate: (color: string) => void;
     onOpenCases: (target: CaseDrawerTarget) => void;
@@ -1956,11 +1983,11 @@ function MouseRow({
                                     e.stopPropagation();
                                     onGenotype();
                                 }}
-                                title={`highlight genotype: ${mouse.genotype}`}
+                                title={`highlight genotype: ${genotypeOf(mouse)}`}
                                 className="w-full text-left hover:underline"
                             >
                                 <span className="truncate font-mono text-[11px]">
-                                    {mouse.genotype}
+                                    {genotypeOf(mouse)}
                                 </span>
                             </button>
                         </div>
@@ -2099,12 +2126,14 @@ function MouseRow({
                                 parent={mouse.parents?.father}
                                 onJump={onJumpMouse}
                                 resolveLabel={resolveParentLabel}
+                                resolveGenotype={resolveParentGenotype}
                             />
                             <ParentRow
                                 tint="bg-pink-100"
                                 parent={mouse.parents?.mother}
                                 onJump={onJumpMouse}
                                 resolveLabel={resolveParentLabel}
+                                resolveGenotype={resolveParentGenotype}
                                 divider
                             />
                         </div>

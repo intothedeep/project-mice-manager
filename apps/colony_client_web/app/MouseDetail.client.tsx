@@ -51,6 +51,7 @@ export function MouseDetailDrawer({
     selected,
     onClose,
     resolveParentLabel,
+    resolveParentGenotype,
 }: {
     selected: SelectedMouse | null;
     onClose: () => void;
@@ -58,6 +59,9 @@ export function MouseDetailDrawer({
     // Q46 option C) — same resolver ColonyGridView hands to ParentRow. null =
     // the parent's metaId has no row in this payload (not-found fallback).
     resolveParentLabel: (metaId: number) => string | null;
+    // Same for the parent's composed genotype — an in-grid parent carries no
+    // genotype string either; it is composed from that parent's gene rows.
+    resolveParentGenotype: (metaId: number) => string | null;
 }) {
     const cases = useTasks();
     const taskLog = useTaskLog();
@@ -188,7 +192,11 @@ export function MouseDetailDrawer({
                                                             {pLabel}
                                                         </span>
                                                         <span className="font-mono text-[11px] text-muted-foreground">
-                                                            {p.genotype ?? ''}
+                                                            {(p.metaId == null
+                                                                ? p.genotype
+                                                                : resolveParentGenotype(
+                                                                      p.metaId
+                                                                  )) ?? ''}
                                                         </span>
                                                     </li>
                                                 );

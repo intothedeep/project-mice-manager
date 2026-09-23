@@ -1,12 +1,13 @@
 import type { MouseCell, Sex, SignalColor } from '@repo/types';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
+import { genotypeOf } from '@/lib/genotype';
 
 // Pure filter core for the Hybrid grid — no state, no I/O. The client component
 // holds the GridFilter in React state; these functions decide match/active so
 // the "dim non-matching" logic stays deterministic and testable.
 
 export interface GridFilter {
-    query: string; // substring over the composed label + genotype
+    query: string; // substring over the composed label + the composed genotype
     sexes: Sex[]; // empty = all sexes
     signals: SignalColor[]; // empty = all signals
 }
@@ -22,7 +23,7 @@ export function matchesMouse(m: MouseCell, f: GridFilter): boolean {
     if (
         q &&
         !mouseLabelOf(m).toLowerCase().includes(q) &&
-        !m.genotype.toLowerCase().includes(q)
+        !genotypeOf(m).toLowerCase().includes(q)
     ) {
         return false;
     }

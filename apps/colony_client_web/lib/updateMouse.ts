@@ -14,10 +14,17 @@ import {
     type AddMouseResult,
     type Counters,
 } from '@/lib/colonyMutationHelpers';
+import { geneRefsEqual, mintGeneRefs } from '@/lib/genotype';
 
 export interface UpdateMousePatch {
     sex?: Sex;
-    genotype?: string;
+    // The mouse's genotype is edited as a SET OF CATALOGUE CODES, never as a
+    // string: the rows are the fact, the string is a read-time projection of
+    // them (lib/genotype.ts). The picked set REPLACES the mouse's rows; a code
+    // that is still picked keeps its alleles, a new one is minted with both
+    // alleles NULL — zygosity not recorded, never an assumed wild-type pair
+    // (mintGeneRefs). [] = not genotyped, which composes back to '?'.
+    geneCodes?: string[];
     dob?: string;
     signal?: SignalColor;
     isAlive?: boolean;
@@ -56,10 +63,10 @@ export function updateMouse(
         changed = true;
     }
 
-    if (patch.genotype !== undefined) {
-        const newGeno = patch.genotype.trim() || '?';
-        if (newGeno !== current.genotype) {
-            updated.genotype = newGeno;
+    if (patch.geneCodes !== undefined) {
+        const genes = mintGeneRefs(patch.geneCodes, current.genes);
+        if (!geneRefsEqual(genes, current.genes)) {
+            updated.genes = genes;
             updated.genotypeColor = null; // old color is a lie for new genotype
             changed = true;
         }
