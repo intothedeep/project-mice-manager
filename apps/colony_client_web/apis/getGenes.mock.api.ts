@@ -14,8 +14,9 @@ import type { Gene } from '@repo/types';
 // were modelled as the empty state those two facts would collapse into one and
 // every wild-type mouse would look like it still needs genotyping.
 //
-// 'ccEGFP' is in the catalogue but carried by no mouse in the seed grid — also
-// deliberate: a catalogue exists independently of who currently carries what.
+// A catalogue exists independently of who currently carries what — but every
+// code here is now carried by at least one seed mouse (ccEGFP by M7AZZ), so no
+// catalogue row is reachable only through the pickers.
 // sortKey is the DISPLAY ORDER of the gene within a composed genotype, in the
 // lab's own writing order — the professor writes 'PlpCre;Nf1 f/+', so PlpCre
 // sorts first. Gaps of 10 so a future gene can be inserted between two existing

@@ -16,6 +16,12 @@ import { genotypeOf, UNKNOWN_GENOTYPE } from '@/lib/genotype';
 //   - F10BEVe  : ear-tag suffix "e"
 //   - M4BCW    : reclip animal — ".2" label is READ-TIME derived from
 //                Tissue-collection done cases (Option C). No stored suffix.
+//   - F11BEVee : two active ear punches — the "ee" label form (Q41)
+//   - F6BCW    : "Nf1 f/?" — one side of the pair not recorded (a NULL allele
+//                beside a recorded one), distinct from both "Nf1 f/+" and "Nf1"
+//   - M7AZZ    : carries ccEGFP — the catalogue's reporter, now held by a mouse
+//   - M6BGX    : "PlpCre;Ai14 +/-" — the '-' allele token, and the mouse that
+//                realises line 2's nominal genotype colour
 //
 // NOTE (T6): activeTasks removed from all MouseCell objects. Badges are now
 // derived from the case store (useTasks + signalColorOf) in ColonyGridView,
@@ -88,6 +94,26 @@ const G_PLPCRE_AI14_PLUS_PLUS: GeneRef[] = [
 const G_PLPCRE_NF1_F_PLUS: GeneRef[] = [
     { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
     { code: 'Nf1', alleleMat: 'f', allelePat: '+', sortKey: 20 },
+];
+// One side recorded, the other not: the maternal copy is floxed, the paternal
+// copy was never assessed. Renders "Nf1 f/?" — a THIRD fact beside "Nf1 f/+"
+// (both sides recorded) and bare "Nf1" (neither recorded), so the half-known
+// case cannot be read as either of them.
+const G_NF1_F_UNKNOWN: GeneRef[] = [
+    { code: 'Nf1', alleleMat: 'f', allelePat: null, sortKey: 20 },
+];
+// The catalogue's reporter, carried by a mouse: zygosity not recorded, so it
+// renders as the bare code exactly as the PlpCre driver does.
+const G_CCEGFP: GeneRef[] = [
+    { code: 'ccEGFP', alleleMat: null, allelePat: null, sortKey: 40 },
+];
+// '-' = a recorded NULL/knockout allele, the third allele token beside '+' and
+// 'f'. Composes to 'PlpCre;Ai14 +/-', which is line 2's nominal genotype — so
+// this set is what makes that line's rail colour a colour some mouse actually
+// has, not a colour key with no carrier.
+const G_PLPCRE_AI14_PLUS_MINUS: GeneRef[] = [
+    { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
+    { code: 'Ai14', alleleMat: '+', allelePat: '-', sortKey: 30 },
 ];
 
 // Colour for a gene set, keyed through the SAME composer the grid renders with
@@ -193,6 +219,28 @@ const COLONY_GRID: ColonyGrid = {
                                     genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
+                                {
+                                    metaId: 104,
+                                    punches: [
+                                        {
+                                            punchId: 45,
+                                            location: 'untagged',
+                                            effectiveAt: '2025-07-01',
+                                        },
+                                    ],
+                                    pupNumber: 6,
+                                    litterCode: 'BCW',
+                                    pupOffsets: [],
+                                    sex: 'F',
+                                    genes: G_NF1_F_UNKNOWN,
+                                    signal: 'flag',
+                                    isAlive: true,
+                                    attention:
+                                        'paternal Nf1 allele never assessed — renders "Nf1 f/?"',
+                                    dob: '2025-07-01',
+                                    genotypeColor: genoOf(G_NF1_F_UNKNOWN),
+                                    mates: [],
+                                },
                             ],
                         },
                         {
@@ -230,6 +278,28 @@ const COLONY_GRID: ColonyGrid = {
                                         mother: { metaId: 102 },
                                     },
                                 },
+                                {
+                                    metaId: 105,
+                                    punches: [
+                                        {
+                                            punchId: 46,
+                                            location: 'untagged',
+                                            effectiveAt: '2025-08-10',
+                                        },
+                                    ],
+                                    pupNumber: 7,
+                                    litterCode: 'AZZ',
+                                    pupOffsets: [],
+                                    sex: 'M',
+                                    genes: G_CCEGFP,
+                                    signal: 'done',
+                                    isAlive: true,
+                                    attention:
+                                        'reporter-only animal — carries the ccEGFP catalogue row',
+                                    dob: '2025-08-10',
+                                    genotypeColor: genoOf(G_CCEGFP),
+                                    mates: [],
+                                },
                             ],
                         },
                     ],
@@ -257,8 +327,9 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'ear',
                                             effectiveAt: '2026-03-01',
                                         },
-                                        // No fixture mouse carries two active ear punches, so the
-                                        // "ee" form (Q41) has no seed coverage — deliberate (owner).
+                                        // Its litter-mate F11BEVee below carries TWO ear punches
+                                        // and composes the "ee" form (Q41); this mouse keeps the
+                                        // single-punch "e" so both forms are on screen at once.
                                         {
                                             punchId: 27,
                                             location: 'untagged',
@@ -351,6 +422,43 @@ const COLONY_GRID: ColonyGrid = {
                                     attention: null,
                                     dob: '2026-09-02',
                                     genotypeColor: geno(UNKNOWN_GENOTYPE),
+                                    mates: [],
+                                },
+                                {
+                                    metaId: 204,
+                                    punches: [
+                                        // TWO active ear punches — one 'e' per
+                                        // punch, so this mouse composes the "ee"
+                                        // form (Q41). The second punch is a
+                                        // separate row, never an edit of the
+                                        // first: the label counts rows.
+                                        {
+                                            punchId: 47,
+                                            location: 'ear',
+                                            effectiveAt: '2026-03-01',
+                                        },
+                                        {
+                                            punchId: 48,
+                                            location: 'ear',
+                                            effectiveAt: '2026-04-05',
+                                        },
+                                        {
+                                            punchId: 49,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-02-01',
+                                        },
+                                    ],
+                                    pupNumber: 11,
+                                    litterCode: 'BEV',
+                                    pupOffsets: [],
+                                    sex: 'F',
+                                    genes: G_NF1_PLUS_PLUS,
+                                    signal: 'done',
+                                    isAlive: true,
+                                    attention:
+                                        're-punched — second ear mark, label reads "ee"',
+                                    dob: '2026-02-01',
+                                    genotypeColor: genoOf(G_NF1_PLUS_PLUS),
                                     mates: [],
                                 },
                             ],
@@ -523,6 +631,30 @@ const COLONY_GRID: ColonyGrid = {
                                     attention: "sac'd 09-05",
                                     dob: '2025-01-15',
                                     genotypeColor: genoOf(G_AI14_F_F),
+                                    mates: [],
+                                },
+                                {
+                                    metaId: 302,
+                                    punches: [
+                                        {
+                                            punchId: 50,
+                                            location: 'untagged',
+                                            effectiveAt: '2025-01-15',
+                                        },
+                                    ],
+                                    pupNumber: 6,
+                                    litterCode: 'BGX',
+                                    pupOffsets: [],
+                                    sex: 'M',
+                                    genes: G_PLPCRE_AI14_PLUS_MINUS,
+                                    signal: 'done',
+                                    isAlive: true,
+                                    attention:
+                                        "carries the line's nominal genotype — the '-' allele",
+                                    dob: '2025-01-15',
+                                    genotypeColor: genoOf(
+                                        G_PLPCRE_AI14_PLUS_MINUS
+                                    ),
                                     mates: [],
                                 },
                             ],
