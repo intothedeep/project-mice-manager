@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x]; 4 = professor GATE; 6 + sex-editor [~] IN FLIGHT; NEW 6a + 7 + 9e + 10 + SEED_COLONY note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 4 = professor GATE; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + 9e + 10 + NEW 12 (replacement edit surface) + SEED_COLONY note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -145,21 +145,56 @@ Each task lists AC = deterministic acceptance criteria.
 > because the state shape it operates on has no room for what it demands.
 > **IN FLIGHT (developers dispatched 2026-09-22): step 6** `lib/punchMutations.ts`
 > (the NEW-module requirement stands on SRP alone, since 8b took the file to 307;
-> now BLOCKED-BY 6a) **and the inline sex editor**, whose design question the
-> OWNER DECIDED 2026-09-22: **the control goes in the mouse-detail drawer, not
-> the grid cell.**
+> now BLOCKED-BY 6a) **and NEW step 11 — REMOVE inline cell editing.**
+> **INLINE CELL EDITING IS REMOVED — OWNER DECIDED 2026-09-22:** *"lets simplify
+> we will remove cell click edit feature from now on > work this first no more
+> cell direct update. delete all related code."* / *"we use a edit modal or mouse
+> drawer to update a mouse data."* The inline `sex` editor shipped (`b5a990b`)
+> and got a reviewer **PASS** (data layer proven — `U5BFA`→`F5BFA`→`M5BFA`→
+> `U5BFA`, no `mouseLabel` key, `SEED_COLONY` unmutated, no grid-cell control,
+> check-types/lint 0; interaction layer explicitly **NOT VERIFIED**, no browser),
+> but it is closed **SUPERSEDED, not shipped** — and the three interaction
+> defects the reviewer found BY READING are the EVIDENCE BASE for the removal,
+> not incidental bugs: a native `<select>` never blurs on pick so the edit sits
+> uncommitted with no Save affordance; Escape closes the whole Sheet because
+> Radix registers on `ownerDocument` with `capture: true`, ahead of React, making
+> `editable-cell.tsx:115-116`'s "stop propagation" comment false; and
+> pick-then-overlay-dismiss can SILENTLY LOSE the edit (Radix dismisses on
+> `pointerdown`). KEPT through the removal (task 12 is their consumer): the
+> drawer's live-lookup staleness fix (ruled ENTAILED by the AC, not scope creep —
+> the click-time snapshot renders `U5BFA` after the edit and fails the AC) and
+> the store-direct `updateMouse` wiring. The earlier "the control goes in the
+> mouse-detail drawer" ruling is SUPERSEDED — the owner reopened the surface as
+> "edit modal **or** mouse drawer", so 12 does NOT inherit "drawer" as decided.
+> **NEW 11** (`[~]`, developer dispatched) deletes `components/ui/editable-cell.tsx`
+> + its three consumers (grid genotype + dob, drawer sex); the cells go read-only
+> with no dead double-click affordance; nothing else changes. An `x_` rename is
+> NOT a soft delete here (both tsconfigs `exclude: ["**/x_*"]`), so the file goes
+> as an ordinary reviewable diff, recoverable from git. **NEW 12** (`[ ]`,
+> BLOCKED-BY 11) is the replacement edit surface — **OPEN, architect owns it:**
+> modal vs drawer, the shape of the part-by-part label editor, and P0.7-b vs P0.8
+> allocation. Owner's requirement, verbatim: *"for mouse label we will show all
+> part by part so we can edit each"* — which is the closure of 9a (no free-text
+> label, no sex back-inference) and 9b (no stored label); 12 must not reintroduce
+> either. **The window between 11 and 12, in which NO mouse field is editable in
+> the app, is DELIBERATE (owner chose removal first) — not a regression.**
 > Still open: 6a (blocks 6), 7 (BLOCKED-BY 6), 10 (BLOCKED-BY 6a + 7 +
-> Q43-narrow), and NEW **9e —
+> Q43-narrow), **NEW 11 `[~]` / 12 `[ ]` (inline-edit removal + replacement
+> surface — see the paragraph above)**, and NEW **9e —
 > DELETE the dead code (owner decided 2026-09-22)**: `nextLitterCode` (zero
 > consumers, re-grepped; the live path is counter-based on purpose),
 > `apis/getMouseDetail.mock.api.ts` (zero importers) and the `MouseDetail` /
 > `GeneCall` / `HistoryEvent` types that die with it — explicitly NOT a 9c-style
 > knowledge move, since `GeneCall`'s baked `"f/+"` allele is the old genotype
 > model P1 abolishes; sequenced AFTER 6a and step 6 (shared `packages/types`).
-> ALSO OPEN, architect owns the ruling (recorded, not designed): the
-> ZERO-ACTIVE-PUNCHES question is still UNDECIDED (floor vs no floor), and the
-> owner answered it with a PROPOSAL rather than a pick — a new `untagged` punch
-> type for pups that arrive with no tag. Three collisions recorded on step 10:
+> **`untagged` PUNCH LOCATION — OWNER DECIDED 2026-09-22: ADOPT IT** (*"add this
+> type into enum for punchs table"*), overruling the architect's earlier
+> recommendation against it; the architect is now DESIGNING it. CORRECTS the
+> earlier "the owner answered with a PROPOSAL rather than a pick" framing. Still
+> OPEN and architect-owned (recorded, not designed): the ZERO-ACTIVE-PUNCHES
+> question (floor vs no floor) — adopting `untagged` did not pick a branch. The
+> three collisions stay on the record as what the design must answer; they are
+> not dissolved by the decision. Three collisions recorded on step 10:
 > `punch_location` is a CLOSED CHECK in `0026` (a fourth value is a migration),
 > **plan §5 Q42 is open and asks exactly whether that CHECK is closed**, and it
 > may contradict shipped task 8c, which mints `location: 'toe'` at creation.
