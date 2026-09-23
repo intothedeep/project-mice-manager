@@ -230,10 +230,24 @@ plug check     subjectMouseId  →  어미만            ← 기존 칸, 새 필
 **막는 것:** `mates` 행을 만드는 흐름이 아직 없습니다. Record Litter UI 와 같은
 자리(DB 필요)라 E-5 와 함께 갑니다.
 
-**지금 바로 가능한 것 하나:** `subjectKind: 'mice'` 묶음 케이스는 `mice[]` 가
-**이미 id 를 들고 있는데** 라벨을 따로 저장합니다. 쥐 케이스(`9dda31d`)와 똑같은
-결함이고 새 필드가 필요 없습니다. 오늘 화면에도 보입니다 — 단일 선택기는 `.N` 을
-붙이는데 묶음 헤더는 맨 이름입니다.
+**정정 (2026-09-23): 제가 "cage·litter 는 FK 가 없어서 라벨 저장이 정당하다"고
+말씀드린 건 틀렸습니다.** `CaseCard` 만 보고 `cases` 테이블을 안 봤습니다.
+DB 에는 **전부 있습니다**:
+
+```
+subject_mouse_id → mouse_meta     subject_cage_id → cages
+subject_mate_id  → mates          litter_id       → litters
+subject_slot_id  → slots          subject_line_id → mouse_lines
+                                  case_mice 조인 테이블 (묶음)
+```
+
+**`subject_mate_id` 도 이미 있습니다 — 마이그레이션이 필요 없습니다.**
+
+진짜 그림: **DB 는 모든 주어를 제대로 모델링하는데, 클라이언트 DTO 가 FK 를 전부
+버리고 문자열 하나로 대체했습니다.** 그래서 이 결함은 `mate` 만의 문제가 아니라
+**`mouse` 를 뺀 전부**입니다. `9dda31d` 가 그중 하나를 고친 것입니다.
+
+할 일은 스키마 변경이 아니라 **DTO 를 테이블에 맞추는 것**입니다.
 
 ### C-4. pup-ID 명세가 틀렸습니다 — 구현이 맞습니다
 
