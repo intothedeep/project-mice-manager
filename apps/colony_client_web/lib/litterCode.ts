@@ -42,14 +42,3 @@ export function formatLitterCode(seq: number): string {
     }
     return out;
 }
-
-/**
- * Advance a litter code by one step. ZZZ→AAAA rollover is automatic because
- * the codec encodes ordinals and incrementing an ordinal is just +1.
- */
-export function nextLitterCode(current: string): string {
-    const ord = parseLitterCode(current);
-    // If somehow called with an invalid code, return AAA as a safe fallback.
-    if (ord === null) return 'AAA';
-    return formatLitterCode(ord + 1);
-}

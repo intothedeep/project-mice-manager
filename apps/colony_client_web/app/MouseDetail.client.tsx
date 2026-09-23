@@ -44,7 +44,8 @@ export interface SelectedMouse {
 
 // Store-driven: the drawer reflects the SAME live data as the dashboard grid —
 // identity from the MouseCell, cases + append-only history from the case store
-// (useTasks / useTaskLog). No separate getMouseDetail seed (which drifted).
+// (useTasks / useTaskLog). There is no separate mock-detail fetch; the drawer
+// reads only from the live colony/case stores.
 export function MouseDetailDrawer({
     selected,
     onClose,
