@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 4 = professor GATE; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + 9e + 10 + NEW 12 (replacement edit surface) + SEED_COLONY note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 4 = professor GATE; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + NEW 8d (`untagged` punch location) + 9e + 10 + NEW 12 (replacement edit surface, design RULED) + SEED_COLONY note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -164,23 +164,51 @@ Each task lists AC = deterministic acceptance criteria.
 > drawer's live-lookup staleness fix (ruled ENTAILED by the AC, not scope creep —
 > the click-time snapshot renders `U5BFA` after the edit and fails the AC) and
 > the store-direct `updateMouse` wiring. The earlier "the control goes in the
-> mouse-detail drawer" ruling is SUPERSEDED — the owner reopened the surface as
-> "edit modal **or** mouse drawer", so 12 does NOT inherit "drawer" as decided.
+> mouse-detail drawer" ruling was SUPERSEDED when the owner reopened the surface
+> as "edit modal **or** mouse drawer" — and the ARCHITECT HAS NOW RULED it back
+> to the DRAWER (2026-09-22, see 12 below).
 > **NEW 11** (`[~]`, developer dispatched) deletes `components/ui/editable-cell.tsx`
 > + its three consumers (grid genotype + dob, drawer sex); the cells go read-only
 > with no dead double-click affordance; nothing else changes. An `x_` rename is
 > NOT a soft delete here (both tsconfigs `exclude: ["**/x_*"]`), so the file goes
 > as an ordinary reviewable diff, recoverable from git. **NEW 12** (`[ ]`,
-> BLOCKED-BY 11) is the replacement edit surface — **OPEN, architect owns it:**
-> modal vs drawer, the shape of the part-by-part label editor, and P0.7-b vs P0.8
-> allocation. Owner's requirement, verbatim: *"for mouse label we will show all
-> part by part so we can edit each"* — which is the closure of 9a (no free-text
-> label, no sex back-inference) and 9b (no stored label); 12 must not reintroduce
-> either. **The window between 11 and 12, in which NO mouse field is editable in
-> the app, is DELIBERATE (owner chose removal first) — not a regression.**
+> BLOCKED-BY 11, SEQUENCED AFTER 10) is the replacement edit surface — **DESIGN
+> RULED 2026-09-22:** the surface is the **DRAWER** (`MouseDetailDrawer` exists,
+> is store-driven, already carries the live-lookup fix a modal would re-solve);
+> the shape is an **EDIT MODE on the Identity section** — pencil toggle, LOCAL
+> draft, Save/Cancel, ONE atomic `updateMouse(metaId, patch)` on Save, NOT
+> per-field live commit (the composed label must be visible before it is
+> committed); the phase is **P0.7-b** (9a killed label-as-input, 9b killed
+> label-as-storage, "edit the parts" is the closing move; no P0.8 deliverable is
+> a field-edit surface). EDITABLE: `sex`, `genotype`, `dob`. READ-ONLY, each with
+> its reason shown: `pupNumber` (birth number, immutable — typo correction OPEN
+> for the owner), `litterCode` (membership, not text — re-parenting is a separate
+> flow), `pupOffsets` ("assigned on transfer"; P0.8's transfer flow is the only
+> writer), punches (read-only projection → step 10's section, no second
+> add/remove UI), `.N` (derived from done/verified Tissue-collection cases). The
+> live result composes through `composeMouseLabel(buildMouseLabel(...))` — never
+> a template string, never a second builder; ACs are DATA-FLOW DIRECTION (labels
+> flow OUT to render, never IN to a mutation) plus the 603 probe (`U5BFA`→`F5BFA`
+> in drawer AND grid, no label write). Owner's requirement, verbatim: *"for mouse
+> label we will show all part by part so we can edit each"* — the closure of 9a
+> (no free-text label, no sex back-inference) and 9b (no stored label); 12 must
+> not reintroduce either. **The window between 11 and 12, in which NO mouse field
+> is editable in the app, is DELIBERATE (owner chose removal first and REAFFIRMED
+> it 2026-09-22 — no stopgap control) — not a regression, and SETTLED.**
 > Still open: 6a (blocks 6), 7 (BLOCKED-BY 6), 10 (BLOCKED-BY 6a + 7 +
 > Q43-narrow), **NEW 11 `[~]` / 12 `[ ]` (inline-edit removal + replacement
-> surface — see the paragraph above)**, and NEW **9e —
+> surface — see the paragraph above)**, **NEW 8d — the `untagged` punch location
+> (owner DECIDED the value AND the default 2026-09-22): migration `0028`
+> re-ADDs the `punch_location` CHECK as `('toe','ear','other','untagged')` after
+> VERIFYING the constraint name in `pg_constraint`, `PunchLocation` gains the
+> fourth value, `MouseSpec` gains `initialPunchLocation` (riding `mouse?` exactly
+> as `punchEffectiveAt` does — no mutation signature changes) with the
+> AddMouseDialog select DEFAULTING to `untagged`, the `'toe'` literal leaves
+> `buildMouseCell`, and 1-2 `untagged` fixture mice give the value seed coverage
+> (this moves the seed `maxPunchId` off 22 — step 7 asserts the EQUALITY, not the
+> literal). `untagged` renders nothing, same as `toe`; `mouseIdentity.ts`
+> unchanged. SEQUENCED AFTER 6a and 6. STILL OPEN: the zero-active-punches
+> FLOOR**, and NEW **9e —
 > DELETE the dead code (owner decided 2026-09-22)**: `nextLitterCode` (zero
 > consumers, re-grepped; the live path is counter-based on purpose),
 > `apis/getMouseDetail.mock.api.ts` (zero importers) and the `MouseDetail` /
@@ -189,12 +217,11 @@ Each task lists AC = deterministic acceptance criteria.
 > model P1 abolishes; sequenced AFTER 6a and step 6 (shared `packages/types`).
 > **`untagged` PUNCH LOCATION — OWNER DECIDED 2026-09-22: ADOPT IT** (*"add this
 > type into enum for punchs table"*), overruling the architect's earlier
-> recommendation against it; the architect is now DESIGNING it. CORRECTS the
-> earlier "the owner answered with a PROPOSAL rather than a pick" framing. Still
-> OPEN and architect-owned (recorded, not designed): the ZERO-ACTIVE-PUNCHES
-> question (floor vs no floor) — adopting `untagged` did not pick a branch. The
-> three collisions stay on the record as what the design must answer; they are
-> not dissolved by the decision. Three collisions recorded on step 10:
+> recommendation against it; **the design landed 2026-09-22 as task 8d above,
+> and the creation default is now `untagged`, not `toe`.** Still
+> OPEN (recorded, not designed): the ZERO-ACTIVE-PUNCHES
+> question (floor vs no floor) — adopting `untagged` did not pick a branch.
+> Three collisions recorded on step 10:
 > `punch_location` is a CLOSED CHECK in `0026` (a fourth value is a migration),
 > **plan §5 Q42 is open and asks exactly whether that CHECK is closed**, and it
 > may contradict shipped task 8c, which mints `location: 'toe'` at creation.
@@ -209,6 +236,10 @@ Each task lists AC = deterministic acceptance criteria.
 > PATTERN instance (wrong-at-writing). Base P0-b: litter-code
 > generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
 > Record-Litter tx, surface cols I–N.
+> **SPLIT DEFERRED (main session, 2026-09-22):** `docs/phases/p0.7.tasks.md` is
+> ~1140 lines, past docs.md §1's 400 hard line, but a further split WAITS until
+> P0.7-b closes — splitting mid-flight moves files under in-progress tasks and §2
+> forbids archiving while the set has open work.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.7.tasks.md](./docs/phases/p0.7.tasks.md)
 
