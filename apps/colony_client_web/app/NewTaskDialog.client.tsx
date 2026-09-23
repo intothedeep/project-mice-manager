@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import type { TaskSignal } from '@repo/types';
-import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import { addTask } from '@/lib/mockStore';
-import { useLitterCodes } from '@/lib/mockColonyStore';
+import { useColonyGrid, useLitterCodes } from '@/lib/mockColonyStore';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
 import {
     GENE_CODES,
@@ -28,20 +27,6 @@ type Values = Record<string, string | string[]>;
 
 const SELECT_CLASS =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
-
-// Picker options derived from the colony fixture (mock).
-const MOUSE_OPTIONS = Array.from(
-    new Set(
-        SEED_COLONY.lines.flatMap((l) =>
-            l.cages.flatMap((c) =>
-                c.slots.flatMap((s) => s.mice.map((m) => mouseLabelOf(m)))
-            )
-        )
-    )
-);
-const CAGE_OPTIONS = SEED_COLONY.lines.flatMap((l) =>
-    l.cages.map((c) => c.cageNumber)
-);
 
 export function NewTaskDialog({
     open,
@@ -79,6 +64,32 @@ export function NewTaskDialog({
     // component top (same as AddMouseDialog) and passed down, because
     // taskTypes.ts is a static schema module and cannot call a hook.
     const litterOptions = useLitterCodes();
+
+    // Mouse and cage options come from the same LIVE state, for the same
+    // reason: a mouse added through AddMouseDialog must be selectable as a
+    // task subject immediately. Labels are COMPOSED here (mouseLabelOf), never
+    // stored — the ".N" reclip suffix is a separate outer layer the dialog has
+    // never shown, so it is not composed in.
+    const grid = useColonyGrid();
+    const mouseOptions = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    grid.lines.flatMap((l) =>
+                        l.cages.flatMap((c) =>
+                            c.slots.flatMap((s) =>
+                                s.mice.map((m) => mouseLabelOf(m))
+                            )
+                        )
+                    )
+                )
+            ),
+        [grid]
+    );
+    const cageOptions = useMemo(
+        () => grid.lines.flatMap((l) => l.cages.map((c) => c.cageNumber)),
+        [grid]
+    );
 
     const def = useMemo(
         () => TYPES.find((t) => t.type === typeName) ?? TYPES[0]!,
@@ -195,6 +206,8 @@ export function NewTaskDialog({
                     >
                         <FieldInput
                             field={f}
+                            mouseOptions={mouseOptions}
+                            cageOptions={cageOptions}
                             litterOptions={litterOptions}
                             value={values[f.key]}
                             onChange={(v) => setField(f.key, v)}
@@ -265,11 +278,15 @@ function Label({
 
 function FieldInput({
     field,
+    mouseOptions,
+    cageOptions,
     litterOptions,
     value,
     onChange,
 }: {
     field: FormField;
+    mouseOptions: string[];
+    cageOptions: string[];
     litterOptions: string[];
     value: string | string[] | undefined;
     onChange: (v: string | string[]) => void;
@@ -280,9 +297,9 @@ function FieldInput({
         case 'litter': {
             const opts =
                 field.kind === 'mouse'
-                    ? MOUSE_OPTIONS
+                    ? mouseOptions
                     : field.kind === 'cage'
-                      ? CAGE_OPTIONS
+                      ? cageOptions
                       : litterOptions;
             return (
                 <select
