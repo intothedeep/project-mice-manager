@@ -207,12 +207,12 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 2,
                                             location: 'toe',
-                                            effectiveAt: '2025-05-01',
+                                            effectiveAt: '2025-06-15',
                                         },
                                         {
                                             punchId: 25,
                                             location: 'untagged',
-                                            effectiveAt: '2025-05-01',
+                                            effectiveAt: '2025-06-15',
                                         },
                                     ],
                                     pupNumber: 5,
@@ -223,7 +223,7 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention: null,
-                                    dob: '2025-05-01',
+                                    dob: '2025-06-15',
                                     genotypeColor: genoOf(G_WT),
                                     mates: [],
                                 },
@@ -544,12 +544,12 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 8,
                                             location: 'toe',
-                                            effectiveAt: '2025-04-01',
+                                            effectiveAt: '2025-06-15',
                                         },
                                         {
                                             punchId: 31,
                                             location: 'untagged',
-                                            effectiveAt: '2025-04-01',
+                                            effectiveAt: '2025-06-15',
                                         },
                                     ],
                                     pupNumber: 9,
@@ -561,7 +561,7 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         'mated with two males (BEZ line-up)',
-                                    dob: '2025-04-01',
+                                    dob: '2025-06-15',
                                     genotypeColor: genoOf(G_NF1_F_PLUS),
                                     mates: [
                                         {
