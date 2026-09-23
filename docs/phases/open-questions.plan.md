@@ -503,6 +503,21 @@
     is whether such a rule belongs in the schema at all, in the picker, or
     nowhere (the lab may legitimately write `WT` to mean "wild type at the
     locus we care about"). Needs the professor, not an architect.
+    **MEMO 2026-09-23 (owner: *"leave as it is but memo I will update later"*)
+    — nothing is scheduled; do not treat this as an open ask.** A SECOND
+    concrete instance arrived with `28acb8b`: `ccEGFP` and `ccEGFP(hmo)` are
+    now two catalogue codes, and a mouse can carry BOTH — hemizygous and
+    homozygous at once — because `(mouse_id, gene_id)` sees two different
+    `gene_id`s. Same shape as `[Nf1, WT]`: individually unique, jointly absurd.
+    The owner's own sketch of the eventual fix, recorded not evaluated: *"we
+    may add a column in mice_genes table, for hmo or extra marking — jsonb or
+    | separated string?"*
+    NOTE THE TENSION, because it is easy to lose: that sketch and `28acb8b`
+    point OPPOSITE ways. `28acb8b` made `(hmo)` part of the CODE, a separate
+    catalogue row; the sketch would make it a MARKING on the join row, which
+    folds `ccEGFP(hmo)` back into `ccEGFP` and deletes a catalogue entry. Both
+    are defensible; they are not compatible. Whoever picks this up decides
+    which, and the other is unwound — this is not an incremental add.
 49. **Should the gene PICKERS follow `sort_key` too? — RESOLVED 2026-09-23
     (owner: "yes"). One order everywhere: the pickers now sort by `sort_key`,
     so `PlpCre` is first in the picker exactly as it is in the composed

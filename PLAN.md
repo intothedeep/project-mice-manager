@@ -505,7 +505,11 @@ enforced at DB level.
 > (palette-as-state, colour exhaustion at 13% alpha, and that it is an
 > ALTERNATIVE to the per-gene-hue idea, never both); Q48 whether `mice_genes`
 > should validate gene COMBINATIONS at all (`[Nf1, WT]`), now that
-> `(mouse_id, gene_id)` closes only the duplicate case.
+> `(mouse_id, gene_id)` closes only the duplicate case. Q48 is a **MEMO** as of
+> 2026-09-23 (owner: "leave as it is but memo I will update later") — nothing is
+> scheduled. It gained a second instance in `28acb8b` (`ccEGFP` + `ccEGFP(hmo)`
+> on one mouse) and the owner's sketch of a fix, which points the OPPOSITE way
+> from what shipped; the detail file records that tension.
 > Earlier movements: **Q45 RESOLVED 2026-09-18** (offset storage = migration
 > 0027 `pup_number_offsets` + `MouseCell.pupOffsets`); **Q46 DECIDED
 > 2026-09-22 (owner): option C** for the `ParentCell` label → implemented by
