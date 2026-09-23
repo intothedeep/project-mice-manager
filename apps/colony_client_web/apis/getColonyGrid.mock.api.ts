@@ -723,7 +723,10 @@ const COLONY_GRID: ColonyGrid = {
                                             effectiveAt: '2025-06-15',
                                         },
                                     ],
-                                    pupNumber: 5,
+                                    // pup 6, not 5: 102 is already pup 5 of AYL,
+                                    // and two mice cannot be the same pup of one
+                                    // litter. Both composed to F5AYL until 2026-09-23.
+                                    pupNumber: 6,
                                     litterCode: 'AYL',
                                     pupOffsets: [],
                                     sex: 'F',
