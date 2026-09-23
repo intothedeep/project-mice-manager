@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { PunchLocation, Sex } from '@repo/types';
+import type { Sex } from '@repo/types';
 import {
     addMouse,
     addCage,
@@ -59,13 +59,6 @@ export const SELECT_CLASS =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
 export const SEX_OPTIONS: Sex[] = ['U', 'M', 'F'];
-
-export const PUNCH_LOCATION_OPTIONS: PunchLocation[] = [
-    'untagged',
-    'toe',
-    'ear',
-    'other',
-];
 
 export type AddMode = 'cage' | 'slot' | 'mouse';
 

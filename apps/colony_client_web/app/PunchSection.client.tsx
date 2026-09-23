@@ -7,13 +7,12 @@ import { TODAY } from '@/lib/dueDates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { SELECT_CLASS, PUNCH_LOCATION_OPTIONS } from './AddMouseDialog.client';
+import { SELECT_CLASS } from './AddMouseDialog.client';
 
-// `untagged` is minted with the mouse and never removed, so it is not an
-// option a user can add. addPunch refuses it too — this only hides it.
-const ADDABLE_LOCATIONS = PUNCH_LOCATION_OPTIONS.filter(
-    (p) => p !== 'untagged'
-);
+// The locations a user may ADD. `untagged` is deliberately absent: it is
+// minted with the mouse and never removed, so there is no second one to add.
+// addPunch refuses it too — a list is a convenience, not a guard.
+const ADDABLE_LOCATIONS: PunchLocation[] = ['toe', 'ear', 'other'];
 
 // Task 13, punch half. ONE mutation path — addPunch/removePunch (step 7's
 // store wrappers) — with two views on it: this section's active/history list,
