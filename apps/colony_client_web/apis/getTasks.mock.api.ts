@@ -157,8 +157,11 @@ export const SEED_CASES: SeedCaseRow[] = [
         signal: 'plan' as TaskSignal,
         status: 'done' as CaseTaskStatus,
         subjectKind: 'litter' as TaskSubjectKind,
-        subjectLabel: 'litter BCX',
+        // The litter's CODE is its identity (litters.litter_code is UNIQUE);
+        // the case stores no display text of its own.
+        subjectLabel: null,
         subjectMouseId: null,
+        subjectLitterCode: 'BCX',
         detail: '2 pups → new cage',
         dueDate: '2026-09-06',
         createdAt: '2026-09-03',
@@ -183,8 +186,11 @@ export const SEED_CASES: SeedCaseRow[] = [
         signal: 'instruction' as TaskSignal,
         status: 'verified' as CaseTaskStatus,
         subjectKind: 'cage' as TaskSubjectKind,
-        subjectLabel: 'cage 2414',
+        // cageId 2 = cage 2414 in SEED_COLONY. The displayed code is resolved
+        // from this id at read time, never stored beside it.
+        subjectLabel: null,
         subjectMouseId: null,
+        subjectCageId: 2,
         detail: 'unsexed pups U3BCX, U4BCX',
         dueDate: '2026-09-04',
         createdAt: '2026-09-03',
@@ -205,13 +211,15 @@ export const SEED_CASES: SeedCaseRow[] = [
     },
     {
         // Batch case: ONE case covering U3BCX (202) and U4BCX (203) together.
-        // subjectKind='mice' → no individual subject FK; membership in mice[].
+        // subjectKind='mice' → no individual subject FK; membership in mice[],
+        // which is also what the header is composed from: a member that gets a
+        // ".N" reclip suffix gets it here too, with no second edit.
         id: 9,
         caseType: 'Genotyping',
         signal: 'plan' as TaskSignal,
         status: 'todo' as CaseTaskStatus,
         subjectKind: 'mice' as TaskSubjectKind,
-        subjectLabel: '2 mice: U3BCX, U4BCX',
+        subjectLabel: null,
         subjectMouseId: null,
         mice: [202, 203],
         detail: null,

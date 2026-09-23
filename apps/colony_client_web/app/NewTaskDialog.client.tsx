@@ -148,9 +148,9 @@ export function NewTaskDialog({
 
     function submit() {
         if (missing) return;
-        const subjectLabel = batch
-            ? batchSubjectLabel(preset!.map((m) => m.label))
-            : buildSubjectLabel(def, values, baseMouseLabels);
+        // Batch types are all mouse-kind, so buildSubjectLabel returns null
+        // for them too: a batch case stores no header either.
+        const subjectLabel = buildSubjectLabel(def, values, baseMouseLabels);
         const dueDate = def.dueFromField
             ? String(values[def.dueFromField] || due)
             : due;
@@ -160,11 +160,12 @@ export function NewTaskDialog({
             values,
             subjectLabel,
             subjectMouseId: pickedMouseId(def, values),
+            subjectLitterCode: pickedLitterCode(def, values),
             detail: buildDetail(def, values),
             dueDate,
             assignee: assignee.trim() || null,
-            // Pass mice pairs so addTask builds subjectKind='mice' case.
-            mice: batch ? preset! : undefined,
+            // Pass member ids so addTask builds a subjectKind='mice' case.
+            mice: batch ? preset!.map((m) => m.metaId) : undefined,
         });
         reset();
         onClose();
@@ -386,13 +387,6 @@ function FieldInput({
     }
 }
 
-function batchSubjectLabel(labels: string[]): string {
-    const head = labels.slice(0, 3).join(', ');
-    return labels.length > 3
-        ? `${labels.length} mice: ${head}…`
-        : `${labels.length} mice: ${head}`;
-}
-
 // The metaId a mouse-subject case points at. Null for every other kind — a
 // cage, litter or mate case has no single mouse to resolve a name from.
 function pickedMouseId(def: TaskTypeDef, values: Values): number | null {
@@ -401,25 +395,31 @@ function pickedMouseId(def: TaskTypeDef, values: Values): number | null {
     return Number.isFinite(picked) && picked > 0 ? picked : null;
 }
 
-// A subject label for the kinds that cannot resolve one. Mouse-subject cases
-// return null here and carry subjectMouseId instead; a mate names two mice and
-// CaseCard has one subjectMouseId slot, so it keeps a stored string — built
-// from base names, matching every other stored mate string in the mock.
+// The CODE a litter-subject case points at. The litter picker already carries
+// the bare code ('BCX') — it is the litter's identity, so it is stored as-is
+// and any display wording is composed at read time.
+function pickedLitterCode(def: TaskTypeDef, values: Values): string | null {
+    if (def.subjectKind !== 'litter' || !def.subjectFrom) return null;
+    return String(values[def.subjectFrom] ?? '') || null;
+}
+
+// The ONE subject string still stored: a mate names two mice while the case
+// has a single mouse slot, so nothing on the row can resolve it. Built from
+// BASE names — a stored ".N" would freeze a count that moves on every tissue
+// collection. Every other kind returns null and carries an id or a code.
 function buildSubjectLabel(
     def: TaskTypeDef,
     values: Values,
     baseMouseLabels: Map<number, string>
 ): string | null {
+    if (def.subjectKind !== 'mate') return null;
     if (def.cascade) {
         const name = (key: string) =>
             baseMouseLabels.get(Number(values[key])) ?? '?';
         return `${name('mother')} × ${name('father')}`;
     }
-    if (def.subjectKind === 'mouse') return null;
     if (def.subjectFrom) {
-        const v = String(values[def.subjectFrom] ?? '');
-        if (!v) return null;
-        return def.subjectKind === 'cage' ? `cage ${v}` : v;
+        return String(values[def.subjectFrom] ?? '') || null;
     }
     return null;
 }

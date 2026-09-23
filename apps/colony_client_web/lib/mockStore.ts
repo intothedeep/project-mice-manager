@@ -126,29 +126,35 @@ export interface NewTaskInput {
     def: TaskTypeDef;
     values: Record<string, string | string[]>;
     signal: TaskSignal;
-    // Stored ONLY for subject kinds with nothing to resolve (cage, litter,
-    // mate, slot, mice). A mouse-subject case carries subjectMouseId instead
-    // and its name is composed at read time.
+    // Stored ONLY for 'mate', the one kind with nothing to point at. Every
+    // other kind carries an id or a code below and its name is composed at
+    // read time.
     subjectLabel: string | null;
     // The picked mouse's metaId for def.subjectKind === 'mouse'. The dialog
     // pickers carry ids, so no label lookup is needed (and none is done — two
     // mice may display the same name, as 102/402 did).
     subjectMouseId: number | null;
+    // The picked litter's CODE for def.subjectKind === 'litter'. The code is
+    // the litter's identity (litters.litter_code is UNIQUE); the 'litter '
+    // prefix the old stored label carried was display text, not part of it.
+    subjectLitterCode: string | null;
     detail: string | null;
     dueDate: string | null;
     assignee: string | null;
     // Batch mode: N mice in one case. When present and non-empty, addTask
-    // creates ONE case with subjectKind='mice' covering all metaIds.
-    mice?: { metaId: number; label: string }[];
+    // creates ONE case with subjectKind='mice' covering all metaIds. Ids
+    // only — the header is composed from them at read time, so a member's
+    // name is never copied onto the case.
+    mice?: number[];
 }
 
 // addTask: creates a case (status=todo) + its first todo task-log row.
 // Batch path: mice[] present → ONE case with subjectKind='mice', all metaIds
-// in the mice[] field. No per-mouse cases.
+// in the mice[] field. No per-mouse cases, and no stored header.
 // Single-subject path: mice absent → one case, subjectKind from def.subjectKind,
 // subjectMouseId carried through from the dialog's picker (NOT resolved from a
-// mouseLabel — that is the 102-vs-402 ambiguity). A mouse-subject case stores
-// NO label: its name is resolved from subjectMouseId at read time.
+// mouseLabel — that is the 102-vs-402 ambiguity). Only a 'mate' case stores a
+// label; every other kind's name is resolved from its id or code at read time.
 // For a Mate, auto-enqueues plug-check + delivery into Upcoming.
 export function addTask(input: NewTaskInput): void {
     const caseId = nextCaseId++;
@@ -157,22 +163,15 @@ export function addTask(input: NewTaskInput): void {
 
     if (input.mice && input.mice.length > 0) {
         // Batch path: N mice → ONE case, subjectKind='mice'.
-        const labels = input.mice.map((m) => m.label);
-        const head = labels.slice(0, 3).join(', ');
-        const batchLabel =
-            labels.length > 3
-                ? `${labels.length} mice: ${head}…`
-                : `${labels.length} mice: ${head}`;
-
         caseRow = {
             id: caseId,
             caseType: input.def.type,
             signal: input.signal,
             status: 'todo',
             subjectKind: 'mice',
-            subjectLabel: input.subjectLabel ?? batchLabel,
+            subjectLabel: null,
             subjectMouseId: null,
-            mice: input.mice.map((m) => m.metaId),
+            mice: input.mice,
             detail: input.detail,
             createdAt: TODAY,
             dueDate: input.dueDate,
@@ -181,15 +180,17 @@ export function addTask(input: NewTaskInput): void {
         };
     } else {
         // Single-subject path.
-        const isMouseSubject = input.def.subjectKind === 'mouse';
+        const kind = input.def.subjectKind;
         caseRow = {
             id: caseId,
             caseType: input.def.type,
             signal: input.signal,
             status: 'todo',
-            subjectKind: input.def.subjectKind,
-            subjectLabel: isMouseSubject ? null : input.subjectLabel,
-            subjectMouseId: isMouseSubject ? input.subjectMouseId : null,
+            subjectKind: kind,
+            subjectLabel: kind === 'mate' ? input.subjectLabel : null,
+            subjectMouseId: kind === 'mouse' ? input.subjectMouseId : null,
+            subjectLitterCode:
+                kind === 'litter' ? input.subjectLitterCode : null,
             detail: input.detail,
             createdAt: TODAY,
             dueDate: input.dueDate,

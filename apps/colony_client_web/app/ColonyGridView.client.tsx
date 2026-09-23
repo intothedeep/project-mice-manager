@@ -1044,19 +1044,16 @@ export function ColonyGridView() {
                             def,
                             values: {},
                             signal: 'instruction',
-                            subjectLabel: ctxMenu.mouse.mouseLabel,
                             // Batch path (mice below): the case is subjectKind
-                            // 'mice', which has no single-mouse FK slot.
+                            // 'mice', which has no single-mouse FK slot and no
+                            // stored header — the member id is the subject.
+                            subjectLabel: null,
                             subjectMouseId: null,
+                            subjectLitterCode: null,
                             detail: null,
                             dueDate: null,
                             assignee: null,
-                            mice: [
-                                {
-                                    metaId: ctxMenu.mouse.metaId,
-                                    label: ctxMenu.mouse.mouseLabel,
-                                },
-                            ],
+                            mice: [ctxMenu.mouse.metaId],
                         });
                         setCtxMenu(null);
                     }}

@@ -25,16 +25,26 @@ export interface CaseCard {
     signal: TaskSignal; // resolved from cases.signal_id -> signals.type
     status: TaskStatus; // cases.current_status (denorm cache)
     subjectKind: TaskSubjectKind | null; // null when no specific subject entity
-    // Stored label for subject kinds with nothing to resolve: 'cage 2413',
-    // 'litter BCW', a mate's 'F6AYL × M4BCW'. A subject_kind='mouse' case
-    // carries NULL here — its name is composed from subjectMouseId at read
-    // time, so the two can never disagree.
+    // Stored label for the ONE subject kind that still has nothing to point
+    // at: a mate's 'F6AYL × M4BCW'. Every other kind carries an id or a code
+    // below and its name is resolved from live state at read time, so a stored
+    // copy can never disagree with the entity it names.
     subjectLabel: string | null;
     // subjectMouseId: the resolved mouse_meta.id for single-subject 'mouse' cases.
     // Also present on 'mice' batch cases (always null — membership is in case_mice).
     // Optional for backward compat — consumers that only read subject_kind='mouse'
     // and 'mice' need this; other kinds leave it absent.
     subjectMouseId?: number | null;
+    // subjectCageId: cases.subject_cage_id — the cage a subject_kind='cage'
+    // case points at. Its displayed CODE (cages.cage_number) is resolved from
+    // this id, so a renumbered cage renames its cases with it.
+    subjectCageId?: number | null;
+    // subjectLitterCode: litters.litter_code for subject_kind='litter'. The
+    // code is UNIQUE and assigned once, so it IS the litter's identity — the
+    // client has no litter surrogate id to carry (codes are derived from
+    // MouseCell.litterCode), so the DTO projects the natural key. The server
+    // resolves it from cases.litter_id.
+    subjectLitterCode?: string | null;
     // mice: metaIds of all members for 'mice' batch cases. Populated by the server
     // JOIN on case_mice; absent for all other subject kinds.
     mice?: number[];

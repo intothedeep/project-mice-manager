@@ -11,6 +11,10 @@ import { useTasks, setTaskStatus } from '@/lib/mockStore';
 import { formatDate } from '@/lib/dueDates';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
 import { buildMouseLabelIndex } from '@/lib/mouseLabel';
+import {
+    buildCageCodeIndex,
+    resolveCaseSubjectLabel,
+} from '@/lib/caseSubjectLabel';
 import { useColonyGrid } from '@/lib/mockColonyStore';
 import { CaseTimeline } from './CaseTimeline.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
@@ -44,6 +48,8 @@ export function TasksView() {
         () => buildMouseLabelIndex(grid, tasks),
         [grid, tasks]
     );
+    // cageId -> cage code, the same shape for the kind that points at a cage.
+    const cageCodes = useMemo(() => buildCageCodeIndex(grid), [grid]);
 
     // act uses the case id (c.id) — each card represents one case.
     function act(c: ClientCaseCard, to: CaseTaskStatus) {
@@ -108,6 +114,7 @@ export function TasksView() {
                                             role={role}
                                             today={today}
                                             mouseLabels={mouseLabels}
+                                            cageCodes={cageCodes}
                                             onAct={act}
                                         />
                                     ))
@@ -126,28 +133,28 @@ function TaskItem({
     role,
     today,
     mouseLabels,
+    cageCodes,
     onAct,
 }: {
     task: ClientCaseCard;
     role: Role;
     today: string;
     mouseLabels: Map<number, string>;
+    cageCodes: Map<number, string>;
     onAct: (c: ClientCaseCard, to: CaseTaskStatus) => void;
 }) {
     const actions = availableActions(role, task.status);
     const overdue = isOverdue(task, today);
     const cancelled = task.status === 'cancelled';
 
-    // A mouse-subject case is named by resolving its subjectMouseId, never by a
-    // stored copy — that copy went stale the moment the mouse was renumbered.
-    // Cage, litter, mate and batch labels have no single id to resolve from and
-    // are still stored, so they fall through.
-    const displaySubjectLabel =
-        (task.subjectMouseId != null
-            ? mouseLabels.get(task.subjectMouseId)
-            : null) ??
-        task.subjectLabel ??
-        null;
+    // Every subject name is RESOLVED from the id or code the case carries —
+    // never from a stored copy, which goes stale the moment the entity moves.
+    // 'mate' is the one kind left with nothing to point at (see the resolver).
+    const displaySubjectLabel = resolveCaseSubjectLabel(
+        task,
+        mouseLabels,
+        cageCodes
+    );
 
     return (
         <div
