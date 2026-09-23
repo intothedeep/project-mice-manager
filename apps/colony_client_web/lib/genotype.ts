@@ -55,6 +55,29 @@ export const UNKNOWN_GENOTYPE = '?';
 // Neither may collapse into the bare code, which claims hemizygous.
 const TRANSGENE_PRESENT = 'Tg';
 
+// The allele tokens a picker OFFERS — the whole vocabulary of both kinds in one
+// list, NOT filtered by GeneRef.kind. Two reasons it is unfiltered: a filter
+// would have to decide what 'WT' offers, and WT's kind is an admitted
+// placeholder (packages/types/src/gene.ts) — no control should inherit meaning
+// from it; and migration 0029 deliberately shipped "no zygosity enum, no CHECK,
+// no validation", so narrowing the offer here would be the only place in the
+// stack claiming a vocabulary the professor has not confirmed.
+// The STORED type stays `string | null` regardless: this list is what a picker
+// shows, never what a row may hold.
+export const ALLELE_TOKENS: readonly string[] = [
+    '+',
+    '-',
+    'f',
+    TRANSGENE_PRESENT,
+];
+
+// One mouse's recorded pair for one gene, maternal first (the same order the
+// renderer prints). `null` on a side is NOT RECORDED, as on GeneRef.
+export interface AllelePair {
+    mat: string | null;
+    pat: string | null;
+}
+
 function renderGene(gene: GeneRef): string {
     if (gene.alleleMat === null && gene.allelePat === null) return gene.code;
     if (
@@ -84,6 +107,18 @@ export function genotypeOf(mouse: Pick<MouseCell, 'genes'>): string {
     return inOrder(mouse.genes).map(renderGene).join(';');
 }
 
+// The mouse's recorded allele pairs, keyed by code — what an allele picker
+// edits. Built from the SAME rows geneCodesOf reads, so a draft seeded from
+// both is an exact copy of the mouse and re-saving it is a no-op.
+export function allelePairsOf(
+    mouse: Pick<MouseCell, 'genes'>
+): Record<string, AllelePair> {
+    const pairs: Record<string, AllelePair> = {};
+    for (const g of mouse.genes)
+        pairs[g.code] = { mat: g.alleleMat, pat: g.allelePat };
+    return pairs;
+}
+
 // The mouse's picked catalogue codes, in row order — what the genotype badge
 // pickers show as already-selected. Codes only: the pickers choose genes, not
 // zygosity, so the alleles stay behind on the rows.
@@ -106,19 +141,29 @@ export function geneCodesOf(mouse: Pick<MouseCell, 'genes'>): string[] {
 // A genuinely NEW row is minted with BOTH ALLELES NULL (not recorded), so a
 // freshly added 'Nf1' reads "Nf1" and never claims a wild-type pair nobody
 // assessed. A freshly picked TRANSGENE therefore also reads bare — "not
-// recorded", not "one copy"; the pickers cannot yet express 'Tg'/'Tg'.
+// recorded", not "one copy".
+//
+// `pairs` is the OPTIONAL allele edit — the genotyping RESULT, which the gene
+// pickers alone cannot express. A code present in `pairs` takes that pair
+// verbatim; a code absent from it falls back to `current` exactly as before,
+// so a caller that passes no pairs gets the preservation behaviour unchanged.
+// Presence is tested on the PAIR, never on its sides: clearing a side back to
+// "not recorded" stores null, and a `?? kept` fallback would quietly restore
+// the value the user just cleared.
 export function mintGeneRefs(
     codes: readonly string[],
-    current: readonly GeneRef[] = []
+    current: readonly GeneRef[] = [],
+    pairs: Readonly<Record<string, AllelePair>> = {}
 ): GeneRef[] {
     return codes.map((code) => {
         const kept = current.find((g) => g.code === code);
+        const edited = pairs[code];
         const gene = catalogueGene(code);
         return {
             code,
             kind: gene.kind,
-            alleleMat: kept?.alleleMat ?? null,
-            allelePat: kept?.allelePat ?? null,
+            alleleMat: edited ? edited.mat : (kept?.alleleMat ?? null),
+            allelePat: edited ? edited.pat : (kept?.allelePat ?? null),
             sortKey: gene.sortKey,
         };
     });

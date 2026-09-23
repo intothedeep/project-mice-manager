@@ -7,11 +7,18 @@ import { updateMouse } from '@/lib/mockColonyStore';
 import { buildMouseLabel } from '@/lib/mouseIdentity';
 import { composeMouseLabel } from '@/lib/mouseLabel';
 import { formatDate } from '@/lib/dueDates';
-import { geneCodesOf, genotypeOf } from '@/lib/genotype';
+import {
+    ALLELE_TOKENS,
+    allelePairsOf,
+    geneCodesOf,
+    genotypeOf,
+    type AllelePair,
+} from '@/lib/genotype';
 import { GENE_CATALOG_CODES } from '@/apis/getGenes.mock.api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CodeBadgeSelect } from '@/components/ui/code-badge-select';
+import { AllelePairSelect } from '@/components/ui/allele-pair-select';
 import { SELECT_CLASS, SEX_OPTIONS } from './AddMouseDialog.client';
 
 // Task 13, field-editing half. Mounted with `key={metaId}` by the drawer so
@@ -30,11 +37,23 @@ interface Draft {
     // editing the ROWS. Deselecting everything is valid — that is '?', the
     // not-genotyped state a "check the genes" case is generated from.
     geneCodes: string[];
+    // The genotyping RESULT per picked code — what the badges above cannot
+    // say. Keyed by code and seeded from the mouse's own rows, so a draft
+    // nobody touched is an exact copy and Save is a no-op. A code the user
+    // deselects keeps its stale entry here on purpose: reselecting it within
+    // the same edit restores the pair instead of silently clearing it, and
+    // updateMouse only reads the codes that survived.
+    alleles: Record<string, AllelePair>;
     dob: string; // '' stands in for MouseCell.dob === null while editing
 }
 
 function draftFrom(m: MouseCell): Draft {
-    return { sex: m.sex, geneCodes: geneCodesOf(m), dob: m.dob ?? '' };
+    return {
+        sex: m.sex,
+        geneCodes: geneCodesOf(m),
+        alleles: allelePairsOf(m),
+        dob: m.dob ?? '',
+    };
 }
 
 export function IdentitySection({
@@ -63,6 +82,7 @@ export function IdentitySection({
         const result = updateMouse(mouse.metaId, {
             sex: draft.sex,
             geneCodes: draft.geneCodes,
+            geneAlleles: draft.alleles,
             dob: draft.dob,
         });
         if (!result.ok) {
@@ -179,6 +199,37 @@ export function IdentitySection({
                             }
                         />
                     </Row>
+                    {draft.geneCodes.length ? (
+                        <div className="mt-2 flex flex-col gap-1">
+                            <span className="text-xs font-medium text-muted-foreground">
+                                alleles (mat/pat)
+                            </span>
+                            {draft.geneCodes.map((code) => {
+                                const pair = draft.alleles[code] ?? {
+                                    mat: null,
+                                    pat: null,
+                                };
+                                return (
+                                    <AllelePairSelect
+                                        key={code}
+                                        code={code}
+                                        options={ALLELE_TOKENS}
+                                        mat={pair.mat}
+                                        pat={pair.pat}
+                                        onChange={(next) =>
+                                            setDraft((d) => ({
+                                                ...d,
+                                                alleles: {
+                                                    ...d.alleles,
+                                                    [code]: next,
+                                                },
+                                            }))
+                                        }
+                                    />
+                                );
+                            })}
+                        </div>
+                    ) : null}
                     <Row label="dob">
                         <Input
                             type="date"

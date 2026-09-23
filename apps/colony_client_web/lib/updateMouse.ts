@@ -14,7 +14,12 @@ import {
     type AddMouseResult,
     type Counters,
 } from '@/lib/colonyMutationHelpers';
-import { geneRefsEqual, mintGeneRefs } from '@/lib/genotype';
+import {
+    geneCodesOf,
+    geneRefsEqual,
+    mintGeneRefs,
+    type AllelePair,
+} from '@/lib/genotype';
 
 export interface UpdateMousePatch {
     sex?: Sex;
@@ -25,6 +30,18 @@ export interface UpdateMousePatch {
     // alleles NULL — zygosity not recorded, never an assumed wild-type pair
     // (mintGeneRefs). [] = not genotyped, which composes back to '?'.
     geneCodes?: string[];
+    // The genotyping RESULT, keyed by gene code: which allele each parent
+    // contributed ('f'/'+'/'-') or how many copies of a transgene are present
+    // ('Tg'/'+'). Separate from geneCodes above because the two are different
+    // acts — geneCodes says WHICH markers the mouse carries, geneAlleles says
+    // WHAT WAS FOUND at them — and because keeping it optional leaves the
+    // code-only patch behaving exactly as it always did.
+    //
+    // A code listed here takes its pair verbatim, INCLUDING null, which means
+    // "back to not recorded". A code NOT listed keeps whatever the mouse
+    // already had, which is what makes re-saving an unchanged pick a no-op.
+    // Sent WITHOUT geneCodes it edits the mouse's existing rows in place.
+    geneAlleles?: Record<string, AllelePair>;
     dob?: string;
     signal?: SignalColor;
     isAlive?: boolean;
@@ -63,8 +80,9 @@ export function updateMouse(
         changed = true;
     }
 
-    if (patch.geneCodes !== undefined) {
-        const genes = mintGeneRefs(patch.geneCodes, current.genes);
+    if (patch.geneCodes !== undefined || patch.geneAlleles !== undefined) {
+        const codes = patch.geneCodes ?? geneCodesOf(current);
+        const genes = mintGeneRefs(codes, current.genes, patch.geneAlleles);
         if (!geneRefsEqual(genes, current.genes)) {
             updated.genes = genes;
             updated.genotypeColor = null; // old color is a lie for new genotype

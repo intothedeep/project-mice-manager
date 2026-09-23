@@ -125,10 +125,14 @@ Two kinds of marker are recorded differently, because they are different things:
 
 Available markers: `PlpCre`, `Nf1`, `Ai14`, `ccEGFP`, `WT`.
 
-**Not yet possible:** there is no way to record a *homozygous* transgene through
-the app. Markers are picked by name, and copy counts cannot be entered at all —
-the same reason `Nf1 f/+` cannot be typed in either. The screen for choosing
-zygosity is designed but not built (③).
+Both copies of every marker can be set from the mouse drawer: pick the marker,
+then set the maternal and paternal side independently from `+`, `-`, `f`, `Tg`,
+or leave either as *not recorded*. Leaving both unset is normal for a newly
+added animal — you do not know a genotype at the moment you create a mouse.
+
+**Still ambiguous on screen:** a transgene confirmed to have one copy and a
+transgene nobody has assessed yet both read as `ccEGFP`. The `(het)` question
+above would separate them.
 
 ## 4 · Marking
 
