@@ -129,7 +129,13 @@ export function usePunches(metaId: number): PunchRow[] {
 }
 
 // Returns the DISTINCT litter codes currently present in the colony, sorted
-// LATEST-FIRST (highest ordinal first). Computed at read time — not stored.
+// LATEST-FIRST (highest ordinal first) with 'WT' PINNED to the top. Computed
+// at read time — not stored.
+//
+// WHY the pin: 'WT' is the standing wild-type label (litterCode.ts header), not
+// a generated litter, and its ordinal 618 sits below the 703 generator floor —
+// a plain descending sort would bury the colony's most-used code at the bottom
+// of the picker.
 export function useLitterCodes(): string[] {
     const grid = useColonyGrid();
     return useMemo(() => {
@@ -143,8 +149,10 @@ export function useLitterCodes(): string[] {
                         const ord = parseLitterCode(m.litterCode);
                         if (ord !== null) seen.set(ord, m.litterCode);
                     }
+        const rank = (ord: number, code: string) =>
+            code === 'WT' ? Infinity : ord;
         return [...seen.entries()]
-            .sort((a, b) => b[0] - a[0])
+            .sort((a, b) => rank(b[0], b[1]) - rank(a[0], a[1]))
             .map(([, code]) => code);
     }, [grid]);
 }
