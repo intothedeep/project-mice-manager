@@ -44,7 +44,6 @@ SET sort_key = CASE code
                    WHEN 'Nf1' THEN 20
                    WHEN 'Ai14' THEN 30
                    WHEN 'ccEGFP' THEN 40
-                   WHEN 'ccEGFP(hmo)' THEN 45
                    WHEN 'WT' THEN 50
     END;
 

@@ -1,6 +1,7 @@
 # Colony app — what works today
 
-> Snapshot of the running app on 2026-09-23 (commit `6d6103c`), written for review.
+> Snapshot of the running app on 2026-09-23, at migrations `0001`–`0032`, written
+> for review.
 > This is a SNAPSHOT, not a specification. `PLAN.md` holds the intent; this file
 > describes what the software actually does right now, and will go stale.
 
@@ -41,8 +42,14 @@ Two more, smaller:
 - **Genotype notation.** `Nf1` shows both copies, e.g. `Nf1 f/+`. `PlpCre` and `WT`
   show no copies at all. Is that the right distinction — some markers carry a pair
   and some do not?
-- **`ccEGFP(hmo)`** is recorded as a *different marker* from `ccEGFP`, not as
-  "ccEGFP, homozygous". Is that how you think of it?
+- **Transgene notation.** `PlpCre` and `ccEGFP` are inserted transgenes, so they
+  have no allele pair — only one copy or two. The app is being changed to record
+  that as `Tg/+` for one copy and `Tg/Tg` for two, which displays as `ccEGFP` and
+  `ccEGFP(hmo)`. Two things to confirm: **is `Tg` the token you use**, and **is
+  `(hmo)` written only for homozygous**, or do you also mark the one-copy case
+  (`(het)`, `(hemi)`) rather than leaving it bare?
+- Recording it this way also captures **which parent a transgene came from**,
+  which the `(hmo)` suffix alone cannot. Is that worth having?
 
 ---
 
@@ -96,7 +103,7 @@ A mouse does not store a genotype string. It carries **one row per marker**, and
 string is assembled for display:
 
 ```
-rows:  PlpCre (no copies recorded)  +  Nf1 (maternal f, paternal +)
+rows:  PlpCre (one copy)  +  Nf1 (maternal f, paternal +)
 shown: PlpCre;Nf1 f/+
 ```
 
@@ -108,7 +115,20 @@ shown: PlpCre;Nf1 f/+
 - Markers are shown in a fixed order set per marker, so the same mouse always reads
   the same way regardless of the order someone ticked the boxes.
 
-Available markers: `PlpCre`, `Nf1`, `Ai14`, `ccEGFP`, `ccEGFP(hmo)`, `WT`.
+Two kinds of marker are recorded differently, because they are different things:
+
+- **Locus genes** (`Nf1`, `Ai14`) edit a gene already present, so each parent
+  contributes a copy and both copies have a state — `Nf1 f/+`, `Ai14 +/-`.
+- **Transgenes** (`PlpCre`, `ccEGFP`) are inserted, so there is no pre-existing
+  copy to pair with. Only the number of copies matters: one shows as `ccEGFP`,
+  two as `ccEGFP(hmo)`.
+
+Available markers: `PlpCre`, `Nf1`, `Ai14`, `ccEGFP`, `WT`.
+
+**Not yet possible:** there is no way to record a *homozygous* transgene through
+the app. Markers are picked by name, and copy counts cannot be entered at all —
+the same reason `Nf1 f/+` cannot be typed in either. The screen for choosing
+zygosity is designed but not built (③).
 
 ## 4 · Marking
 

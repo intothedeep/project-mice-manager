@@ -1,3 +1,5 @@
+import type { GeneKind } from './gene';
+
 // View DTOs for the read-only Cage Grid screen.
 //
 // These are the shapes the API will return AFTER head-row resolution — i.e. the
@@ -59,17 +61,28 @@ export interface PunchRef {
 // mice_genes, so no `deletedAt` appears here (grid.ts carries no tombstones).
 export interface GeneRef {
     code: string;
+    // genes.kind, denormalised onto the ref exactly as `sortKey` below is (the
+    // server JOINs genes for both). It lives HERE rather than behind a
+    // catalogue lookup because the composer in lib/genotype.ts is TOTAL —
+    // every input has a result — and a lookup keyed on `code` would have to
+    // throw on a code the catalogue does not hold.
+    //
+    // It selects the NOTATION, not the storage: both kinds use the two allele
+    // fields below. 'locus' renders the pair ("Nf1 f/+"); 'transgene' counts
+    // 'Tg' copies, one -> bare code, two -> "code(hmo)".
+    kind: GeneKind;
     // MATERNAL THEN PATERNAL — parent of origin, rendered
     // `code alleleMat/allelePat` (owner decision 2026-09-17). The LEFT allele
     // is the mother's: "Nf1 f/+" and "Nf1 +/f" are DIFFERENT MICE, so nothing
     // sorts or normalises the pair. Declared in render order on purpose; this
     // has been inverted once already (see migration 0029's header).
     //
-    // NULL = NOT RECORDED, which is what a marker with no zygosity to record
-    // ('PlpCre', 'WT') carries and what a new row is minted with. Both NULL
-    // renders the bare code. '+' is a RECORDED wild-type allele and is a
-    // DIFFERENT fact from NULL — "Nf1 +/+" vs "PlpCre" is that difference on
-    // screen. `| null` rather than `?` so every reader must handle it.
+    // NULL = NOT RECORDED, which is what a marker with nothing yet assessed
+    // ('WT', a freshly picked gene) carries and what a new row is minted with.
+    // Both NULL renders the bare code, whatever the kind. '+' is a RECORDED
+    // wild-type allele and is a DIFFERENT fact from NULL — "Nf1 +/+" vs a bare
+    // "WT" is that difference on screen. `| null` rather than `?` so every
+    // reader must handle it.
     alleleMat: string | null;
     allelePat: string | null;
     // genes.sort_key, denormalised onto the ref exactly as `code` above is —

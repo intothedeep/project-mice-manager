@@ -22,8 +22,9 @@ import { genotypeOf, UNKNOWN_GENOTYPE } from '@/lib/genotype';
 //   - M7AZZ    : carries ccEGFP — the catalogue's reporter, now held by a mouse
 //   - M6BGX    : "PlpCre;Ai14 +/-" — the '-' allele token, and the mouse that
 //                realises line 2's nominal genotype colour
-//   - F8AZZ    : carries ccEGFP(hmo) — the homozygous reporter is its own
-//                catalogue GENE (28acb8b), not a zygosity of ccEGFP
+//   - F8AZZ    : "ccEGFP(hmo)" — the SAME ccEGFP gene with 'Tg' on BOTH sides.
+//                Homozygosity is a fact about the mouse, so it is composed from
+//                this row, never read from a catalogue code (28acb8b unwound)
 //
 // NOTE (T6): activeTasks removed from all MouseCell objects. Badges are now
 // derived from the case store (useTasks + signalColorOf) in ColonyGridView,
@@ -64,64 +65,153 @@ const geno = (g: string): string | null => GENO[g] ?? null;
 // renders "Nf1 f/+". The mirror mouse ("Nf1 +/f") is a different animal, never a
 // respelling, so no code sorts the pair.
 //
-// null = zygosity NOT RECORDED, which is what the markers that have no
-// zygosity to record carry ('WT', the 'PlpCre' driver) — those render as the
-// bare code. An explicit '+' is a RECORDED wild-type allele, which is why
-// G_NF1_PLUS_PLUS renders "Nf1 +/+" while G_WT renders "WT". The two are
+// null = zygosity NOT RECORDED, which is what 'WT' carries here — it renders
+// as the bare code. An explicit '+' is a RECORDED wild-type allele, which is
+// why G_NF1_PLUS_PLUS renders "Nf1 +/+" while G_WT renders "WT". The two are
 // different facts; see lib/genotype.ts.
 //
-// sortKey is the CATALOGUE's display order (apis/getGenes.mock.api.ts), copied
-// onto each row exactly as the server will JOIN it: PlpCre 10, Nf1 20, Ai14 30,
-// ccEGFP 40, ccEGFP(hmo) 45, WT 50. It is why 'PlpCre;Ai14 +/+' renders in that
-// order no matter how these arrays are written.
+// TRANSGENE rows ('PlpCre', 'ccEGFP') are COUNTED, not paired: 'Tg' is a copy
+// and '+' is the ABSENT side, so 'Tg'/'+' is one copy (rendering the bare code)
+// and 'Tg'/'Tg' is two (rendering "code(hmo)"). Maternal-first still holds, so
+// these rows also record WHICH PARENT the insert came from.
+//
+// kind and sortKey are CATALOGUE facts (apis/getGenes.mock.api.ts), copied onto
+// each row exactly as the server will JOIN them: PlpCre 10, Nf1 20, Ai14 30,
+// ccEGFP 40, WT 50. sortKey is why 'PlpCre;Ai14 +/+' renders in that order no
+// matter how these arrays are written; kind is which notation each row uses.
 const G_WT: GeneRef[] = [
-    { code: 'WT', alleleMat: null, allelePat: null, sortKey: 50 },
+    {
+        code: 'WT',
+        kind: 'locus',
+        alleleMat: null,
+        allelePat: null,
+        sortKey: 50,
+    },
 ];
 const G_NF1_F_PLUS: GeneRef[] = [
-    { code: 'Nf1', alleleMat: 'f', allelePat: '+', sortKey: 20 },
+    {
+        code: 'Nf1',
+        kind: 'locus',
+        alleleMat: 'f',
+        allelePat: '+',
+        sortKey: 20,
+    },
 ];
 const G_NF1_PLUS_PLUS: GeneRef[] = [
-    { code: 'Nf1', alleleMat: '+', allelePat: '+', sortKey: 20 },
+    {
+        code: 'Nf1',
+        kind: 'locus',
+        alleleMat: '+',
+        allelePat: '+',
+        sortKey: 20,
+    },
 ];
 const G_NF1_F_F: GeneRef[] = [
-    { code: 'Nf1', alleleMat: 'f', allelePat: 'f', sortKey: 20 },
+    {
+        code: 'Nf1',
+        kind: 'locus',
+        alleleMat: 'f',
+        allelePat: 'f',
+        sortKey: 20,
+    },
 ];
 const G_AI14_F_F: GeneRef[] = [
-    { code: 'Ai14', alleleMat: 'f', allelePat: 'f', sortKey: 30 },
+    {
+        code: 'Ai14',
+        kind: 'locus',
+        alleleMat: 'f',
+        allelePat: 'f',
+        sortKey: 30,
+    },
 ];
 const G_PLPCRE_AI14_PLUS_PLUS: GeneRef[] = [
-    { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
-    { code: 'Ai14', alleleMat: '+', allelePat: '+', sortKey: 30 },
+    {
+        code: 'PlpCre',
+        kind: 'transgene',
+        alleleMat: 'Tg',
+        allelePat: '+',
+        sortKey: 10,
+    },
+    {
+        code: 'Ai14',
+        kind: 'locus',
+        alleleMat: '+',
+        allelePat: '+',
+        sortKey: 30,
+    },
 ];
 const G_PLPCRE_NF1_F_PLUS: GeneRef[] = [
-    { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
-    { code: 'Nf1', alleleMat: 'f', allelePat: '+', sortKey: 20 },
+    {
+        code: 'PlpCre',
+        kind: 'transgene',
+        alleleMat: 'Tg',
+        allelePat: '+',
+        sortKey: 10,
+    },
+    {
+        code: 'Nf1',
+        kind: 'locus',
+        alleleMat: 'f',
+        allelePat: '+',
+        sortKey: 20,
+    },
 ];
 // One side recorded, the other not: the maternal copy is floxed, the paternal
 // copy was never assessed. Renders "Nf1 f/?" — a THIRD fact beside "Nf1 f/+"
 // (both sides recorded) and bare "Nf1" (neither recorded), so the half-known
 // case cannot be read as either of them.
 const G_NF1_F_UNKNOWN: GeneRef[] = [
-    { code: 'Nf1', alleleMat: 'f', allelePat: null, sortKey: 20 },
+    {
+        code: 'Nf1',
+        kind: 'locus',
+        alleleMat: 'f',
+        allelePat: null,
+        sortKey: 20,
+    },
 ];
-// The catalogue's reporter, carried by a mouse: zygosity not recorded, so it
-// renders as the bare code exactly as the PlpCre driver does.
+// The catalogue's reporter, carried in ONE copy, inherited from the mother
+// ('Tg' maternal, ABSENT '+' paternal). One copy renders the bare code.
 const G_CCEGFP: GeneRef[] = [
-    { code: 'ccEGFP', alleleMat: null, allelePat: null, sortKey: 40 },
+    {
+        code: 'ccEGFP',
+        kind: 'transgene',
+        alleleMat: 'Tg',
+        allelePat: '+',
+        sortKey: 40,
+    },
 ];
 // '-' = a recorded NULL/knockout allele, the third allele token beside '+' and
 // 'f'. Composes to 'PlpCre;Ai14 +/-', which is line 2's nominal genotype — so
 // this set is what makes that line's rail colour a colour some mouse actually
 // has, not a colour key with no carrier.
 const G_PLPCRE_AI14_PLUS_MINUS: GeneRef[] = [
-    { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
-    { code: 'Ai14', alleleMat: '+', allelePat: '-', sortKey: 30 },
+    {
+        code: 'PlpCre',
+        kind: 'transgene',
+        alleleMat: 'Tg',
+        allelePat: '+',
+        sortKey: 10,
+    },
+    {
+        code: 'Ai14',
+        kind: 'locus',
+        alleleMat: '+',
+        allelePat: '-',
+        sortKey: 30,
+    },
 ];
-// The HOMOZYGOUS reporter is its OWN catalogue gene (28acb8b), not ccEGFP with
-// a recorded allele pair: '(hmo)' is carried by the CODE. So the row mints
-// NULL/NULL like the ccEGFP and PlpCre rows above, and renders the bare code.
+// TWO copies of the SAME ccEGFP gene — one from each parent — which is what
+// homozygous means, and what lib/genotype.ts composes into "ccEGFP(hmo)".
+// '(hmo)' is NOT part of any catalogue code: zygosity is a fact about the
+// mouse, exactly as 'f/f' is (28acb8b unwound 2026-09-23).
 const G_CCEGFP_HMO: GeneRef[] = [
-    { code: 'ccEGFP(hmo)', alleleMat: null, allelePat: null, sortKey: 45 },
+    {
+        code: 'ccEGFP',
+        kind: 'transgene',
+        alleleMat: 'Tg',
+        allelePat: 'Tg',
+        sortKey: 40,
+    },
 ];
 
 // Colour for a gene set, keyed through the SAME composer the grid renders with
@@ -325,7 +415,7 @@ const COLONY_GRID: ColonyGrid = {
                                     signal: 'done',
                                     isAlive: true,
                                     attention:
-                                        "M7AZZ's littermate, homozygous for the reporter — carries the ccEGFP(hmo) catalogue row",
+                                        'M7AZZ\'s littermate, homozygous for the reporter — two ccEGFP copies compose "ccEGFP(hmo)"',
                                     dob: '2026-05-20',
                                     genotypeColor: genoOf(G_CCEGFP_HMO),
                                     mates: [],

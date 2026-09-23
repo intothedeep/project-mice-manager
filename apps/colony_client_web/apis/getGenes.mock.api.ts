@@ -15,31 +15,65 @@ import type { Gene } from '@repo/types';
 // every wild-type mouse would look like it still needs genotyping.
 //
 // A catalogue exists independently of who currently carries what — but every
-// code here is now carried by at least one seed mouse (ccEGFP by M7AZZ,
-// ccEGFP(hmo) by its littermate F8AZZ), so no catalogue row is reachable only
+// code here is carried by at least one seed mouse (ccEGFP by M7AZZ, and by its
+// littermate F8AZZ with two copies), so no catalogue row is reachable only
 // through the pickers.
+//
+// 'ccEGFP(hmo)' IS NOT A ROW HERE, and was removed after briefly being one
+// (28acb8b, unwound 2026-09-23). Zygosity is a fact about the MOUSE, not about
+// the gene — the same reason 'Nf1 f/+' and 'Nf1 f/f' are not catalogue rows.
+// The homozygous reporter is the mice_genes row ('ccEGFP', 'Tg', 'Tg'), which
+// lib/genotype.ts renders "ccEGFP(hmo)". sortKey 45 is left UNUSED: the gaps
+// exist so values never have to move.
+//
+// `kind` selects the NOTATION (migration 0032): 'locus' genes edit a site the
+// genome already has, so both copies have a state ('Nf1 f/+'); 'transgene'
+// genes are inserted at a random site, so the only facts are one copy
+// ('ccEGFP') or two ('ccEGFP(hmo)'). 'WT' IS FILED AS 'locus', AND IT IS A
+// PLACEHOLDER: wild type is neither. Pending the professor; if a third value
+// is needed, widening the CHECK is the 0028 two-liner.
+//
 // sortKey is the DISPLAY ORDER of the gene within a composed genotype, in the
 // lab's own writing order — the professor writes 'PlpCre;Nf1 f/+', so PlpCre
 // sorts first. Gaps of 10 so a future gene can be inserted between two existing
 // ones without renumbering. It is a catalogue fact, which is why it lives here
 // and not on a mouse's rows.
 const GENES: Gene[] = [
-    { geneId: 1, code: 'Nf1', label: 'Neurofibromin 1 (floxed)', sortKey: 20 },
-    { geneId: 2, code: 'PlpCre', label: 'Plp1-CreERT2 driver', sortKey: 10 },
-    { geneId: 3, code: 'Ai14', label: 'Ai14 tdTomato reporter', sortKey: 30 },
+    {
+        geneId: 1,
+        code: 'Nf1',
+        label: 'Neurofibromin 1 (floxed)',
+        sortKey: 20,
+        kind: 'locus',
+    },
+    {
+        geneId: 2,
+        code: 'PlpCre',
+        label: 'Plp1-CreERT2 driver',
+        sortKey: 10,
+        kind: 'transgene',
+    },
+    {
+        geneId: 3,
+        code: 'Ai14',
+        label: 'Ai14 tdTomato reporter',
+        sortKey: 30,
+        kind: 'locus',
+    },
     {
         geneId: 4,
         code: 'ccEGFP',
         label: 'Cre-conditional EGFP reporter',
         sortKey: 40,
+        kind: 'transgene',
     },
     {
         geneId: 5,
-        code: 'ccEGFP(hmo)',
-        label: 'Cre-conditional EGFP reporter, homozygous',
-        sortKey: 45,
+        code: 'WT',
+        label: 'Wild type (no marker)',
+        sortKey: 50,
+        kind: 'locus',
     },
-    { geneId: 6, code: 'WT', label: 'Wild type (no marker)', sortKey: 50 },
 ];
 
 // Codes only, in sortKey order — what the badge pickers render. Sorted, NOT in
@@ -52,17 +86,18 @@ export const GENE_CATALOG_CODES: readonly string[] = [...GENES]
     .sort((a, b) => a.sortKey - b.sortKey)
     .map((g) => g.code);
 
-// The catalogue's sortKey for a code — what mintGeneRefs copies onto a new row
-// (the server will JOIN genes for the same value).
+// The catalogue row for a code — what mintGeneRefs copies sortKey and kind from
+// (the server will JOIN genes for the same values).
 //
 // THROWS on an unknown code rather than defaulting: mice_genes.gene_id is an FK
 // to genes, so a row for a non-catalogue code is unrepresentable in the real
 // schema. A silent fallback would mint a row the DB could never hold and would
-// push it to an arbitrary display position with no error behind it.
-export function geneSortKey(code: string): number {
+// push it to an arbitrary display position, with an invented notation, and no
+// error behind it.
+export function catalogueGene(code: string): Gene {
     const gene = GENES.find((g) => g.code === code);
     if (gene === undefined) throw new Error(`unknown gene code: ${code}`);
-    return gene.sortKey;
+    return gene;
 }
 
 // Simulates the async shape of the real fetcher.

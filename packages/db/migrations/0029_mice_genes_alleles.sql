@@ -30,15 +30,16 @@
 --
 -- BOTH NULLABLE, NO DEFAULT (owner 2026-09-23: "부, 모 모두 default null").
 -- NULL means zygosity IS NOT RECORDED for this row, which is the normal state
--- for two different reasons: a marker that HAS no zygosity to record (a driver
--- like 'PlpCre', or 'WT'), and a gene that simply has not been genotyped yet.
--- A row with both NULL renders as the bare code ("PlpCre"); a recorded pair
--- renders in full ("Nf1 +/+").
+-- for two different reasons: a marker that HAS no zygosity to record ('WT'),
+-- and a gene that simply has not been genotyped yet. A row with both NULL
+-- renders as the bare code ("WT"); a recorded pair renders in full
+-- ("Nf1 +/+"). A TRANSGENE also uses these two columns — 'Tg' present, '+'
+-- absent — so 'PlpCre' is a RECORDED pair too (see 0032).
 --
 -- '+'/'+' IS THEREFORE NOT THE SAME FACT AS NULL/NULL: it is a RECORDED
 -- wild-type pair. Defaulting these columns to '+' would collapse the two and
 -- silently turn every un-assessed row into a positive wild-type claim — and
--- would rewrite "PlpCre" as "PlpCre +/+" on screen.
+-- would rewrite an un-assessed "Nf1" as "Nf1 +/+" on screen.
 --
 -- DELIBERATELY no zygosity enum, no CHECK, no validation (owner: "I will add
 -- more logic later, at this time just add 2 columns").
