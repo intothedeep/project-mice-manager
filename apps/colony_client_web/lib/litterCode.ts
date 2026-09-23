@@ -19,6 +19,21 @@
 // DO NOT relax this to {2,5}. The exception is an exact match on purpose — it
 // admits "WT" and nothing else, so a two-letter typo ("AB", "ZZ") still fails
 // the validation gate that parseLitterCode backs.
+//
+// THE SAME DISTINCTION APPLIES BEYOND THIS FILE, and this is the note to find
+// when you write the next rule about litters. "WT" is a STANDING LABEL, not a
+// litter, so litter-wide invariants do not hold for it and must exempt it:
+//
+//   - same litterCode implies same DOB. True of AYL, AZZ, BCW — all three were
+//     corrected on 2026-09-23 because they were not. FALSE of "WT", whose mice
+//     carry nine different birth dates in the seed grid and correctly so:
+//     wild-type stock is not a cohort born on one day.
+//   - same litterCode implies one shared dam and sire, one mating, one
+//     expected-delivery date. Also false for the same reason.
+//
+// A validator that treats "WT" as a litter will flag real data as broken. The
+// rule is the same one that keeps it out of the ordinal space above: it is a
+// name for animals that have no litter, not the name of a litter.
 
 const LITTER_CODE_RE = /^([A-Z]{3,5}|WT)$/;
 
