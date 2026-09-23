@@ -56,6 +56,10 @@ TASKS.md     task list with acceptance criteria (stubs → docs/phases/)
 STATUS.md    append-only progress log
 docs/phases/    ACTIVE per-sub-phase detail, split per docs.md §1
 docs/design/    design spikes and owner input — output artifacts, not living docs
+FLOWS.md     SNAPSHOT of what the app does, written for the professor. An
+             output artifact, NOT a living doc: no read guard, no lifecycle,
+             and it goes stale by design. PLAN.md is the intent record; if
+             the two disagree, PLAN.md wins and FLOWS.md is out of date
 _archive/       COLD STORAGE, committed. Do not read unless investigating history
 ```
 
