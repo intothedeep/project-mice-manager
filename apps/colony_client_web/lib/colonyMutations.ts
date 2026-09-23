@@ -7,15 +7,20 @@
 // the line then delegates to addCage; addCage creates the cage then delegates
 // to addSlot; addSlot creates the slot then calls addMouse only when a mouse
 // was supplied. addMouse is the SOLE mouse-creating primitive — it mints the
-// implicit toe punch (colonyMutationHelpers.ts:buildMouseCell) and must not
-// have two branches to patch. A rejection anywhere in the chain returns the
-// CALLER's original state/counters (not the tentative ones), so a failed
-// addLine never leaves a dangling cages: [] line behind.
+// creation punch (colonyMutationHelpers.ts:mintPunch) and must not have two
+// branches to patch. A rejection anywhere in the chain returns the CALLER's
+// original state/counters (not the tentative ones), so a failed addLine
+// never leaves a dangling cages: [] line behind.
+//
+// All four take/return ColonyState (grid + punchLog), not a bare ColonyGrid —
+// addMouse appends to punchLog, so every caller in the chain must carry it
+// through.
 //
 // Split out of this file (P0.7-b 8b): updateMouse.ts (edits an existing
 // mouse — no call chain with the four add mutations below) and
-// colonyMutationHelpers.ts (buildMouseCell, advanceLitterCounter, findCage,
-// suggestNextCageNumber — pure helpers shared by both).
+// colonyMutationHelpers.ts (buildMouseCell, mintPunch, projectPunches,
+// advanceLitterCounter, findCage, suggestNextCageNumber — pure helpers
+// shared by both).
 
 import type { ColonyGrid, GridLine } from '@repo/types';
 import { slotLabelSet, cageNumberSet } from '@/lib/colonySeed';
@@ -23,7 +28,10 @@ import {
     buildMouseCell,
     advanceLitterCounter,
     findCage,
+    mintPunch,
+    projectPunches,
     type AddMouseResult,
+    type ColonyState,
     type Counters,
     type MouseSpec,
 } from '@/lib/colonyMutationHelpers';
@@ -63,11 +71,11 @@ export type AddLineResult =
 
 // SOLE mouse-creating primitive — addSlot/addCage/addLine delegate here.
 export function addMouse(
-    state: ColonyGrid,
+    state: ColonyState,
     counters: Counters,
     input: AddMouseInput
-): { state: ColonyGrid; counters: Counters; result: AddMouseResult } {
-    const cage = findCage(state, input.cageId);
+): { state: ColonyState; counters: Counters; result: AddMouseResult } {
+    const cage = findCage(state.grid, input.cageId);
     if (!cage) {
         return {
             state,
@@ -85,16 +93,15 @@ export function addMouse(
 
     const litterCode = input.litterCode.trim();
     const nextMeta = counters.nextMetaId;
-    const nextPunch = counters.nextPunchId;
-    const mouse = buildMouseCell(input, litterCode, nextMeta, nextPunch);
+    const mouse = buildMouseCell(input, litterCode, nextMeta);
     const newLitterOrd = advanceLitterCounter(
         litterCode,
         counters.nextLitterOrd
     );
 
-    const newState: ColonyGrid = {
-        ...state,
-        lines: state.lines.map((line) => ({
+    const gridWithMouse: ColonyGrid = {
+        ...state.grid,
+        lines: state.grid.lines.map((line) => ({
             ...line,
             cages: line.cages.map((c) => {
                 if (c.cageId !== input.cageId) return c;
@@ -110,24 +117,35 @@ export function addMouse(
         })),
     };
 
+    // Creation always mints 'untagged' — it is no longer a caller choice
+    // (P0.7-b: "we never delete an untagged record"). Real tags are added
+    // beside it afterward via addPunch.
+    const minted = mintPunch(
+        state.punchLog,
+        { ...counters, nextMetaId: nextMeta + 1, nextLitterOrd: newLitterOrd },
+        {
+            metaId: nextMeta,
+            location: 'untagged',
+            effectiveAt: input.punchEffectiveAt,
+        }
+    );
+
     return {
-        state: newState,
-        counters: {
-            ...counters,
-            nextMetaId: nextMeta + 1,
-            nextPunchId: nextPunch + 1,
-            nextLitterOrd: newLitterOrd,
+        state: {
+            grid: projectPunches(gridWithMouse, minted.log),
+            punchLog: minted.log,
         },
+        counters: minted.counters,
         result: { ok: true },
     };
 }
 
 // Creates the slot (empty), then delegates to addMouse iff a mouse was supplied.
 export function addSlot(
-    state: ColonyGrid,
+    state: ColonyState,
     counters: Counters,
     input: AddSlotInput
-): { state: ColonyGrid; counters: Counters; result: AddMouseResult } {
+): { state: ColonyState; counters: Counters; result: AddMouseResult } {
     const label = input.slotLabel.trim();
     if (!label) {
         return {
@@ -139,7 +157,7 @@ export function addSlot(
             },
         };
     }
-    if (slotLabelSet(state).has(label.toLowerCase())) {
+    if (slotLabelSet(state.grid).has(label.toLowerCase())) {
         return {
             state,
             counters,
@@ -149,7 +167,7 @@ export function addSlot(
             },
         };
     }
-    const cage = findCage(state, input.cageId);
+    const cage = findCage(state.grid, input.cageId);
     if (!cage) {
         return {
             state,
@@ -159,9 +177,9 @@ export function addSlot(
     }
 
     const slotId = counters.nextSlotId;
-    const stateWithSlot: ColonyGrid = {
-        ...state,
-        lines: state.lines.map((line) => ({
+    const gridWithSlot: ColonyGrid = {
+        ...state.grid,
+        lines: state.grid.lines.map((line) => ({
             ...line,
             cages: line.cages.map((c) =>
                 c.cageId !== input.cageId
@@ -169,6 +187,10 @@ export function addSlot(
                     : { ...c, slots: [...c.slots, { slotId, label, mice: [] }] }
             ),
         })),
+    };
+    const stateWithSlot: ColonyState = {
+        grid: gridWithSlot,
+        punchLog: state.punchLog,
     };
     const countersWithSlot: Counters = { ...counters, nextSlotId: slotId + 1 };
 
@@ -193,12 +215,12 @@ export function addSlot(
 
 // Creates the cage (empty), then delegates to addSlot.
 export function addCage(
-    state: ColonyGrid,
+    state: ColonyState,
     counters: Counters,
     input: AddCageInput
-): { state: ColonyGrid; counters: Counters; result: AddMouseResult } {
+): { state: ColonyState; counters: Counters; result: AddMouseResult } {
     const cageNumStr = String(input.cageNumber);
-    if (cageNumberSet(state).has(cageNumStr)) {
+    if (cageNumberSet(state.grid).has(cageNumStr)) {
         return {
             state,
             counters,
@@ -208,7 +230,7 @@ export function addCage(
             },
         };
     }
-    const line = state.lines.find((l) => l.lineId === input.lineId);
+    const line = state.grid.lines.find((l) => l.lineId === input.lineId);
     if (!line) {
         return {
             state,
@@ -218,9 +240,9 @@ export function addCage(
     }
 
     const cageId = counters.nextCageId;
-    const stateWithCage: ColonyGrid = {
-        ...state,
-        lines: state.lines.map((l) =>
+    const gridWithCage: ColonyGrid = {
+        ...state.grid,
+        lines: state.grid.lines.map((l) =>
             l.lineId !== input.lineId
                 ? l
                 : {
@@ -237,6 +259,10 @@ export function addCage(
                   }
         ),
     };
+    const stateWithCage: ColonyState = {
+        grid: gridWithCage,
+        punchLog: state.punchLog,
+    };
     const countersWithCage: Counters = { ...counters, nextCageId: cageId + 1 };
 
     const inner = addSlot(stateWithCage, countersWithCage, {
@@ -252,10 +278,10 @@ export function addCage(
 
 // Creates the line (no cages yet), then delegates to addCage.
 export function addLine(
-    state: ColonyGrid,
+    state: ColonyState,
     counters: Counters,
     input: AddLineInput
-): { state: ColonyGrid; counters: Counters; result: AddLineResult } {
+): { state: ColonyState; counters: Counters; result: AddLineResult } {
     const name = input.lineName.trim();
     if (!name) {
         return {
@@ -266,7 +292,7 @@ export function addLine(
     }
 
     const nameLower = name.toLowerCase();
-    if (state.lines.some((l) => l.lineName.toLowerCase() === nameLower)) {
+    if (state.grid.lines.some((l) => l.lineName.toLowerCase() === nameLower)) {
         return {
             state,
             counters,
@@ -284,9 +310,13 @@ export function addLine(
         nominalGenotypeColor: input.nominalGenotypeColor ?? null,
         cages: [],
     };
-    const stateWithLine: ColonyGrid = {
-        ...state,
-        lines: [...state.lines, newLine],
+    const gridWithLine: ColonyGrid = {
+        ...state.grid,
+        lines: [...state.grid.lines, newLine],
+    };
+    const stateWithLine: ColonyState = {
+        grid: gridWithLine,
+        punchLog: state.punchLog,
     };
     const countersWithLine: Counters = { ...counters, nextLineId: lineId + 1 };
 

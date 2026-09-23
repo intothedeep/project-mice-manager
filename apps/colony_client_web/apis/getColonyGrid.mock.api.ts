@@ -77,6 +77,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2024-02-10',
                                         },
+                                        {
+                                            punchId: 24,
+                                            location: 'untagged',
+                                            effectiveAt: '2024-02-10',
+                                        },
                                     ],
                                     pupNumber: 4,
                                     litterCode: 'BCW',
@@ -115,6 +120,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2025-05-01',
                                         },
+                                        {
+                                            punchId: 25,
+                                            location: 'untagged',
+                                            effectiveAt: '2025-05-01',
+                                        },
                                     ],
                                     pupNumber: 5,
                                     litterCode: 'AYL',
@@ -140,6 +150,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 3,
                                             location: 'toe',
+                                            effectiveAt: '2026-05-20',
+                                        },
+                                        {
+                                            punchId: 26,
+                                            location: 'untagged',
                                             effectiveAt: '2026-05-20',
                                         },
                                     ],
@@ -195,6 +210,13 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'ear',
                                             effectiveAt: '2026-03-01',
                                         },
+                                        // No fixture mouse carries two active ear punches, so the
+                                        // "ee" form (Q41) has no seed coverage — deliberate (owner).
+                                        {
+                                            punchId: 27,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-02-01',
+                                        },
                                     ],
                                     pupNumber: 10,
                                     litterCode: 'BEV',
@@ -228,6 +250,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 5,
                                             location: 'toe',
+                                            effectiveAt: '2026-09-02',
+                                        },
+                                        {
+                                            punchId: 28,
+                                            location: 'untagged',
                                             effectiveAt: '2026-09-02',
                                         },
                                     ],
@@ -269,6 +296,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2026-09-02',
                                         },
+                                        {
+                                            punchId: 29,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-09-02',
+                                        },
                                     ],
                                     pupNumber: 4,
                                     litterCode: 'BCX',
@@ -303,6 +335,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2024-03-01',
                                         },
+                                        {
+                                            punchId: 30,
+                                            location: 'untagged',
+                                            effectiveAt: '2024-03-01',
+                                        },
                                     ],
                                     pupNumber: 1,
                                     litterCode: 'BCW',
@@ -330,6 +367,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 8,
                                             location: 'toe',
+                                            effectiveAt: '2025-04-01',
+                                        },
+                                        {
+                                            punchId: 31,
+                                            location: 'untagged',
                                             effectiveAt: '2025-04-01',
                                         },
                                     ],
@@ -371,6 +413,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 9,
                                             location: 'toe',
+                                            effectiveAt: '2024-06-01',
+                                        },
+                                        {
+                                            punchId: 32,
+                                            location: 'untagged',
                                             effectiveAt: '2024-06-01',
                                         },
                                     ],
@@ -421,6 +468,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2025-01-15',
                                         },
+                                        {
+                                            punchId: 33,
+                                            location: 'untagged',
+                                            effectiveAt: '2025-01-15',
+                                        },
                                     ],
                                     pupNumber: 5,
                                     litterCode: 'BGX',
@@ -462,6 +514,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 11,
                                             location: 'toe',
+                                            effectiveAt: '2025-06-15',
+                                        },
+                                        {
+                                            punchId: 34,
+                                            location: 'untagged',
                                             effectiveAt: '2025-06-15',
                                         },
                                     ],
@@ -519,6 +576,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2026-03-01',
                                         },
+                                        {
+                                            punchId: 35,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-03-01',
+                                        },
                                     ],
                                     pupNumber: 2,
                                     litterCode: 'WT',
@@ -538,6 +600,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 13,
                                             location: 'toe',
+                                            effectiveAt: '2025-02-01',
+                                        },
+                                        {
+                                            punchId: 36,
+                                            location: 'untagged',
                                             effectiveAt: '2025-02-01',
                                         },
                                     ],
@@ -565,6 +632,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 14,
                                             location: 'toe',
+                                            effectiveAt: '2026-08-20',
+                                        },
+                                        {
+                                            punchId: 37,
+                                            location: 'untagged',
                                             effectiveAt: '2026-08-20',
                                         },
                                     ],
@@ -610,6 +682,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2026-01-10',
                                         },
+                                        {
+                                            punchId: 38,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-01-10',
+                                        },
                                     ],
                                     pupNumber: 6,
                                     litterCode: 'WT',
@@ -629,6 +706,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 16,
                                             location: 'toe',
+                                            effectiveAt: '2026-02-15',
+                                        },
+                                        {
+                                            punchId: 39,
+                                            location: 'untagged',
                                             effectiveAt: '2026-02-15',
                                         },
                                     ],
@@ -652,6 +734,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2026-03-01',
                                         },
+                                        {
+                                            punchId: 40,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-03-01',
+                                        },
                                     ],
                                     pupNumber: 4,
                                     litterCode: 'WT',
@@ -671,6 +758,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 18,
                                             location: 'toe',
+                                            effectiveAt: '2026-03-20',
+                                        },
+                                        {
+                                            punchId: 41,
+                                            location: 'untagged',
                                             effectiveAt: '2026-03-20',
                                         },
                                     ],
@@ -694,6 +786,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2026-04-05',
                                         },
+                                        {
+                                            punchId: 42,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-04-05',
+                                        },
                                     ],
                                     pupNumber: 6,
                                     litterCode: 'WT',
@@ -715,6 +812,11 @@ const COLONY_GRID: ColonyGrid = {
                                             location: 'toe',
                                             effectiveAt: '2026-05-01',
                                         },
+                                        {
+                                            punchId: 43,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-05-01',
+                                        },
                                     ],
                                     pupNumber: 8,
                                     litterCode: 'WT',
@@ -734,6 +836,11 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 21,
                                             location: 'toe',
+                                            effectiveAt: '2026-09-04',
+                                        },
+                                        {
+                                            punchId: 44,
+                                            location: 'untagged',
                                             effectiveAt: '2026-09-04',
                                         },
                                     ],

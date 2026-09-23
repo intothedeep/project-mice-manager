@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useSyncExternalStore } from 'react';
-import type { ColonyGrid, PunchHistoryEntry, PunchRef } from '@repo/types';
+import type { ColonyGrid, PunchHistoryEntry } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import { moveMouse, type MoveTarget } from '@/lib/gridMove';
 import { formatLitterCode, parseLitterCode } from '@/lib/litterCode';
@@ -38,6 +38,7 @@ import {
 } from '@/lib/punchMutations';
 import {
     suggestNextCageNumber as pureSuggestNextCageNumber,
+    projectPunches,
     type ColonyState,
     type MouseSpec,
     type AddMouseResult,
@@ -66,14 +67,14 @@ export type {
 
 // ---- state -----------------------------------------------------------------
 
-// Step 6a (owner option B): state widens from a bare ColonyGrid to { grid,
-// punchLog } so a removed punch can be tombstoned in the log without leaking
-// deletedAt into the grid DTO. punchLog seeds from every punch row already in
-// SEED_COLONY (step 7) — the seed carries ACTIVE rows only, so no seeded entry
-// starts tombstoned.
+// punchLog is the SINGLE SOURCE (colonyMutationHelpers.ts header) — it seeds
+// from every punch row already in SEED_COLONY (the seed carries ACTIVE rows
+// only, so no seeded entry starts tombstoned), and `grid` is projectPunches'
+// derived view over it from the very first snapshot.
+const initialPunchLog = seedPunchLog(SEED_COLONY);
 let state: ColonyState = {
-    grid: SEED_COLONY,
-    punchLog: seedPunchLog(SEED_COLONY),
+    grid: projectPunches(SEED_COLONY, initialPunchLog),
+    punchLog: initialPunchLog,
 };
 let counters: Counters = {
     nextMetaId: maxMetaId(SEED_COLONY) + 1,
@@ -156,77 +157,39 @@ export function suggestNextCageNumber(): string {
 
 // ---- public writes (thin wrappers) -----------------------------------------
 
-// Any of the four add mutations MAY mint a creation punch (MouseSpec rides
-// the optional `mouse?` param on addSlot/addCage/addLine, and is required on
-// addMouse — all four funnel through colonyMutations.ts:addMouse, the SOLE
-// mint site). That mint lands in the grid, but the pure functions' signature
-// is fixed at { state: ColonyGrid, counters, result } — there is no route
-// back to punchLog from inside them, and step 7 does not touch their
-// signatures. Find the minted row here instead: if nextPunchId advanced,
-// exactly one new punch exists at the PRE-COMMIT id, and it belongs to
-// exactly one mouse.
-function findMintedPunch(
-    grid: ColonyGrid,
-    punchId: number
-): { metaId: number; punch: PunchRef } | undefined {
-    for (const l of grid.lines)
-        for (const c of l.cages)
-            for (const s of c.slots)
-                for (const m of s.mice) {
-                    const punch = m.punches.find((p) => p.punchId === punchId);
-                    if (punch) return { metaId: m.metaId, punch };
-                }
-    return undefined;
-}
-
-// Shared by every add mutation below: commit state/counters only on success,
-// emit only when something actually changed. Also closes the seam above: a
-// newly minted creation punch is appended to punchLog in the same commit, so
-// a user-created mouse's punch is never invisible to the log.
-function commitIfOk<R extends { ok: boolean }>(r: {
-    state: ColonyGrid;
+// Shared by every write below: commit state/counters only when the pure
+// function actually produced a new state (the no-op/failure paths return the
+// SAME state reference back), emit only then. All six pure mutations now
+// take/return ColonyState (grid + punchLog) — addMouse's creation punch is
+// minted straight into punchLog by the pure layer (colonyMutations.ts), so
+// there is no separate seam to close here any more.
+function commit<R extends { ok: boolean }>(r: {
+    state: ColonyState;
     counters: Counters;
     result: R;
 }): R {
-    if (r.result.ok) {
-        const priorNextPunchId = counters.nextPunchId;
-        let punchLog = state.punchLog;
-        if (r.counters.nextPunchId !== priorNextPunchId) {
-            const minted = findMintedPunch(r.state, priorNextPunchId);
-            if (minted) {
-                const entry: PunchHistoryEntry = {
-                    punchId: minted.punch.punchId,
-                    metaId: minted.metaId,
-                    location: minted.punch.location,
-                    effectiveAt: minted.punch.effectiveAt,
-                    ...(minted.punch.note !== undefined
-                        ? { note: minted.punch.note }
-                        : {}),
-                };
-                punchLog = [...punchLog, entry];
-            }
-        }
-        state = { grid: r.state, punchLog };
-        counters = r.counters;
+    counters = r.counters;
+    if (r.state !== state) {
+        state = r.state;
         emit();
     }
     return r.result;
 }
 
 export function addMouse(input: AddMouseInput): AddMouseResult {
-    return commitIfOk(pureAddMouse(state.grid, counters, input));
+    return commit(pureAddMouse(state, counters, input));
 }
 
 export function addSlot(input: AddSlotInput): AddMouseResult {
-    return commitIfOk(pureAddSlot(state.grid, counters, input));
+    return commit(pureAddSlot(state, counters, input));
 }
 
 export function addCage(input: AddCageInput): AddMouseResult {
-    return commitIfOk(pureAddCage(state.grid, counters, input));
+    return commit(pureAddCage(state, counters, input));
 }
 
 export function addLine(input: AddLineInput): AddLineResult {
-    return commitIfOk(pureAddLine(state.grid, counters, input));
+    return commit(pureAddLine(state, counters, input));
 }
 
 export function updateMouse(
@@ -243,28 +206,12 @@ export function updateMouse(
     return r.result;
 }
 
-// Shared by the two punch wrappers below: commit only when the pure function
-// actually produced a new state (the no-op paths in punchMutations.ts return
-// the SAME state reference back), mirroring updateMouse's no-op guard above.
-function commitPunchIfChanged<R extends { ok: boolean }>(r: {
-    state: ColonyState;
-    counters: Counters;
-    result: R;
-}): R {
-    counters = r.counters;
-    if (r.state !== state) {
-        state = r.state;
-        emit();
-    }
-    return r.result;
-}
-
 export function addPunch(input: AddPunchInput): AddMouseResult {
-    return commitPunchIfChanged(pureAddPunch(state, counters, input));
+    return commit(pureAddPunch(state, counters, input));
 }
 
 export function removePunch(input: RemovePunchInput): AddMouseResult {
-    return commitPunchIfChanged(pureRemovePunch(state, counters, input));
+    return commit(pureRemovePunch(state, counters, input));
 }
 
 // applyColonyMove: wraps gridMove.moveMouse and emits so the grid re-renders.

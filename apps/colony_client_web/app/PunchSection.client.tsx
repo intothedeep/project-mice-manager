@@ -9,6 +9,12 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { SELECT_CLASS, PUNCH_LOCATION_OPTIONS } from './AddMouseDialog.client';
 
+// `untagged` is minted with the mouse and never removed, so it is not an
+// option a user can add. addPunch refuses it too — this only hides it.
+const ADDABLE_LOCATIONS = PUNCH_LOCATION_OPTIONS.filter(
+    (p) => p !== 'untagged'
+);
+
 // Task 13, punch half. ONE mutation path — addPunch/removePunch (step 7's
 // store wrappers) — with two views on it: this section's active/history list,
 // and IdentitySection's read-only "N active ear punches" projection. No
@@ -42,8 +48,14 @@ export function PunchSection({ mouse }: { mouse: MouseCell }) {
     function handleRemove(punchId: number) {
         // Soft-delete only (rules/core.md): removePunch tombstones the log
         // row with deletedAt and masks it out of the grid's active list — it
-        // never splices the record itself.
-        removePunch({ punchId, deletedAt: TODAY });
+        // never splices the record itself. An `untagged` row is REFUSED
+        // (ok: false) — surface that instead of silently doing nothing.
+        const result = removePunch({ punchId, deletedAt: TODAY });
+        if (!result.ok) {
+            setError(result.error);
+            return;
+        }
+        setError(null);
     }
 
     const rows = log.slice().sort((a, b) => a.punchId - b.punchId);
@@ -59,13 +71,13 @@ export function PunchSection({ mouse }: { mouse: MouseCell }) {
                     className={cn(SELECT_CLASS, 'w-auto')}
                     value={location}
                     onChange={(e) => {
-                        const next = PUNCH_LOCATION_OPTIONS.find(
+                        const next = ADDABLE_LOCATIONS.find(
                             (p) => p === e.target.value
                         );
                         if (next) setLocation(next);
                     }}
                 >
-                    {PUNCH_LOCATION_OPTIONS.map((p) => (
+                    {ADDABLE_LOCATIONS.map((p) => (
                         <option
                             key={p}
                             value={p}
@@ -123,7 +135,7 @@ export function PunchSection({ mouse }: { mouse: MouseCell }) {
                                 <span className="text-[10px] text-muted-foreground/70 no-underline">
                                     removed
                                 </span>
-                            ) : (
+                            ) : p.location === 'untagged' ? null : (
                                 <Button
                                     size="xs"
                                     variant="ghost"

@@ -205,10 +205,6 @@ export function AddMouseDialog({
     // open. Using an effect keyed on `open` also handles re-open after close with
     // different prefill values (no stale state).
     const [sex, setSex] = useState<Sex>('U');
-    // Pups often arrive with no physical tag (step 8d) — the creation
-    // default is 'untagged', not 'toe'.
-    const [punchLocation, setPunchLocation] =
-        useState<PunchLocation>('untagged');
     const [litterValue, setLitterValue] = useState<string>(nextAutoCode);
     const [pupNumber, setPupNumber] = useState('');
     const [dob, setDob] = useState(TODAY);
@@ -262,7 +258,6 @@ export function AddMouseDialog({
         }
 
         setSex('U');
-        setPunchLocation('untagged');
         setLitterValue(peekNextLitterCode());
         setPupNumber('');
         setDob(TODAY);
@@ -351,9 +346,10 @@ export function AddMouseDialog({
             genotype: genotype.trim() || undefined,
             // The initial punch is dated to now (when it physically
             // happens), never to dob — a mouse entered weeks after birth
-            // must not inherit a birthday-dated punch.
+            // must not inherit a birthday-dated punch. Creation always mints
+            // 'untagged' (colonyMutations.ts:addMouse) — the location is no
+            // longer a caller choice.
             punchEffectiveAt: TODAY,
-            initialPunchLocation: punchLocation,
         };
 
         const action = buildSubmitAction({
@@ -434,27 +430,6 @@ export function AddMouseDialog({
                                             : s === 'F'
                                               ? 'F — female'
                                               : 'U — unsexed'}
-                                    </option>
-                                ))}
-                            </select>
-                        </Label>
-
-                        <Label text="Punch location">
-                            <select
-                                className={SELECT_CLASS}
-                                value={punchLocation}
-                                onChange={(e) =>
-                                    setPunchLocation(
-                                        e.target.value as PunchLocation
-                                    )
-                                }
-                            >
-                                {PUNCH_LOCATION_OPTIONS.map((p) => (
-                                    <option
-                                        key={p}
-                                        value={p}
-                                    >
-                                        {p}
                                     </option>
                                 ))}
                             </select>
