@@ -1,10 +1,10 @@
 'use client';
 
-import type { ColonyGrid, MouseCell, Role, Sex } from '@repo/types';
+import type { ColonyGrid, MouseCell, Role } from '@repo/types';
 import { useState } from 'react';
 import { signalIdClass } from '@/lib/signal';
 import { useTasks, useTaskLog } from '@/lib/mockStore';
-import { updateMouse, useColonyGrid } from '@/lib/mockColonyStore';
+import { useColonyGrid } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
 import { formatDate } from '@/lib/dueDates';
@@ -17,14 +17,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { EditableCell } from '@/components/ui/editable-cell';
 import { cn } from '@/lib/utils';
-
-const SEX_OPTIONS = [
-    { value: 'M', label: 'M' },
-    { value: 'F', label: 'F' },
-    { value: 'U', label: 'U' },
-];
 
 // metaId -> MouseCell over the whole colony. `selected.mouse` is a snapshot
 // captured at click-time by ColonyGridView, so it goes stale the moment the
@@ -160,27 +153,9 @@ export function MouseDetailDrawer({
                                     <span className="w-14 shrink-0 text-xs text-muted-foreground">
                                         sex
                                     </span>
-                                    <EditableCell
-                                        type="select"
-                                        options={SEX_OPTIONS}
-                                        value={m.sex}
-                                        title="double-click to edit"
-                                        onCommit={(next) => {
-                                            const result = updateMouse(
-                                                m.metaId,
-                                                { sex: next as Sex }
-                                            );
-                                            return result.ok
-                                                ? null
-                                                : result.error;
-                                        }}
-                                    >
-                                        <span className="font-mono">
-                                            {m.isAlive
-                                                ? m.sex
-                                                : `${m.sex} (dead)`}
-                                        </span>
-                                    </EditableCell>
+                                    <span className="font-mono">
+                                        {m.isAlive ? m.sex : `${m.sex} (dead)`}
+                                    </span>
                                 </div>
                             </Section>
 

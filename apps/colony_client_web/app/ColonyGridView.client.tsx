@@ -47,7 +47,6 @@ import {
     useColonyGrid,
     applyColonyMove,
     updateMouse,
-    type UpdateMousePatch,
 } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
@@ -66,7 +65,6 @@ import { NewTaskDialog } from './NewTaskDialog.client';
 import { MouseCaseTypeMenu } from './MouseCaseTypeMenu.client';
 import { AddMouseDialog } from './AddMouseDialog.client';
 import { AddLineDialog } from './AddLineDialog.client';
-import { EditableCell } from '@/components/ui/editable-cell';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
 
@@ -923,18 +921,6 @@ export function ColonyGridView() {
                                                                                                     },
                                                                                                 }
                                                                                             );
-                                                                                        }}
-                                                                                        onUpdate={(
-                                                                                            patch
-                                                                                        ) => {
-                                                                                            const result =
-                                                                                                updateMouse(
-                                                                                                    m.metaId,
-                                                                                                    patch
-                                                                                                );
-                                                                                            return result.ok
-                                                                                                ? null
-                                                                                                : result.error;
                                                                                         }}
                                                                                     />
                                                                                 )
@@ -1834,7 +1820,6 @@ function MouseRow({
     onMate,
     onOpenCases,
     onCtxMenu,
-    onUpdate,
 }: {
     id: string;
     mouse: MouseCell;
@@ -1860,7 +1845,6 @@ function MouseRow({
     onMate: (color: string) => void;
     onOpenCases: (target: CaseDrawerTarget) => void;
     onCtxMenu: (e: React.MouseEvent) => void;
-    onUpdate: (patch: UpdateMousePatch) => string | null;
 }) {
     const dimmed = filterOn && !isMatch;
     const stage = lifeStage(mouse.dob, mouse.sex);
@@ -1966,33 +1950,22 @@ function MouseRow({
                                     : undefined
                             }
                         >
-                            <EditableCell
-                                value={mouse.genotype}
-                                onCommit={(next) =>
-                                    onUpdate({ genotype: next })
-                                }
-                                className="w-full"
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onGenotype();
+                                }}
+                                title={`highlight genotype: ${mouse.genotype}`}
+                                className="w-full text-left hover:underline"
                             >
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onGenotype();
-                                    }}
-                                    title={`highlight genotype: ${mouse.genotype} — double-click to edit`}
-                                    className="w-full text-left hover:underline"
-                                >
-                                    <span className="truncate font-mono text-[11px]">
-                                        {mouse.genotype}
-                                    </span>
-                                </button>
-                            </EditableCell>
+                                <span className="truncate font-mono text-[11px]">
+                                    {mouse.genotype}
+                                </span>
+                            </button>
                         </div>
 
-                        <EditableCell
-                            value={mouse.dob ?? ''}
-                            type="date"
-                            onCommit={(next) => onUpdate({ dob: next })}
+                        <div
                             className={cn(
                                 CELL,
                                 'px-1.5 font-mono text-[10px]',
@@ -2000,14 +1973,14 @@ function MouseRow({
                             )}
                             title={
                                 stage === 'baby'
-                                    ? 'baby (pre-weaning) — double-click to edit'
+                                    ? 'baby (pre-weaning)'
                                     : stage === 'old'
-                                      ? 'old (age threshold reached) — double-click to edit'
-                                      : 'DOB — double-click to edit'
+                                      ? 'old (age threshold reached)'
+                                      : 'DOB'
                             }
                         >
                             {fmtDate(mouse.dob)}
-                        </EditableCell>
+                        </div>
 
                         {/* grid-rows-2, not flex-col: a flex item's min-height is
                             auto, so the half holding text cannot shrink below its
