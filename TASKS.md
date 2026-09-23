@@ -8,7 +8,7 @@
 Task legend: `[ ]` TODO · `[~]` IN PROGRESS · `[x]` DONE.
 Each task lists AC = deterministic acceptance criteria.
 > Schema-evolution fold history (P0 re-scope + R1–R15) rolled off → _archive/tasks.schema-fold-preamble.md  <!-- ARCHIVE: history-only -->
-> Current schema is authoritative in packages/db/SCHEMA.md (generated from live DB), NOT restated here.
+> Current schema is authoritative in packages/db/SCHEMA.md, NOT restated here — but see the CORRECTION of 2026-09-23 (owner: "no db yet"): there is NO database, SCHEMA.md stops at `0027`, and its "generated from the live colony_dev" banner is false. The MIGRATIONS (`packages/db/migrations/0001`–`0030`) are the contract; SCHEMA.md is a fossil of a DB that no longer exists. Detail: docs/phases/p0.7-c.tasks.md.
 
 ## P0 — Prototype (LOCAL ONLY)
 
@@ -26,12 +26,15 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- ARCHIVE: history-only -->
 > Detail: [_archive/tasks.p0.2-schema.md](./_archive/tasks.p0.2-schema.md)
 >
-> **CURRENT SCHEMA IS NOT DESCRIBED IN THIS DOC.** It is generated from the live
-> database into [packages/db/SCHEMA.md](./packages/db/SCHEMA.md) (with
-> [ERD.core.png](./packages/db/ERD.core.png)) by
-> `packages/db/scripts/{schema-doc,erd}.sh`. Regenerate after every migration
-> change rather than restating structure here — restating it is what produced
-> the drift this stub replaces.
+> **CURRENT SCHEMA IS NOT DESCRIBED IN THIS DOC.** The contract is
+> [packages/db/migrations/](./packages/db/migrations/) (`0001`–`0030`).
+> [SCHEMA.md](./packages/db/SCHEMA.md) and [ERD.core.png](./packages/db/ERD.core.png)
+> are SNAPSHOTS produced by `packages/db/scripts/{schema-doc,erd}.sh`, and as of
+> 2026-09-23 they are stale: there is no database (owner: "no db yet"), and the
+> snapshot stops at `0027`. Regenerate them once a database exists; until then
+> read the migrations. Do not restate structure here — restating it is what
+> produced the drift this stub replaces, and this paragraph itself drifted the
+> same way: it claimed a "live database" for months after there was none.
 
 ### P0.2-R25 Schema review pass (`packages/db` migrations 0009+) — P0-a
 
@@ -104,7 +107,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (add-mouse v1 [x] archived · **P0.7-b DONE [x] — all 23 tasks closed and ARCHIVED 2026-09-23** · open: 6 base tasks [ ] + BACKLOG path-copy `moveMouse` [ ] + `SEED_COLONY` note [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (add-mouse v1 [x] archived · **P0.7-b DONE [x] — all 23 tasks closed and ARCHIVED 2026-09-23** · **P0.7-c genotype-as-gene-rows: 3 [x] shipped, 2 [ ] open, split to `docs/phases/p0.7-c.tasks.md`** · open: 6 base tasks [ ] + BACKLOG path-copy `moveMouse` [ ] + `SEED_COLONY` note [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). **P0.7-b is DONE and ARCHIVED
 > 2026-09-23:** all 23 implementation tasks (1, 2, 3, 4, 5, 6, 6a, 7, 8, 8b, 8c,
@@ -123,6 +126,41 @@ Each task lists AC = deterministic acceptance criteria.
 > which stays LIVE because it is guidance for writing future ACs.
 > <!-- ARCHIVE: history-only -->
 > Archived detail: [_archive/tasks.p0.7-b.md](./_archive/tasks.p0.7-b.md)
+>
+> **P0.7-c — genotype as GENE ROWS (opened 2026-09-23).** SHIPPED [x]:
+> `MouseCell.genotype` (stored composed string, same defect as the deleted
+> `mouseLabel`) → `genes: GeneRef[]` composed at read by `lib/genotype.ts`,
+> with migration `0029` adding NULLABLE `mice_genes.allele_pat`/`allele_mat`
+> (`ca216c2`); and `parseLitterCode` accepting `WT`, a real litter code on 10 of
+> the 22 seed mice that the regex rejected, breaking the Add-mouse dropdown and
+> the validation gate (`3932157`). Both carry a hash but NO reviewer PASS line —
+> none was supplied — and their "22 mice, 0 mismatches" equality is
+> commit-reported for `3932157` but INDEPENDENTLY RE-DERIVED for `ca216c2`,
+> which has a reviewer **PASS** (`mice=22 genotype mismatches=0`, gates forced
+> uncached). ALSO SHIPPED `[x]` (`11d0322`, developer evidence, no independent
+> reviewer pass): `genes.sort_key` + migration `0030_gene_sort_key.sql` —
+> `mice_genes.order_index` DROPPED, `mice_genes_order_key` replaced by
+> `mice_genes_mouse_gene_key (mouse_id, gene_id) WHERE deleted_at IS NULL`,
+> `GENE_CODES` now DERIVED from the catalogue, and **the allele order corrected
+> to MATERNAL-FIRST — owner ruled 2026-09-23 that the 2026-09-17 decision
+> stands and `0029` had inverted it** (fixed in place; fixture rows swapped,
+> not reordered, so only the meaning changed). OPEN [ ], both re-aimed as
+> BEFORE-THE-FIRST-`createdb` prerequisites: `scenarios/flow-weekly-cycle.sql`
+> is a trap for whoever builds the schema first (INSERTs the dropped
+> `order_index`, aggregates by it, seeds the `'Nf1 f/+'` row `0030` rejects),
+> with the same dead contract in `scenarios/README.md` + `p0.4.tasks.md:19`;
+> and nothing seeds `genes`, so the `sort_key` values live only in the mock.
+> MEMO, NOT A TASK — owner ruled 2026-09-23
+> (*"whats the problem? leave a memo."*): `InGridParentCell.genotypeColor` is
+> still a stored copy while the genotype string on that same cell composes at
+> read, so a parent sub-cell keeps its old tint behind new text (mock-era only,
+> value-correct). **THERE IS NO DATABASE — owner 2026-09-23, *"no db yet"*:**
+> migrations `0001`–`0030` are paper contracts, nothing is "unapplied", and
+> `packages/db/SCHEMA.md` is a FOSSIL that stops at `0027` while its banner
+> still claims it was generated from a live `colony_dev` — recorded as a
+> finding, NOT edited (owner deciding). STILL OPEN: `plan §5 Q49`, whether the
+> gene pickers should follow `sort_key` too. Detail (split out the day it opened, docs.md §1):
+> [docs/phases/p0.7-c.tasks.md](./docs/phases/p0.7-c.tasks.md)
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.7.tasks.md](./docs/phases/p0.7.tasks.md)
 

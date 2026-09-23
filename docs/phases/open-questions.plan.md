@@ -448,3 +448,75 @@
     `getMouseDetail` has zero callers and the drawer reads `MouseCell.parents`.
     It is deleted or retargeted BY TASK 9d, not as a separate task (quality
     gate: no dead exports).
+47. **Gene/genotype COLOUR model — DECIDED IN PRINCIPLE 2026-09-23 (owner),
+    DELIBERATELY NOT IMPLEMENTED.** Owner's words: *"each gene has a color and
+    +/+ will influence color but not this time."* So the model below is
+    SETTLED but NOTHING is scheduled against it — no task, no AC; it is
+    recorded so the next person does not re-derive it.
+    NUMBERING NOTE (read before citing): `docs/phases/p0.3.tasks.md:62` already
+    cited a `plan §5 Q47` before this question existed — that citation is about
+    whether `M1A` and `M1+10A` in one sheet snapshot fold into one animal at
+    import, and it is a DANGLING REF that does NOT point here. Recorded
+    2026-09-22 in `STATUS.md`, annotated at the citation site 2026-09-23.
+    DECIDED, as the owner settled it:
+    - the palette is keyed by the **WHOLE COMPOSED GENOTYPE LABEL** — the
+      string `lib/genotype.ts genotypeOf` produces, not the individual gene;
+    - a ZYGOSITY DIFFERENCE is therefore a DIFFERENT KEY and a different
+      colour: `Ai14` ≠ `Ai14 +/+` (which is exactly the NULL/NULL vs recorded
+      `'+'/'+'` distinction migration `0029` exists to preserve);
+    - gene ORDER within the label is normalised by sorting on `sort_key`
+      (P0.7-c task 4), so input order cannot produce two colours for one mouse;
+    - `WT` and `?` are assigned **NO COLOUR**. This PRESERVES an existing
+      deliberate property, stated in `apis/getColonyGrid.mock.api.ts:27-29`:
+      WT → null "rendered as the DEFAULT cell background (no fill). Only MUTANT
+      genotypes carry a hue, so they pop"; `'?'` → null likewise, with the "?"
+      text doing the disambiguating;
+    - a genotype NOT YET in the palette gets a colour ASSIGNED and STORED.
+    STILL GENUINELY UNRESOLVED — recorded as open, NOT answered here:
+    (a) auto-assignment depends on ORDER OF FIRST SIGHTING unless the palette is
+    persisted; in the mock era that means the palette becomes STATE (today
+    `GENO` in `getColonyGrid.mock.api.ts:30-40` is a hand-written constant map,
+    so nothing assigns anything at runtime);
+    (b) COLOUR EXHAUSTION: the grid renders the tint at 13% alpha
+    (`` `${mouse.genotypeColor}22` ``, `ColonyGridView.client.tsx:1975`, and the
+    parent sub-cell at `:1785`), where only ~12–20 hues are humanly
+    distinguishable — while 5 catalogue genes plus zygosity combine to far more
+    labels than that. REUSE hues, or FALL BACK to no-fill? Undecided;
+    (c) this model is an **ALTERNATIVE** to the earlier "each gene has its own
+    hue, zygosity modulates it" idea — NOT both. Whichever ships, the other is
+    dead; do not implement them side by side.
+    FILED WITH IT (owner 2026-09-23, *"leave a memo"*): the in-grid parent
+    cell is HALF-MIGRATED — its genotype STRING composes at read while its
+    `genotypeColor` is still a STORED copy, so a parent sub-cell paints the old
+    tint behind new text. Memo, not a task, in
+    `docs/phases/p0.7-c.tasks.md`; it sits in this design area and will most
+    likely be settled with whatever answers this question.
+48. **Should `mice_genes` validate gene COMBINATIONS at all? (added
+    2026-09-23 — OPEN, not answered.)** `[Nf1, WT]` is accepted today and
+    nothing rejects it: `mintGeneRefs` (`lib/genotype.ts:64-77`) does no
+    validation, and `0029` deliberately added "no zygosity enum, no CHECK, no
+    validation" (owner: *"I will add more logic later"*). P0.7-c task 4's
+    replacement unique index `(mouse_id, gene_id) WHERE deleted_at IS NULL`
+    closes ONLY the DUPLICATE case (`[Nf1, Nf1]`) — it says nothing about
+    combinations that are individually unique but biologically contradictory,
+    of which "wild type AND a mutant marker" is the obvious one. The question
+    is whether such a rule belongs in the schema at all, in the picker, or
+    nowhere (the lab may legitimately write `WT` to mean "wild type at the
+    locus we care about"). Needs the professor, not an architect.
+49. **Should the gene PICKERS follow `sort_key` too? (added 2026-09-23 —
+    OPEN, nothing assumed, nothing changed.)** Since `11d0322` the GRID renders
+    a composed genotype in catalogue `sort_key` order, so `PlpCre` (10) comes
+    first. The badge pickers still list genes in CATALOGUE ARRAY order, where
+    `Nf1` is first (`apis/getGenes.mock.api.ts:25-34` — `GENE_CATALOG_CODES`
+    maps the array as written, and `GENE_CODES` filters that same array). So a
+    user picks from one order and reads the result in another. Options are
+    obvious and not chosen here: sort the picker by `sort_key` (one order
+    everywhere), leave the array order (the catalogue list has its own logic —
+    most-used first), or make `sort_key` the array order outright. Owner's
+    call. RELATED, already settled in code and NOT part of this question:
+    pick ORDER no longer reaches the rendered string or the write path
+    (`genotypeOf` sorts on `sortKey`, `geneRefsEqual` is order-insensitive,
+    `mintGeneRefs` copies `sortKey` from the catalogue), so
+    `CodeBadgeSelect`'s lack of exclusivity — deselect+reselect reorders a
+    mouse's picks — is moot everywhere EXCEPT what the picker itself shows,
+    which is exactly this question.

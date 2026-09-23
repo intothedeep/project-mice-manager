@@ -246,6 +246,17 @@ live file; every mutation audit-logged.
   transgenes stored as 2 alleles; `GeneCall {code, alleleA, alleleB, display}`,
   flat `MouseCell.genotype` composed at read; Item 4 zygosity picker; three
   professor OQs (allele order, transgene token, full vocab).
+  **PARTLY OVERTAKEN 2026-09-23 by P0.7-c (`ca216c2`, TASKS P0.7 stub):** the
+  bare-`genes.code` half and the two allele columns SHIPPED as migration `0029`,
+  and `MouseCell.genotype` is NOT a flat string any more — it is
+  `genes: GeneRef[]` composed at read by `lib/genotype.ts`, so `GeneCall` never
+  landed. **The MATERNAL-FIRST decision HELD**: `0029` shipped inverted, a
+  reviewer caught it, the owner ruled 2026-09-23 that 09-17 stands, and
+  `11d0322` corrected `0029` in place — columns are `allele_mat`/`allele_pat`
+  (names shortened from `_maternal`/`_paternal`, order as decided). `0029`
+  still ships no `genes.kind`. `11d0322` also landed `genes.sort_key` and
+  DROPPED `mice_genes.order_index`. Still P1 and untouched: the zygosity picker,
+  the NOT-NULL promotion, transgene display, and the vocab OQs.
   <!-- DETAIL: active, read on demand -->
   Detail: [docs/phases/p1.genotyping.plan.md](./docs/phases/p1.genotyping.plan.md)
 - Scheduling offset refinement (professor-confirmed `task_offset_rule` values).
@@ -475,9 +486,26 @@ enforced at DB level.
 
 ## 5. Open Questions — split out (2026-09-22)
 
-> Current state: 46 numbered questions, Q1–Q46, **numbering preserved in the
+> Current state: 49 numbered questions, Q1–Q49, **numbering preserved in the
 > split file** so citations of the form `plan §5 Q43` still resolve.
-> Newest movements: **Q45 RESOLVED 2026-09-18** (offset storage = migration
+> Newest movement: **Q49 ADDED 2026-09-23** — should the gene PICKERS follow
+> `sort_key` too? Since `11d0322` the grid renders in `sort_key` order (PlpCre
+> first) while the pickers still list catalogue-array order (Nf1 first); owner's
+> call, nothing assumed. Pick ORDER itself no longer reaches the rendered string
+> or the write path, so `CodeBadgeSelect`'s missing exclusivity is moot except
+> for what the picker displays. Also **Q47 + Q48 ADDED 2026-09-23** — Q47 the gene/genotype
+> COLOUR model, DECIDED IN PRINCIPLE by the owner (*"each gene has a color and
+> +/+ will influence color but not this time"*: palette keyed by the WHOLE
+> composed genotype label, zygosity = a different key, order normalised by
+> `sort_key`, `WT`/`?` uncoloured, unseen genotype assigned + stored) but
+> DELIBERATELY NOT IMPLEMENTED and carrying three genuinely open parts
+> (palette-as-state, colour exhaustion at 13% alpha, and that it is an
+> ALTERNATIVE to the per-gene-hue idea, never both); Q48 whether `mice_genes`
+> should validate gene COMBINATIONS at all (`[Nf1, WT]`), now that
+> `(mouse_id, gene_id)` closes only the duplicate case. **A `plan §5 Q47`
+> citation at `docs/phases/p0.3.tasks.md:62` PRE-DATES Q47 and does NOT point
+> at it** — annotated at the citation site, not renumbered.
+> Earlier movements: **Q45 RESOLVED 2026-09-18** (offset storage = migration
 > 0027 `pup_number_offsets` + `MouseCell.pupOffsets`); **Q46 DECIDED
 > 2026-09-22 (owner): option C** for the `ParentCell` label → implemented by
 > P0.7-b task 9d; **Q43 FULLY RESOLVED 2026-09-22 (owner): a Tissue-collection
@@ -500,4 +528,8 @@ enforced at DB level.
 > audit_logs immutability, notes reach. Migrations 0001–0020 shipped; SCHEMA.md
 > regenerated. <!-- ARCHIVE: history-only -->
 > Detail: [_archive/plan.r11-r25-schema-redesign.md](./_archive/plan.r11-r25-schema-redesign.md)
-> Current schema is authoritative in [packages/db/SCHEMA.md](./packages/db/SCHEMA.md).
+> Current schema is authoritative in [packages/db/SCHEMA.md](./packages/db/SCHEMA.md)
+> — CORRECTED 2026-09-23 (owner: "no db yet"): there is NO database, so the
+> MIGRATIONS are the contract and SCHEMA.md is a FOSSIL that stops at `0027`
+> with a false "generated from the live colony_dev" banner. Detail:
+> [docs/phases/p0.7-c.tasks.md](./docs/phases/p0.7-c.tasks.md).
