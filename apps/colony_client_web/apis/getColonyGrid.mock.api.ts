@@ -164,12 +164,12 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 1,
                                             location: 'toe',
-                                            effectiveAt: '2024-02-10',
+                                            effectiveAt: '2024-03-01',
                                         },
                                         {
                                             punchId: 24,
                                             location: 'untagged',
-                                            effectiveAt: '2024-02-10',
+                                            effectiveAt: '2024-03-01',
                                         },
                                     ],
                                     pupNumber: 4,
@@ -181,7 +181,7 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         're-clip (.2) — re-genotype this week',
-                                    dob: '2024-02-10',
+                                    dob: '2024-03-01',
                                     genotypeColor: genoOf(G_NF1_F_PLUS),
                                     // dates resolved from mates/tasks (plan §4). Migrated from
                                     // former separate-mouse record (metaId 401) — same animal.
@@ -233,7 +233,7 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 45,
                                             location: 'untagged',
-                                            effectiveAt: '2025-07-01',
+                                            effectiveAt: '2024-03-01',
                                         },
                                     ],
                                     pupNumber: 6,
@@ -245,7 +245,7 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         'paternal Nf1 allele never assessed — renders "Nf1 f/?"',
-                                    dob: '2025-07-01',
+                                    dob: '2024-03-01',
                                     genotypeColor: genoOf(G_NF1_F_UNKNOWN),
                                     mates: [],
                                 },
