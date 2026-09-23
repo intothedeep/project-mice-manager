@@ -329,7 +329,7 @@ subject_slot_id  → slots          subject_line_id → mouse_lines
 
 **제안:** 0–26 을 담는 컬럼 5개(글자당 하나) + 동시 수정을 막는 version 컬럼.
 
-**이미 더 나은 게 들어 있습니다.** `0002_core_tables.sql:243`:
+**이미 더 나은 게 들어 있습니다.** `0002_core_tables.sql:245`:
 
 ```sql
 CREATE SEQUENCE litter_code_seq START 1612;
@@ -387,3 +387,268 @@ AC 가 **`no offset constants in code`** 입니다. 지금 `+10 / +5 / +20 / +21
   임포트된 데이터가 있어야 보여줄 게 생깁니다.
 
 둘 다 임포트 파이프라인 뒤입니다.
+
+---
+
+## F. 스키마가 가진 것 vs 클라이언트가 쓰는 것 — 테이블 재고 (2026-09-23 기준 스냅샷)
+
+
+> ⚠️ **이 중 하나는 지금 당장 서버를 터뜨립니다.** `TaskSignal` 에 `'note'` 가
+> 있는데 (`packages/types/src/task.ts:19`) `signals` 시드에는 `done`·`instruction`·
+> `plan` 셋뿐입니다 (`0002_core_tables.sql:118-121`). 그리고 `resolveSignalId` 는
+> 못 찾으면 **throw 합니다** (`sopRepository.ts:117`). `note` 신호가 달린 케이스가
+> 서버에 닿는 순간 예외입니다 — 지금은 클라이언트가 서버를 안 불러서 안 터질 뿐입니다.
+
+**왜 만들었나.** 한 세션에 세 번, 이미 스키마에 있는 것을 새로 만들자고 제안했고
+아무도 몰랐습니다 — 리터 코드 카운터(E-1), Mate 케이스의 쥐 FK 둘(C-3), `cages`의
+`memo` 컬럼(→ `notes`). 원인은 구조적입니다: 마이그레이션 `0001`–`0032`가 도메인을
+꽤 완전히 모델링하는데 클라이언트는 그 일부만 씁니다. 그래서 "X가 필요하다"가
+"X를 추가해야 한다"로 읽힙니다.
+
+**출처.** `packages/db/migrations/0001`–`0032` 입니다. `SCHEMA.md`는 **0027 시점
+화석**이라 쓰지 않았습니다 (D 섹션에 이미 적혀 있음). `0005`·`0006`·`0008`은
+`0010`/`0021`이 그 산물을 전부 지워서 **무효(inert)**입니다 — 읽을 필요 없고,
+파일이 남아 있는 건 러너의 누락 파일 가드 때문입니다 (`0010` 헤더).
+
+**판정 기준.** "쓴다"는 (a) `packages/types` 에 DTO 가 있고 (b)
+`apps/colony_client_web` 가 읽거나 쓰는 것입니다. `apps/colony_server` 의 SOP
+자동생성기(`sopRepository.ts`)는 **클라이언트가 호출하지 않는 서버 전용 코드**라
+별도로 표시했습니다 — 여기서 "미사용"은 화면이 안 쓴다는 뜻이지 죽은 테이블이라는
+뜻이 아닙니다.
+
+### F-0. 살아있는 테이블 21개
+
+```
+users  groups  group_members  signals  colonies  mouse_lines  cages  slots
+mouse_meta  mice  mates  litters  audit_logs  mice_genes  notes  genes
+cases  tasks  case_mice  punches  pup_number_offsets
+```
+
+`tasks` 는 `0021` 이 만든 `task_events` 를 `0023:21` 이 개명한 것입니다. `0005` 의
+옛 `tasks` 와는 **다른 테이블**이고, `0017` 이 붙인 `tasks.prev_id` 는 그 옛 테이블과
+함께 사라졌습니다 (`0021:60`). `mice_genes` 는 `mouse_genotypes` 의 개명입니다
+(`0015:19`).
+
+**이미 지워진 것 — 다시 만들자는 말이 나오면 이 줄을 보여주세요:**
+`import_batches` · `raw_sheet_rows` · `import_errors` · `color_maps` (`0010`),
+`mouse_events` (`0016:20`), 옛 `tasks` (`0021:60`). 열거형 `mouse_status` ·
+`attention` (`0001`) 은 **어느 컬럼도 안 씁니다** — `mice.attention` 은 TEXT 입니다
+(`0002:360`).
+
+### F-1. 테이블별 판정
+
+| 테이블 | 무엇인가 | 판정 | 놀고 있는 것 |
+|---|---|---|---|
+| `colonies` | 콜로니(= 워크북 한 권) | **사용** | — |
+| `mouse_lines` | 마우스 라인(= 서브콜로니) | **사용** | — |
+| `slots` | 케이지 안의 칸 | **사용** | — (`cage_id`+`label` 이 전부) |
+| `mice_genes` | 쥐 ↔ 유전자 + 모계·부계 대립유전자 | **사용** | — |
+| `tasks` | 케이스 상태 전이 로그(불변·추가전용) | **사용** | `actor_id` (클라는 표시 이름 문자열) |
+| `case_mice` | 배치 케이스의 쥐 명단 | **사용** | — |
+| `signals` | 신호 유형 + **색** | **부분** | **`color`** — F-3 ①·F-4 ⑧ |
+| `cages` | 케이지 | **부분** | `status` |
+| `mouse_meta` | 출생 시 주어진 불변 정보 | **부분** | `raw_mouse_id`·`raw_genotype`·`raw_parents` |
+| `mice` | 쥐의 **가변 상태** 버전 행 | **부분** | 아래 F-2 ⓐ — 8개 |
+| `litters` | 한 배 | **부분** | 아래 F-2 ⓑ |
+| `genes` | 유전자 카탈로그 | **부분** | `description` |
+| `cases` | 케이스(작업) 본체 | **부분** | 아래 F-2 ⓒ — 여기가 핵심 |
+| `punches` | 물리 펀치 한 개 = 한 행 | **부분** | `actor_id` |
+| `pup_number_offsets` | 라벨의 `+N` 토큰 | **부분** | `actor_id`·`note` |
+| `notes` | **모든 것에 붙는 메모** | **미사용** | 표 전체 — F-4 ① |
+| `mates` | 교배 **사이클**(단계별 버전 행) | **미사용**(서버만) | 표 전체 — F-2 ⓓ |
+| `users` | 사람 **그리고** 그룹 | **미사용**(서버만) | 전체 (F-5 애매) |
+| `groups` | 그룹 전용 메타 | **미사용** | 전체 (F-5 애매) |
+| `group_members` | 그룹 멤버십 | **미사용** | 전체 (F-5 애매) |
+| `audit_logs` | 누가 무엇을 했는지 | **미사용** | 전체 (F-5 애매) |
+
+**합계: 사용 6 · 부분 9 · 미사용 6.**
+
+### F-2. 부분 사용 — 어떤 컬럼이 놀고 있나
+
+값이 몰려 있는 곳입니다. 세 번의 놀람이 전부 여기서 나왔습니다.
+
+#### ⓐ `mice` — 이동·죽음·이력이 통째로 빈칸
+
+화면이 읽는 것: `cage_id`·`slot_id`·`sex`·`is_alive`·`attention`. 그게 전부입니다.
+
+노는 것 9개 (`0002:341`–`395`, `0012`, `0017:51`):
+
+| 컬럼 | 스키마가 아는 것 | 화면이 하는 것 |
+|---|---|---|
+| `transit_status` | `waiting`→`issued`→`moved`→`verified` 4단계 | 드래그 한 번에 끝 (`lib/gridMove.ts:17`) |
+| `death_reason` | 'sac' / 'found dead' … `is_alive=false` 일 때만 | `Sac` 태스크의 `reason` 칸이 `direction` JSON 으로 떠 있음 (`lib/taskTypes.ts:149`) |
+| `effective_at` | **언제 사실이 됐는지** (created_at 과 다름) | 없음 |
+| `reason`·`change_note` | 이 버전이 왜 생겼는지 | 없음 |
+| `actor_id` | 누가 썼는지 | 없음 |
+| `idempotency_key` | 재시도 중복 방지 | 없음 |
+| `prev_id` | 낙관적 잠금(CAS) | 주석으로만 언급 (`gridMove.ts:5`) |
+| **`line_id`** | **이 쥐가 속한 프로그램** (`0012`) | `MouseCell` 에 칸이 없음 — 아래 참고 |
+
+**`mice.line_id` 가 특히 아깝습니다.** `0002:614`–`624` 가 일부러 "케이지의 라인과
+쥐의 라인은 **정당하게 다를 수 있다** — 새끼를 다른 프로그램으로 옮기니까"라고
+적고 그래서 복합 FK 를 안 걸었는데, 화면은 케이지 계층(`GridLine → GridCage`)으로만
+라인을 압니다. 결과적으로 **이적(transfer)을 색으로 유추**하고 있습니다 —
+`grid.ts:208` *"A mouse whose genotypeColor differs is a transfer"*. 그 사실을
+정확히 모델링한 FK 가 이미 있는데 말입니다.
+
+#### ⓑ `litters` — 리터 코드 한 글자만 건너옵니다
+
+클라이언트에 닿는 건 `litter_code` 뿐이고, 그것도 `litters` 가 아니라
+`mouse_meta.litter_code` 비정규화 복사본을 통해서입니다 (`MouseCell.litterCode`).
+
+놉니다: **`seq`** (E-1 의 그 시퀀스, `0002:245`·`:540`), `mate_id`(→ 교배 사이클),
+`is_from_outside`(외부 반입 쥐 구분), `pup_count`, `created_by`.
+
+#### ⓒ `cases` — 주어 FK 7개 중 4개만 들고 있습니다
+
+> **사장님께 드린 "여섯 중 하나"는 지금 기준으로는 틀렸습니다.** `9dda31d` 와
+> `b5bb549` 가 그 사이에 고쳤습니다. 현재 상태는 아래가 맞습니다.
+
+DTO(`packages/types/src/case.ts:22`)가 들고 있는 주어 핸들 **4개**:
+`subjectMouseId` · `subjectCageId` · `subjectLitterCode` · `mice[]`(→ `case_mice`).
+전부 `lib/caseSubjectLabel.ts:38` 에서 **살아있는 상태로부터** 이름을 조립합니다.
+
+놀고 있는 주어 FK **3개**:
+
+| 컬럼 | 상태 |
+|---|---|
+| `subject_mate_id` | **테이블에 있고 서버는 이미 씁니다** (`sopRepository.ts:164`). DTO 에는 없어서 Mate 케이스만 `"F6AYL × M4BCW"` 문자열 — C-3 의 그 결함 |
+| `subject_slot_id` | 목 데이터에 `subjectKind:'slot'` 케이스가 **둘** 있는데 (`getTasks.mock.api.ts:120`·`:204`) DTO 에 칸이 없어 이름이 `null` 로 떨어집니다 |
+| `subject_line_id` | `subjectKind:'line'` 케이스가 아직 하나도 없음 |
+
+케이스 본체에서 노는 컬럼: `gen_key`(자동생성 멱등키 — 서버는 씀,
+`sopRepository.ts:171`), `version`(낙관적 잠금, `0025`), `created_by`,
+`actor_role`.
+
+#### ⓓ `mates` — 화면의 `mates` 는 이 테이블이 아닙니다
+
+`MouseCell.mates: MateRef[]` 가 있어서 쓰는 것처럼 보이지만, 목 데이터는
+**아비 기준 묶음 색깔**을 넣고 있습니다 (`getColonyGrid.mock.api.ts:283`
+"keyed by the father-fanout group"). 교배일·출산예정일·단계는 어디서도 안 읽습니다.
+
+스키마가 가진 것: 6단계 상태(`pending`/`cohoused`/`awaiting`/`pregnant`/
+`delivered`/`no_pups`), `occurred_at` + `~` 근사 플래그, `expected_delivery_on`
++ 근사 플래그, `origin_mate_id` 사이클 이력, `note`, 어미·아비 FK (`0002:456`).
+
+**서버는 이미 씁니다** — `sopRepository.ts:33` 이 head 행을 읽어 plug check
+케이스를 만듭니다. 화면만 안 씁니다.
+
+### F-3. 반대 방향 — 화면이 쓰는데 스키마에 없는 것
+
+**이쪽이 "미사용" 스무 줄보다 값이 큽니다.** 아홉 개 찾았습니다.
+
+① **색 팔레트를 저장할 테이블이 없습니다.** `MouseCell.genotypeColor` 주석
+(`packages/types/src/grid.ts:185`)은 *"Server resolves from
+`color_assignments(channel='genotype')`"* 라고 적고 있고, `getPalette.mock.api.ts:7`
+은 *"design-stage `color_palette` table"* 이라고 적습니다. **둘 다 존재한 적이
+없습니다.** 비슷했던 `color_maps` 는 `0010:18` 에서 삭제됐습니다.
+`GridLine.nominalGenotypeColor`·`MateRef.color` 도 같은 처지입니다.
+→ C-1 이 이미 "팔레트를 어디에 저장할지"로 열어둔 문제입니다. 여기서 다시 정하지
+마시고 C-1 에서 정하세요.
+
+② **`cases` 에 담당자 칸이 없습니다.** 화면은 `assignee: 'Jia'` 를 들고 다니는데
+(`getTasks.mock.api.ts:113`) `cases` 에 `assigned_to` 가 없습니다 — `0021:51` 헤더가
+스스로 "absent … flag for architect review" 라고 적어뒀습니다. **그래서 `users`/
+`groups` 가 있어도 "케이스를 그룹에 배정"은 지금 켤 수 없습니다.** F-4 에 안 넣은
+이유입니다.
+
+③ **`direction` JSONB 도 없습니다.** Move 태스크의 `toCage`, Sac 의 `reason`,
+Check food 의 `area` 가 전부 여기로 갑니다 (`lib/taskTypes.ts:130`–`151`). 같은
+`0021:52` 줄이 함께 지적한 것입니다.
+
+④ **`MouseDates.tissue`/`genotyping` 을 담을 곳이 애매합니다.** `mouse_events` 를
+지울 때 `0016:4` 는 *"이제 완료된 `tasks` 행의 `due_date`/`done_at` 에 기록된다"*
+고 적었습니다. 그런데 `0021` 이후 `due_date` 는 `cases` 에 있고 `done_at` 은
+**어느 테이블에도 없습니다**. 완료 시각은 `tasks.created_at` 으로 유추해야 합니다.
+`0016` 헤더가 가리키는 모양과 실제 스키마가 어긋난 상태입니다.
+
+⑤ **`TaskSignal` 에 `'note'` 가 있는데 `signals` 에는 없습니다.**
+`packages/types/src/task.ts:19` 는 `instruction|plan|note`, `0002:118` 시드는
+`done|instruction|plan`. `'note'` 는 행이 없고 `'done'` 은 행이 있는데 아무도 안
+씁니다. 서버의 `resolveSignalId` 는 **없는 type 이면 throw 합니다**
+(`sopRepository.ts:117`) — DB 가 생기는 순간 터질 자리입니다.
+⑨ **화면은 신호를 쥐에 붙이는데, 스키마는 일(work)에 붙입니다.** `MouseCell.signal`
+이 `instruction`·`plan` 값을 직접 들고 있습니다 (`getColonyGrid.mock.api.ts:610`·
+`:722`·`:756` 등 — `done` 다음으로 흔합니다). 그런데 `signal_id` 는 `cases` 와
+`notes` 에만 있고 **`mice` 에는 신호 컬럼이 없습니다**. `dead`/`flag` 는
+`is_alive`/`attention` 에서 파생이라 괜찮지만, `instruction`/`plan` 은 어디서
+오는지 스키마에 자리가 없습니다. ①과 함께 봐야 합니다 — 열린 케이스에서 파생할
+것인지(`ColonyGridView.client.tsx` 가 배지에는 이미 그렇게 합니다), 쥐에 붙는
+신호를 따로 저장할 것인지가 아직 안 정해졌습니다.
+
+⑥ **Upcoming 화면에는 DTO 가 아예 없습니다.** `UpcomingItem`
+(`getUpcoming.mock.api.ts:15`)은 `packages/types` 에 없고, 교배일·출생일이
+하드코딩 상수(`MATING_A` 등)이며 `cases` 도 `mates` 도 안 봅니다. A-1 의 `+10/+20/
++21` 이 여기서 계산됩니다.
+
+⑦ **`task_offset_rule` 테이블이 없습니다.** A-1·E-4 가 이미 아는 것 — 재확인만
+합니다. 날짜 간격은 코드 두 군데에 박혀 있습니다.
+
+⑧ **`MateRef.matedOn` 주석이 없는 테이블을 가리킵니다** — *"matings.mated_on"*
+(`grid.ts:145`). `matings` 는 `0007:3` 이 적은 대로 `mates`+`litters` 로 쪼개졌습니다.
+해당 값은 `mates.occurred_at` 입니다. 결함이 아니라 **낡은 주석**입니다.
+
+### F-4. 마이그레이션 없이 지금 켤 수 있는 것 (유용한 순서)
+
+① **케이지·슬롯·라인·콜로니 메모.** `notes` 는 완전 미사용인데 `0018:25` 가
+`colony_id`·`cage_id`·`line_id`·`slot_id` 를 이미 붙여놨고, 원래부터
+`subject_mouse_id`·`litter_id` 가 있습니다. 거기에 **작성자**(`actor_id`),
+**시각**, **종류**(`note_type`), **신호**(`signal_id`), **버전 이력**
+(`origin_note_id`+`prev_id`)까지 딸려 옵니다. `cages` 에 `memo TEXT` 를 붙이자는
+제안보다 모든 면에서 낫습니다. **필요한 것은 DTO 하나뿐입니다.**
+
+② **Mate 케이스가 `mates` 행을 가리키게.** C-3 에서 이미 결정됐고,
+`cases.subject_mate_id` 가 있고, **서버 삽입 경로도 이미 있습니다**
+(`sopRepository.ts:164`). 막는 건 `mates` 행을 만드는 UI 뿐입니다(E-5 와 같은 자리).
+DTO 에 `subjectMateId` 한 칸 추가가 클라이언트 쪽 작업 전부입니다.
+
+③ **`mice.transit_status` 로 이동을 2단계로.** 지금은 드래그 한 번에 끝나서
+"옮기라고 지시함"과 "실제로 옮김"이 구분이 안 됩니다. 스키마는 네 단계를 이미
+구분하고 기본값이 `verified`(= 제자리) 라서, **안 쓰면 기존 동작 그대로**입니다.
+랙과 화면을 일치시키는 게 이 저장소의 목적이라면 이게 가장 직접적입니다.
+
+④ **Sac 의 `reason` 을 `mice.death_reason` 으로.** 지금은 `direction` JSON —
+③의 `direction` 은 테이블조차 없는데(F-3 ③) `death_reason` 은 **있습니다**.
+`CHECK (death_reason IS NULL OR is_alive = false)` 까지 붙어 있습니다
+(`0002:358`).
+
+⑤ **리터 코드를 `litters.seq` 에서.** E-1 이 다 적어뒀습니다 — 시퀀스도
+(`0002:245`) 코덱도(`lib/litterCode.ts`) 이미 있습니다. DB 뒤입니다.
+
+⑥ **Upcoming 을 `mates` 단계에서.** `expected_delivery_on` 과 `~` 근사 플래그가
+이미 컬럼입니다. 지금 하드코딩된 `+20` 을 지우는 길이 여기입니다 — 다만
+**A-1 의 교수님 답이 먼저**입니다(E-4).
+
+⑦ **`cases.gen_key` 로 자동생성 중복 방지.** 서버는 이미 씁니다. 클라이언트가
+케이스를 만들 때 같은 키 규칙을 쓰면 하루 두 번 돌려도 안 겹칩니다.
+
+⑧ **신호 색을 데이터로.** `signals.color` 가 컬럼인데 색은 `lib/signal.ts` 와
+`globals.css` 에 박혀 있습니다. `0002:100` 이 *"교수님이 마이그레이션 없이 신호를
+추가할 수 있게"* 하려고 테이블로 승격한 것인데 그 목적이 안 살아 있습니다.
+(단 F-3 ⑤ 의 `'note'` 행 누락을 같이 고쳐야 합니다.)
+
+⑨ **`mice.line_id` 로 이적을 색이 아니라 사실로.** F-2 ⓐ 끝의 그 건입니다.
+`MouseCell` 에 `lineId` 한 칸이면 "이 쥐는 케이지의 라인과 다른 프로그램"이
+색 비교가 아니라 비교 한 번이 됩니다.
+
+⑩ 잔돈: `cages.status`, `genes.description`, `litters.is_from_outside`(외부 반입
+쥐 표시), `punches.actor_id`·`pup_number_offsets.actor_id`(누가 기록했는지).
+
+### F-5. 애매하거나 확인 못 한 것
+
+- **`users`·`groups`·`group_members`** — 모델링은 돼 있지만(그룹도 `users` 행,
+  `0002:28`) 인증이 P2 이고 `cases` 에 담당자 FK 가 없어(F-3 ②) **아직 아무것도
+  쓸 수 없는 상태**입니다. 미사용으로 세긴 했지만 "지울 수 있다"는 뜻은 아닙니다.
+  `0022` 가 시스템 유저 한 행을 시드합니다.
+- **`audit_logs`** — 서버 쓰기 경로가 아직 없어 쓸 수가 없습니다. 미사용이 아니라
+  **아직 차례가 아닌 것**입니다. `0019` 가 `updated_at`/`deleted_at` 을 떼고
+  `request_id`·`on_behalf_of_id`(대리 실행)를 붙여 **진짜 불변**으로 만들어뒀습니다
+  — 소프트 삭제 규칙의 인정된 예외입니다.
+- `packages/domain` 은 판정에서 뺐습니다 — `CLAUDE.md:38` 이 *"pure domain logic
+  (parsers, codecs) — no I/O"* 라고 못박고 있어 테이블을 건드릴 수 없습니다.
+  위 판정은 `packages/types` + `apps/colony_client_web` + `apps/colony_server`
+  기준입니다.
+- `0003`·`0019`·`0020` 은 확인했습니다 — 테이블을 만들거나 지우지 않아 재고에
+  영향 없음. 다만 `0003` 은 **DDL 이 한 줄도 없는 빈 파일**(`SELECT 1;`)이고,
+  헤더가 존재한 적 없는 `mouse_ids` 테이블을 설명합니다. 낡은 주석입니다.
+- `_archive/` 는 읽지 않았습니다 (`rules/docs.md` §3 읽기 가드).
