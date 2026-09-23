@@ -33,7 +33,7 @@ export type Sex = 'M' | 'F' | 'U';
 // out of a label (the position of the 'e' suffix in a rendered id is an OPEN
 // QUESTION to the lab owner — see the retired parse contract in
 // docs/phases/p0.7.plan.md).
-export type PunchLocation = 'toe' | 'ear' | 'other';
+export type PunchLocation = 'toe' | 'ear' | 'other' | 'untagged';
 
 export interface PunchRef {
     punchId: number;

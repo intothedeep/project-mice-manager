@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Sex } from '@repo/types';
+import type { PunchLocation, Sex } from '@repo/types';
 import {
     addMouse,
     addCage,
@@ -56,6 +56,13 @@ const SELECT_CLASS =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
 const SEX_OPTIONS: Sex[] = ['U', 'M', 'F'];
+
+const PUNCH_LOCATION_OPTIONS: PunchLocation[] = [
+    'untagged',
+    'toe',
+    'ear',
+    'other',
+];
 
 export type AddMode = 'cage' | 'slot' | 'mouse';
 
@@ -195,6 +202,10 @@ export function AddMouseDialog({
     // open. Using an effect keyed on `open` also handles re-open after close with
     // different prefill values (no stale state).
     const [sex, setSex] = useState<Sex>('U');
+    // Pups often arrive with no physical tag (step 8d) — the creation
+    // default is 'untagged', not 'toe'.
+    const [punchLocation, setPunchLocation] =
+        useState<PunchLocation>('untagged');
     const [litterValue, setLitterValue] = useState<string>(nextAutoCode);
     const [pupNumber, setPupNumber] = useState('');
     const [dob, setDob] = useState(TODAY);
@@ -248,6 +259,7 @@ export function AddMouseDialog({
         }
 
         setSex('U');
+        setPunchLocation('untagged');
         setLitterValue(peekNextLitterCode());
         setPupNumber('');
         setDob(TODAY);
@@ -334,10 +346,11 @@ export function AddMouseDialog({
             pupNumber: pupNum,
             dob,
             genotype: genotype.trim() || undefined,
-            // The implicit toe punch is dated to now (when it physically
+            // The initial punch is dated to now (when it physically
             // happens), never to dob — a mouse entered weeks after birth
             // must not inherit a birthday-dated punch.
             punchEffectiveAt: TODAY,
+            initialPunchLocation: punchLocation,
         };
 
         const action = buildSubmitAction({
@@ -418,6 +431,27 @@ export function AddMouseDialog({
                                             : s === 'F'
                                               ? 'F — female'
                                               : 'U — unsexed'}
+                                    </option>
+                                ))}
+                            </select>
+                        </Label>
+
+                        <Label text="Punch location">
+                            <select
+                                className={SELECT_CLASS}
+                                value={punchLocation}
+                                onChange={(e) =>
+                                    setPunchLocation(
+                                        e.target.value as PunchLocation
+                                    )
+                                }
+                            >
+                                {PUNCH_LOCATION_OPTIONS.map((p) => (
+                                    <option
+                                        key={p}
+                                        value={p}
+                                    >
+                                        {p}
                                     </option>
                                 ))}
                             </select>

@@ -749,6 +749,32 @@ const COLONY_GRID: ColonyGrid = {
                                     genotypeColor: geno('WT'),
                                     mates: [],
                                 },
+                                {
+                                    // 8d fixture coverage: a pup that arrived
+                                    // with no physical tag. `untagged` is an
+                                    // ordinary fourth punch_location value
+                                    // (0028_punch_location_untagged.sql) and
+                                    // renders no suffix, same as `toe`.
+                                    metaId: 618,
+                                    punches: [
+                                        {
+                                            punchId: 23,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-09-10',
+                                        },
+                                    ],
+                                    pupNumber: 10,
+                                    litterCode: 'WT',
+                                    pupOffsets: [],
+                                    sex: 'U',
+                                    genotype: 'WT',
+                                    signal: 'plan',
+                                    isAlive: true,
+                                    attention: 'litter pup — not yet weaned',
+                                    dob: '2026-09-10',
+                                    genotypeColor: geno('WT'),
+                                    mates: [],
+                                },
                             ],
                         },
                     ],

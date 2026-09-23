@@ -9,6 +9,7 @@ import type {
     GridCage,
     MouseCell,
     PunchHistoryEntry,
+    PunchLocation,
     PunchRef,
     Sex,
 } from '@repo/types';
@@ -41,10 +42,14 @@ export interface MouseSpec {
     pupNumber: number;
     dob: string;
     genotype?: string;
-    // WHEN the implicit toe punch (minted in addMouse) physically happened —
-    // distinct from dob: a mouse entered weeks after birth must not have its
-    // punch dated to its birthday. Callers pass TODAY (@/lib/dueDates).
+    // WHEN the punch minted in addMouse physically happened — distinct from
+    // dob: a mouse entered weeks after birth must not have its punch dated
+    // to its birthday. Callers pass TODAY (@/lib/dueDates).
     punchEffectiveAt: string; // ISO date
+    // The punch location to mint on creation (step 8d). Pups often arrive
+    // with no physical tag, so the caller (AddMouseDialog) defaults this to
+    // 'untagged', not 'toe'.
+    initialPunchLocation: PunchLocation;
 }
 
 export type AddMouseResult = { ok: true } | { ok: false; error: string };
@@ -60,12 +65,13 @@ export function buildMouseCell(
     punchId: number
 ): MouseCell {
     const pupOffsets: number[] = [];
-    // Creating a mouse mints an implicit 'toe' punch — addMouse is the SOLE
-    // mint site (docs/phases/p0.7.plan.md, punch-records bullet: "in addMouse
-    // and NOWHERE else"); once-and-only-once is structural, not a DB trigger.
-    const toePunch: PunchRef = {
+    // Creating a mouse mints a punch at spec.initialPunchLocation — addMouse
+    // is the SOLE mint site (docs/phases/p0.7.plan.md, punch-records bullet:
+    // "in addMouse and NOWHERE else"); once-and-only-once is structural, not
+    // a DB trigger.
+    const punch: PunchRef = {
         punchId,
-        location: 'toe',
+        location: spec.initialPunchLocation,
         effectiveAt: spec.punchEffectiveAt,
     };
     return {
@@ -81,7 +87,7 @@ export function buildMouseCell(
         dob: spec.dob,
         genotypeColor: null,
         mates: [],
-        punches: [toePunch],
+        punches: [punch],
     };
 }
 
