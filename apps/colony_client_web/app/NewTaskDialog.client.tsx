@@ -330,7 +330,11 @@ function FieldInput({
                     : field.kind === 'cage'
                       ? cageOptions.map((c) => ({
                             value: c,
-                            text: `cage ${c}`,
+                            // Bare, matching the task board, which renders a
+                            // cage case as `2414` since b5bb549. The other
+                            // `cage ${n}` sites are different surfaces where the
+                            // word disambiguates against slot and line.
+                            text: `${c}`,
                         }))
                       : litterOptions.map((l) => ({ value: l, text: l }));
             return (
