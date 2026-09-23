@@ -39,6 +39,7 @@ import {
 import {
     suggestNextCageNumber as pureSuggestNextCageNumber,
     projectPunches,
+    assertPunchInvariants,
     type ColonyState,
     type MouseSpec,
     type AddMouseResult,
@@ -84,6 +85,10 @@ let counters: Counters = {
     nextLitterOrd: maxSeedLitterOrdinal(SEED_COLONY) + 1,
     nextLineId: maxLineId(SEED_COLONY) + 1,
 };
+// Guard the seed itself — colonySeed.seedPunches is a legitimate third
+// PunchRow constructor (beside mintPunch and the store's own normalisation)
+// that this invariant would otherwise never see.
+assertPunchInvariants(initialPunches, counters);
 
 // ---- subscription ----------------------------------------------------------
 
@@ -170,6 +175,7 @@ function commit<R extends { ok: boolean }>(r: {
 }): R {
     counters = r.counters;
     if (r.state !== state) {
+        assertPunchInvariants(r.state.punches, counters);
         state = r.state;
         emit();
     }

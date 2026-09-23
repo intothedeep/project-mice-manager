@@ -29,7 +29,6 @@ import {
     advanceLitterCounter,
     findCage,
     mintPunch,
-    projectPunches,
     type AddMouseResult,
     type ColonyState,
     type Counters,
@@ -121,7 +120,7 @@ export function addMouse(
     // (P0.7-b: "we never delete an untagged record"). Real tags are added
     // beside it afterward via addPunch.
     const minted = mintPunch(
-        state.punches,
+        { grid: gridWithMouse, punches: state.punches },
         { ...counters, nextMetaId: nextMeta + 1, nextLitterOrd: newLitterOrd },
         {
             metaId: nextMeta,
@@ -131,10 +130,7 @@ export function addMouse(
     );
 
     return {
-        state: {
-            grid: projectPunches(gridWithMouse, minted.log),
-            punches: minted.log,
-        },
+        state: minted.state,
         counters: minted.counters,
         result: { ok: true },
     };

@@ -5,10 +5,15 @@
 //
 // Split out of colonyMutations.ts (P0.7-b 8b): updateMouse edits an existing
 // mouse and shares no call chain with the four add mutations — only the
-// Counters/AddMouseResult shapes in colonyMutationHelpers.ts.
+// Counters/AddMouseResult shapes and the mapMice walker in
+// colonyMutationHelpers.ts.
 
 import type { ColonyGrid, MouseCell, Sex, SignalColor } from '@repo/types';
-import type { AddMouseResult, Counters } from '@/lib/colonyMutationHelpers';
+import {
+    mapMice,
+    type AddMouseResult,
+    type Counters,
+} from '@/lib/colonyMutationHelpers';
 
 export interface UpdateMousePatch {
     sex?: Sex;
@@ -83,21 +88,9 @@ export function updateMouse(
             result: { ok: true },
         };
 
-    const newState: ColonyGrid = {
-        ...state,
-        lines: state.lines.map((l) => ({
-            ...l,
-            cages: l.cages.map((c) => ({
-                ...c,
-                slots: c.slots.map((s) => ({
-                    ...s,
-                    mice: s.mice.map((m) =>
-                        m.metaId === metaId ? updated : m
-                    ),
-                })),
-            })),
-        })),
-    };
+    const newState: ColonyGrid = mapMice(state, (m) =>
+        m.metaId === metaId ? updated : m
+    );
 
     return {
         state: newState,

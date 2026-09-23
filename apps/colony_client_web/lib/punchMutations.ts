@@ -17,7 +17,7 @@
 import type { ColonyGrid, MouseCell, PunchLocation } from '@repo/types';
 import {
     mintPunch,
-    projectPunches,
+    deriveColonyState,
     type AddMouseResult,
     type ColonyState,
     type Counters,
@@ -72,7 +72,7 @@ export function addPunch(
         };
     }
 
-    const minted = mintPunch(state.punches, counters, {
+    const minted = mintPunch(state, counters, {
         metaId: input.metaId,
         location: input.location,
         effectiveAt: input.effectiveAt,
@@ -80,10 +80,7 @@ export function addPunch(
     });
 
     return {
-        state: {
-            grid: projectPunches(state.grid, minted.log),
-            punches: minted.log,
-        },
+        state: minted.state,
         counters: minted.counters,
         result: { ok: true },
     };
@@ -125,10 +122,7 @@ export function removePunch(
     );
 
     return {
-        state: {
-            grid: projectPunches(state.grid, newLog),
-            punches: newLog,
-        },
+        state: deriveColonyState(state.grid, newLog),
         counters,
         result: { ok: true },
     };

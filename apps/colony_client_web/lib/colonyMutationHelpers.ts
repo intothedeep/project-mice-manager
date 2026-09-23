@@ -8,6 +8,7 @@ import type {
     ColonyGrid,
     GridCage,
     MouseCell,
+    PunchRef,
     PunchRow,
     PunchLocation,
     Sex,
@@ -21,9 +22,13 @@ import { parseLitterCode } from '@/lib/litterCode';
 // over one `punches` table (one `WHERE deleted_at IS NULL`, one without —
 // migration 0026's partial index exists for exactly that). This is
 // mock-store state, not a DTO — it does not belong in packages/types.
+// `readonly` here (LOCAL to this file, never in packages/types — the
+// invariant it protects is mock-era only) makes the single-writer property
+// structural: a caller can no longer push/splice this array in place, only
+// produce a new one through mintPunch/deriveColonyState below.
 export interface ColonyState {
     grid: ColonyGrid;
-    punches: PunchRow[];
+    readonly punches: readonly PunchRow[];
 }
 
 export interface Counters {
@@ -81,11 +86,27 @@ export function buildMouseCell(
     };
 }
 
+// The ONE place a { grid, punches } snapshot is assembled from a punch log —
+// mintPunch (append, below) and removePunch (tombstone, punchMutations.ts)
+// both go through this, so neither call site hand-rolls the pair itself
+// (8h AC 1: no site outside the sanctioned re-derivation path constructs a
+// punch-write pair).
+export function deriveColonyState(
+    grid: ColonyGrid,
+    punches: readonly PunchRow[]
+): ColonyState {
+    return { grid: projectPunches(grid, punches), punches };
+}
+
 // ONE append path into the punch store (rules/core.md: never hard-DELETE —
 // this only ever appends, removePunch tombstones in place). Every mint —
 // addMouse's creation punch, PunchSection's addPunch — funnels through here.
+// Owns the re-derivation (returns the new ColonyState, not a bare log) so a
+// caller can never advance the punch counter without also re-deriving the
+// grid from it, and can never build a well-typed punch write outside this
+// function (8h piece a).
 export function mintPunch(
-    log: PunchRow[],
+    state: ColonyState,
     counters: Counters,
     input: {
         metaId: number;
@@ -93,7 +114,7 @@ export function mintPunch(
         effectiveAt: string;
         note?: string;
     }
-): { log: PunchRow[]; counters: Counters } {
+): { state: ColonyState; counters: Counters } {
     const punchId = counters.nextPunchId;
     const entry: PunchRow = {
         punchId,
@@ -103,42 +124,136 @@ export function mintPunch(
         ...(input.note !== undefined ? { note: input.note } : {}),
     };
     return {
-        log: [...log, entry],
+        state: deriveColonyState(state.grid, [...state.punches, entry]),
         counters: { ...counters, nextPunchId: punchId + 1 },
     };
+}
+
+// Generic reuse-preserving map: returns the ORIGINAL array reference when no
+// element actually changed (by `fn`'s own reference test), and a fresh array
+// only when at least one element did. mapMice below composes four of these,
+// one per grid level, so identity survives all the way up to the root when
+// nothing under it changed (step 6's AC: every unaffected mouse/slot/cage/
+// line stays `===` its previous self).
+function mapReuse<T>(
+    arr: T[],
+    fn: (item: T) => T
+): { list: T[]; changed: boolean } {
+    let changed = false;
+    const list = arr.map((item) => {
+        const next = fn(item);
+        if (next !== item) changed = true;
+        return next;
+    });
+    return { list: changed ? list : arr, changed };
+}
+
+// Walks all four grid levels (line → cage → slot → mouse) and applies `fn` to
+// every mouse, preserving reference identity at every level whose contents
+// did not change. Shared by projectPunches (below) and updateMouse.ts — the
+// single generic walker for "touch one mouse, leave the rest `===`" (step 6's
+// AC), so a caller never hand-rolls the four-level nest again.
+export function mapMice(
+    grid: ColonyGrid,
+    fn: (mouse: MouseCell) => MouseCell
+): ColonyGrid {
+    const { list: lines, changed } = mapReuse(grid.lines, (line) => {
+        const { list: cages, changed: cagesChanged } = mapReuse(
+            line.cages,
+            (cage) => {
+                const { list: slots, changed: slotsChanged } = mapReuse(
+                    cage.slots,
+                    (slot) => {
+                        const { list: mice, changed: miceChanged } = mapReuse(
+                            slot.mice,
+                            fn
+                        );
+                        return miceChanged ? { ...slot, mice } : slot;
+                    }
+                );
+                return slotsChanged ? { ...cage, slots } : cage;
+            }
+        );
+        return cagesChanged ? { ...line, cages } : line;
+    });
+    return changed ? { ...grid, lines } : grid;
+}
+
+// Elementwise PunchRef equality (never JSON/rendered-string comparison) —
+// lets projectPunches skip rebuilding a mouse whose projected punches are
+// value-equal to what it already carries.
+function punchRefsEqual(a: PunchRef[], b: PunchRef[]): boolean {
+    if (a.length !== b.length) return false;
+    return a.every((p, i) => {
+        const q = b[i];
+        return (
+            q !== undefined &&
+            p.punchId === q.punchId &&
+            p.location === q.location &&
+            p.effectiveAt === q.effectiveAt &&
+            p.note === q.note
+        );
+    });
 }
 
 // Derives MouseCell.punches (active rows only, plan §4) for every mouse in
 // the grid from punches — the read-time projection that makes punches the
 // single source (grid never carries its own punch array independently).
-export function projectPunches(grid: ColonyGrid, log: PunchRow[]): ColonyGrid {
-    return {
-        ...grid,
-        lines: grid.lines.map((l) => ({
-            ...l,
-            cages: l.cages.map((c) => ({
-                ...c,
-                slots: c.slots.map((s) => ({
-                    ...s,
-                    mice: s.mice.map((m) => ({
-                        ...m,
-                        punches: log
-                            .filter(
-                                (e) => e.metaId === m.metaId && !e.deletedAt
-                            )
-                            .map((e) => ({
-                                punchId: e.punchId,
-                                location: e.location,
-                                effectiveAt: e.effectiveAt,
-                                ...(e.note !== undefined
-                                    ? { note: e.note }
-                                    : {}),
-                            })),
-                    })),
-                })),
-            })),
-        })),
-    };
+// Reuses mapMice so a mouse whose projected punches are unchanged is
+// returned BY REFERENCE — required for step 6's "every other mouse is
+// reference-equal" AC, which a naive rebuild-everything projection breaks.
+export function projectPunches(
+    grid: ColonyGrid,
+    log: readonly PunchRow[]
+): ColonyGrid {
+    return mapMice(grid, (m) => {
+        const punches: PunchRef[] = log
+            .filter((e) => e.metaId === m.metaId && !e.deletedAt)
+            .map((e) => ({
+                punchId: e.punchId,
+                location: e.location,
+                effectiveAt: e.effectiveAt,
+                ...(e.note !== undefined ? { note: e.note } : {}),
+            }));
+        return punchRefsEqual(m.punches, punches) ? m : { ...m, punches };
+    });
+}
+
+// Dev-gated invariant guard over the punch store — same species as
+// addPunch's `untagged` refusal: a rejection of a PROGRAMMER ERROR, not a
+// test and not a test runner (rules/core.md: tests are SUSPENDED). Two
+// checks with different lifespans, called out separately because they die at
+// different points:
+//   - punchId uniqueness across EVERY row (active + tombstoned) — survives
+//     MVP2: once the server mints ids this validates the server's response
+//     instead of the mock's own counter.
+//   - max(punchId) < counters.nextPunchId — MOCK-ERA ONLY. It assumes the
+//     mock's own counter is the id authority, which stops being true the
+//     day the server mints ids; delete this half then, keep the other.
+// Callers run this after every commit AND once at init (colonySeed's
+// `seedPunches` is a legitimate third PunchRow constructor this guard would
+// otherwise never see).
+export function assertPunchInvariants(
+    punches: readonly PunchRow[],
+    counters: Counters
+): void {
+    if (process.env.NODE_ENV === 'production') return;
+    const seen = new Set<number>();
+    let max = 0;
+    for (const p of punches) {
+        if (seen.has(p.punchId)) {
+            throw new Error(
+                `Punch store invariant violated: duplicate punchId ${p.punchId}.`
+            );
+        }
+        seen.add(p.punchId);
+        if (p.punchId > max) max = p.punchId;
+    }
+    if (max >= counters.nextPunchId) {
+        throw new Error(
+            `Punch store invariant violated: punchId ${max} >= counters.nextPunchId ${counters.nextPunchId}.`
+        );
+    }
 }
 
 // WHY max: a manually-typed code above peek keeps the auto option from proposing
