@@ -22,6 +22,8 @@ import { genotypeOf, UNKNOWN_GENOTYPE } from '@/lib/genotype';
 //   - M7AZZ    : carries ccEGFP — the catalogue's reporter, now held by a mouse
 //   - M6BGX    : "PlpCre;Ai14 +/-" — the '-' allele token, and the mouse that
 //                realises line 2's nominal genotype colour
+//   - F8AZZ    : carries ccEGFP(hmo) — the homozygous reporter is its own
+//                catalogue GENE (28acb8b), not a zygosity of ccEGFP
 //
 // NOTE (T6): activeTasks removed from all MouseCell objects. Badges are now
 // derived from the case store (useTasks + signalColorOf) in ColonyGridView,
@@ -70,8 +72,8 @@ const geno = (g: string): string | null => GENO[g] ?? null;
 //
 // sortKey is the CATALOGUE's display order (apis/getGenes.mock.api.ts), copied
 // onto each row exactly as the server will JOIN it: PlpCre 10, Nf1 20, Ai14 30,
-// ccEGFP 40, WT 50. It is why 'PlpCre;Ai14 +/+' renders in that order no matter
-// how these arrays are written.
+// ccEGFP 40, ccEGFP(hmo) 45, WT 50. It is why 'PlpCre;Ai14 +/+' renders in that
+// order no matter how these arrays are written.
 const G_WT: GeneRef[] = [
     { code: 'WT', alleleMat: null, allelePat: null, sortKey: 50 },
 ];
@@ -114,6 +116,12 @@ const G_CCEGFP: GeneRef[] = [
 const G_PLPCRE_AI14_PLUS_MINUS: GeneRef[] = [
     { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
     { code: 'Ai14', alleleMat: '+', allelePat: '-', sortKey: 30 },
+];
+// The HOMOZYGOUS reporter is its OWN catalogue gene (28acb8b), not ccEGFP with
+// a recorded allele pair: '(hmo)' is carried by the CODE. So the row mints
+// NULL/NULL like the ccEGFP and PlpCre rows above, and renders the bare code.
+const G_CCEGFP_HMO: GeneRef[] = [
+    { code: 'ccEGFP(hmo)', alleleMat: null, allelePat: null, sortKey: 45 },
 ];
 
 // Colour for a gene set, keyed through the SAME composer the grid renders with
@@ -298,6 +306,28 @@ const COLONY_GRID: ColonyGrid = {
                                         'reporter-only animal — carries the ccEGFP catalogue row',
                                     dob: '2025-08-10',
                                     genotypeColor: genoOf(G_CCEGFP),
+                                    mates: [],
+                                },
+                                {
+                                    metaId: 106,
+                                    punches: [
+                                        {
+                                            punchId: 51,
+                                            location: 'untagged',
+                                            effectiveAt: '2025-08-10',
+                                        },
+                                    ],
+                                    pupNumber: 8,
+                                    litterCode: 'AZZ',
+                                    pupOffsets: [],
+                                    sex: 'F',
+                                    genes: G_CCEGFP_HMO,
+                                    signal: 'done',
+                                    isAlive: true,
+                                    attention:
+                                        "M7AZZ's littermate, homozygous for the reporter — carries the ccEGFP(hmo) catalogue row",
+                                    dob: '2025-08-10',
+                                    genotypeColor: genoOf(G_CCEGFP_HMO),
                                     mates: [],
                                 },
                             ],
