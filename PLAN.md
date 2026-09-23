@@ -499,13 +499,13 @@ enforced at DB level.
 > +/+ will influence color but not this time"*: palette keyed by the WHOLE
 > composed genotype label, zygosity = a different key, order normalised by
 > `sort_key`, `WT`/`?` uncoloured, unseen genotype assigned + stored) but
-> DELIBERATELY NOT IMPLEMENTED and carrying three genuinely open parts
+> DELIBERATELY NOT IMPLEMENTED. Its three unresolved parts were DOWNGRADED TO A
+> MEMO 2026-09-23 (owner: "memo not urgent") — nothing waits on them; they become
+> the first design questions of whoever picks the colour model up. Those parts
 > (palette-as-state, colour exhaustion at 13% alpha, and that it is an
 > ALTERNATIVE to the per-gene-hue idea, never both); Q48 whether `mice_genes`
 > should validate gene COMBINATIONS at all (`[Nf1, WT]`), now that
-> `(mouse_id, gene_id)` closes only the duplicate case. **A `plan §5 Q47`
-> citation at `docs/phases/p0.3.tasks.md:62` PRE-DATES Q47 and does NOT point
-> at it** — annotated at the citation site, not renumbered.
+> `(mouse_id, gene_id)` closes only the duplicate case.
 > Earlier movements: **Q45 RESOLVED 2026-09-18** (offset storage = migration
 > 0027 `pup_number_offsets` + `MouseCell.pupOffsets`); **Q46 DECIDED
 > 2026-09-22 (owner): option C** for the `ParentCell` label → implemented by

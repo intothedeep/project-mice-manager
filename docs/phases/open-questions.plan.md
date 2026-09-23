@@ -453,11 +453,6 @@
     +/+ will influence color but not this time."* So the model below is
     SETTLED but NOTHING is scheduled against it — no task, no AC; it is
     recorded so the next person does not re-derive it.
-    NUMBERING NOTE (read before citing): `docs/phases/p0.3.tasks.md:62` already
-    cited a `plan §5 Q47` before this question existed — that citation is about
-    whether `M1A` and `M1+10A` in one sheet snapshot fold into one animal at
-    import, and it is a DANGLING REF that does NOT point here. Recorded
-    2026-09-22 in `STATUS.md`, annotated at the citation site 2026-09-23.
     DECIDED, as the owner settled it:
     - the palette is keyed by the **WHOLE COMPOSED GENOTYPE LABEL** — the
       string `lib/genotype.ts genotypeOf` produces, not the individual gene;
@@ -472,7 +467,12 @@
       genotypes carry a hue, so they pop"; `'?'` → null likewise, with the "?"
       text doing the disambiguating;
     - a genotype NOT YET in the palette gets a colour ASSIGNED and STORED.
-    STILL GENUINELY UNRESOLVED — recorded as open, NOT answered here:
+    MEMO, NOT URGENT (owner 2026-09-23, *"memo not urgent"*): the three items
+    below are recorded so they are not re-derived, and NOTHING is waiting on
+    them. They are not blocking, not scheduled, and nobody is expected to
+    answer them before the colour model is actually picked up — at which point
+    they become its first design questions rather than prerequisites. Do not
+    treat them as an open ask to the owner.
     (a) auto-assignment depends on ORDER OF FIRST SIGHTING unless the palette is
     persisted; in the mock era that means the palette becomes STATE (today
     `GENO` in `getColonyGrid.mock.api.ts:30-40` is a hand-written constant map,

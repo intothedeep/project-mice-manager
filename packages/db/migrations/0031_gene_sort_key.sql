@@ -7,6 +7,12 @@
 -- longer claims "order_index order". 0014 could not be corrected that way — it
 -- IS applied — which is why 0029 carries its correction in prose instead.
 --
+-- RUNS AFTER 0030_seed_genes.sql, deliberately: the catalogue's five rows are
+-- already there, so the UPDATE below is the ONE place the five sort_key values
+-- exist in migrations/ and 0030 never has to repeat them. (This file was
+-- 0030_gene_sort_key.sql until 2026-09-23; it was renamed to open the slot,
+-- which cost nothing because no migration here has ever been applied.)
+--
 -- WHY genes.sort_key: how a marker is POSITIONED in a written genotype is a
 -- property of the gene, not of one mouse's rows. With order_index, two mice
 -- carrying the same two genes could render them in opposite orders, and a
@@ -26,8 +32,8 @@
 -- papered over with a nullable column the DTO's `number` would then lie about.
 -- The UPDATE therefore carries NO `WHERE deleted_at IS NULL`: SET NOT NULL
 -- checks tombstoned rows too, so skipping them would fail on a row this header
--- calls fine. Nothing in migrations/ seeds `genes`, so on a fresh database the
--- UPDATE matches zero rows and the constraint holds trivially.
+-- calls fine. On a fresh database the rows it acts on are exactly the five
+-- 0030 has just seeded.
 
 ALTER TABLE genes
     ADD COLUMN sort_key INTEGER;

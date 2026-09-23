@@ -91,8 +91,9 @@ export function generatePlugCheckCandidates(
 // as having none).
 //
 // GENOTYPE-PENDING SIGNAL RESOLUTION:
-//   mice_genes (0015) has columns: id, mouse_id, order_index, gene_id.
-//   marker_text was DROPPED in 0015; zygosity is embedded in genes.code.
+//   mice_genes (0015, 0029, 0031) has columns: id, mouse_id, gene_id,
+//   allele_mat, allele_pat. marker_text was DROPPED in 0015; zygosity lives on
+//   the row's allele pair (0029), NOT in genes.code, which is bare.
 //   There is NO explicit "zygosity unknown" or "pending" flag column.
 //   The schema encodes "genotyped" as: at least one live mice_genes row with
 //   gene_id IS NOT NULL for this mouse. "Needs genotyping" = zero such rows.

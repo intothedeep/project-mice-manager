@@ -19,8 +19,7 @@ migration change; a scenario that stops working is a regression.
 1. **mouse_events GONE** — tissue-collection / genotyping are DONE `tasks` rows
    (`task_type = 'tissue_collection'` / `'genotyping'`, date in `due_date`/`done_at`).
 2. **mouse_genotypes → mice_genes** — `marker_text` replaced by `gene_id BIGINT → genes(id)`.
-   A mouse genotype string = `string_agg(g.code, ';' ORDER BY mg.order_index)`.
-   `genes.code` holds the whole marker including zygosity (e.g. `Nf1 f/+`).
+   SUPERSEDED IN PART by 0029/0030/0031 (below), which moved zygosity and order.
 3. **Import provenance REMOVED** — `import_batch_id`, `source_sheet`, `source_row`
    are gone from all tables. `import_batches`, `raw_sheet_rows`, `import_errors`,
    `color_maps` tables are dropped.
@@ -35,6 +34,45 @@ migration change; a scenario that stops working is a regression.
    `on_behalf_of_id`; UPDATE/DELETE are REVOKEd FROM PUBLIC (immutable).
 9. **slots.label is globally unique** — scenarios use `cage_number||'-'||label`
    patterns to avoid collisions between cages.
+
+## Post-R25 genotype model (migrations 0029–0031)
+
+`genes.code` is now **BARE** — `Nf1`, `PlpCre`, `Ai14`, `ccEGFP`, `WT`, one row
+per GENE. A composite code such as `Nf1 f/+` is the 0014-era model and no longer
+exists anywhere in the schema.
+
+- **0029** — zygosity moved onto the link row: `mice_genes.allele_mat` /
+  `allele_pat`, both nullable, **MATERNAL FIRST** (owner, 2026-09-17). `f/+` and
+  `+/f` are different mice; the pair is never sorted or normalised.
+- **0030** — seeds the five catalogue rows (`code` + `label`). Before it,
+  nothing in `migrations/` populated `genes` at all, so a scenario had to invent
+  its own gene row; it no longer does.
+- **0031** — display order moved onto the catalogue: `genes.sort_key` (NOT NULL,
+  PlpCre 10, Nf1 20, Ai14 30, ccEGFP 40, WT 50). The per-mouse ordering column
+  `mice_genes` had carried since 0007 is **DROPPED**, and `mice_genes_order_key`
+  goes with it; the unique key is now
+  `(mouse_id, gene_id) WHERE deleted_at IS NULL`.
+
+A mouse genotype string is therefore composed at read time as one rendered
+marker per row, joined with `';'` in `genes.sort_key` order:
+
+```sql
+string_agg(CASE WHEN mg.allele_mat IS NULL AND mg.allele_pat IS NULL
+                    THEN g.code
+                ELSE g.code || ' ' || coalesce(mg.allele_mat,'?')
+                            || '/' || coalesce(mg.allele_pat,'?')
+           END, ';' ORDER BY g.sort_key)
+```
+
+Both alleles NULL means "zygosity not recorded" and renders the bare code, which
+is a different fact from a recorded `'+'/'+'` pair. This grammar is shared with
+the client's `apps/colony_client_web/lib/genotype.ts` `renderGene`; the two must
+stay identical.
+
+**NOT RE-RUN.** The 0029–0031 updates to `flow-weekly-cycle.sql` were made and
+verified BY READING ONLY — there is no database (owner, 2026-09-23), so nothing
+below this line has been executed since R25. The PASS status further down is a
+record of the R25 run, not of the current files.
 
 ## Scenarios
 

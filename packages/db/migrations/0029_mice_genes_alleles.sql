@@ -25,7 +25,7 @@
 --
 -- A mouse's genotype is its live mice_genes rows joined with ';'. It is
 -- COMPOSED AT READ TIME and never stored (same rule as the rendered mouse
--- label). The row ORDER is the catalogue's genes.sort_key — see 0030, which
+-- label). The row ORDER is the catalogue's genes.sort_key — see 0031, which
 -- supersedes the "order_index order" this header first claimed.
 --
 -- BOTH NULLABLE, NO DEFAULT (owner 2026-09-23: "부, 모 모두 default null").

@@ -3,7 +3,7 @@
 > **STALE SNAPSHOT — corrected by hand 2026-09-23.** There is NO database. This
 > file is a dump of a `colony_dev` that no longer exists, and it stopped at
 > migration `0027`: it has `pup_number_offsets` (0027) and no trace of 0028's
-> `untagged`, 0029's allele columns or 0030's `sort_key`.
+> `untagged`, 0029's allele columns or 0031's `sort_key`.
 >
 > **`packages/db/migrations/` is the contract. This file is not.** It also says
 > nothing about which migrations were ever applied — none have been.

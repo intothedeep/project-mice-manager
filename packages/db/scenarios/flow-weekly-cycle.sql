@@ -33,12 +33,28 @@ SELECT mm.id,
        'F',(SELECT id FROM mouse_lines),(SELECT prof FROM w),'import','2026-08-01'
 FROM mouse_meta mm;
 -- R25: mouse_genotypes -> mice_genes; marker_text -> gene_id FK to genes.code
-INSERT INTO genes (code) VALUES ('Nf1 f/+') ON CONFLICT DO NOTHING;
-INSERT INTO mice_genes (mouse_id,order_index,gene_id)
-SELECT id,1,(SELECT id FROM genes WHERE code='Nf1 f/+') FROM mouse_meta LIMIT 1;
--- Verify genotype string via the R25 contract: string_agg(g.code, ';' ORDER BY mg.order_index)
+-- 0029/0030/0031: genes.code is BARE, zygosity lives on the LINK ROW as
+-- allele_mat/allele_pat (MATERNAL FIRST -- 'f'/'+' is "the floxed copy came
+-- from the mother", and '+'/'f' is a different mouse), and display order is the
+-- catalogue's genes.sort_key. The same mouse still ends up reading 'Nf1 f/+';
+-- only where each half of that string is stored has changed.
+-- NO `INSERT INTO genes` HERE ANY MORE: 0030 seeds the catalogue, so an import
+-- RESOLVES a code, it never creates a gene. Creating one here would be a second
+-- home for the catalogue, which is what 0030 exists to prevent.
+INSERT INTO mice_genes (mouse_id,gene_id,allele_mat,allele_pat)
+SELECT id,(SELECT id FROM genes WHERE code='Nf1' AND deleted_at IS NULL),'f','+'
+FROM mouse_meta LIMIT 1;
+-- Verify the genotype string via the contract: one rendered marker per
+-- mice_genes row, joined with ';' in genes.sort_key order. Both alleles NULL
+-- renders the BARE code ("PlpCre", "WT") -- "not recorded" is a different fact from a
+-- recorded '+'/'+' pair -- and a single NULL side shows as '?'. Same grammar as
+-- lib/genotype.ts renderGene, which is the client half of this contract.
 SELECT mm.litter_code,
-       string_agg(g.code, ';' ORDER BY mg.order_index) AS genotype
+       string_agg(CASE WHEN mg.allele_mat IS NULL AND mg.allele_pat IS NULL
+                           THEN g.code
+                       ELSE g.code || ' ' || coalesce(mg.allele_mat,'?')
+                                   || '/' || coalesce(mg.allele_pat,'?')
+                  END, ';' ORDER BY g.sort_key) AS genotype
 FROM mouse_meta mm
 JOIN mice_genes mg ON mg.mouse_id = mm.id
 JOIN genes g ON g.id = mg.gene_id

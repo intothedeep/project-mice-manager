@@ -41,7 +41,7 @@ function renderGene(gene: GeneRef): string {
 // Sorted, not trusted in array order: the GENE's sortKey is the authority, and a
 // server query without ORDER BY would otherwise silently render "Nf1
 // f/+;PlpCre" for a mouse whose catalogue says the opposite. Display order is a
-// property of the gene, so it cannot drift per mouse (migration 0030).
+// property of the gene, so it cannot drift per mouse (migration 0031).
 function inOrder(genes: GeneRef[]): GeneRef[] {
     return [...genes].sort((a, b) => a.sortKey - b.sortKey);
 }
@@ -92,7 +92,7 @@ export function mintGeneRefs(
 // is not a fact about the mouse, so a server returning the same rows in another
 // order must not read as a change and trigger a spurious write. sortKey is a
 // catalogue fact, not part of the picked set, so it is not compared — and a tie
-// on it would need a mouse carrying one gene twice, which the 0030 unique index
+// on it would need a mouse carrying one gene twice, which the 0031 unique index
 // forbids.
 export function geneRefsEqual(a: GeneRef[], b: GeneRef[]): boolean {
     if (a.length !== b.length) return false;
