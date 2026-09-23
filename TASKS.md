@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,4,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + NEW 8d (`untagged` punch location) + 9e + NEW 13 (10+12 MERGED — the mouse-editing drawer) + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,4,5,8,8b,8c,9a,9b,9c,9d + 11 (inline-edit removal) + 13 (mouse-editing drawer) [x] + inline sex editor [x] SUPERSEDED-not-shipped; 6a + 6 + 7 + 8d LANDED-IN-SOURCE but not yet ticked (close notes owed); NEW 8e (`punchLog` single source) → NEW 8f (`untagged` always, never removed) + 9e + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -145,9 +145,11 @@ Each task lists AC = deterministic acceptance criteria.
 > TIGHTENED to name the selector (it is now task 13's punch-half AC). SIXTH AC defect logged in the phase file's
 > PATTERN block, a NEW SUB-SHAPE: an AC that silently MANDATES a schema change
 > because the state shape it operates on has no room for what it demands.
-> **IN FLIGHT (developers dispatched 2026-09-22): step 6** `lib/punchMutations.ts`
+> ~~**IN FLIGHT (developers dispatched 2026-09-22): step 6** `lib/punchMutations.ts`
 > (the NEW-module requirement stands on SRP alone, since 8b took the file to 307;
-> now BLOCKED-BY 6a) **and NEW step 11 — REMOVE inline cell editing.**
+> now BLOCKED-BY 6a) **and NEW step 11 — REMOVE inline cell editing.**~~
+> **[STALE 2026-09-22: 11 is CLOSED `[x]` and step 6 has LANDED in source — see
+> the CLOSED / DOC-LAGS-SOURCE block below, which is the current state.]**
 > **INLINE CELL EDITING IS REMOVED — OWNER DECIDED 2026-09-22:** *"lets simplify
 > we will remove cell click edit feature from now on > work this first no more
 > cell direct update. delete all related code."* / *"we use a edit modal or mouse
@@ -169,11 +171,14 @@ Each task lists AC = deterministic acceptance criteria.
 > mouse-detail drawer" ruling was SUPERSEDED when the owner reopened the surface
 > as "edit modal **or** mouse drawer" — and the ARCHITECT HAS NOW RULED it back
 > to the DRAWER (2026-09-22, see 12 below).
-> **NEW 11** (`[~]`, developer dispatched) deletes `components/ui/editable-cell.tsx`
+> **11** (**`[x]` CLOSED 2026-09-22** — the `[~]`/"developer dispatched" marker
+> below is HISTORY, the CLOSED block above is the state) deletes `components/ui/editable-cell.tsx`
 > + its three consumers (grid genotype + dob, drawer sex); the cells go read-only
 > with no dead double-click affordance; nothing else changes. An `x_` rename is
 > NOT a soft delete here (both tsconfigs `exclude: ["**/x_*"]`), so the file goes
-> as an ordinary reviewable diff, recoverable from git. **NEW 13** (`[ ]`, the 10+12
+> as an ordinary reviewable diff, recoverable from git. **13** (**`[x]` CLOSED
+> 2026-09-22**; the `[ ]` marker in this historical paragraph is superseded by the
+> CLOSED block above — the 10+12
 > MERGE — **OWNER DECIDED 2026-09-22, *"merge into one task"***: same surface, and
 > 12's punch row only pointed at 10's section, so the split's 12-blocked-by-10
 > dependency dissolves. 13 owns the WHOLE mouse-editing drawer — field editing AND
@@ -202,9 +207,72 @@ Each task lists AC = deterministic acceptance criteria.
 > not reintroduce either. **The window between 11 and 12, in which NO mouse field
 > is editable in the app, is DELIBERATE (owner chose removal first and REAFFIRMED
 > it 2026-09-22 — no stopgap control) — not a regression, and SETTLED.**
-> Still open: 6a (blocks 6), 7 (BLOCKED-BY 6), **NEW 11 `[~]` (inline-edit
-> removal, landed `28d38df`, close pass pending) and NEW 13 `[ ]` (the 10+12
-> MERGED mouse-editing drawer, BLOCKED-BY 7 + 11 — see the paragraph above)**, **NEW 8d — the `untagged` punch location
+> **CLOSED 2026-09-22, both reviewer PASS: 11 `[x]`** (inline-edit removal,
+> `28d38df`; its one ISSUE — AC (5)'s stale-comment greps — fixed in `5f4586d`,
+> and the AC is **RESTATED** to "no comment in `MouseDetail.client.tsx` makes a
+> FALSE claim", because one of the two phrases became TRUE again when 13 shipped:
+> SEVENTH AC defect, a phrase grep a later task re-validated) **and 13 `[x]`**
+> (the 10+12 MERGED mouse-editing drawer, `91bb988`, **all 12 ACs** — `U5BFA` →
+> `updateMouse(603,{sex:'F'})` → `F5BFA` with no `mouseLabel` key,
+> `addPunch(ear)` → `F5BFAe`, `removePunch` → `F5BFA` with the log row carrying
+> `deletedAt` while the active list drops it; JSX-only criteria read, not clicked
+> — no browser). **L4 SEQUENCING SLIP recorded on both: 13 shipped while 11 was
+> still `[~]`, although 13's BLOCKED-BY names it; remedied by 11's close.**
+> RECORD-ONLY from 13's closing review (no AC, no task; full list on the task):
+> `AddMouseDialog` still has an unchecked `e.target.value as Sex` cast on the
+> CREATION path; `updateMouse`'s no-op guard misses the null-dob case (Save sends
+> `''`, compares unequal, forces a pointless rebuild + emit); `TODAY` is a MODULE
+> CONSTANT so a tab open across midnight defaults the punch date to yesterday;
+> `MouseDetail.client.tsx` is 307 lines (past code.md's 300 SOFT line, under the
+> 400 hard one — 13 carries no line criterion); `IdentitySection` re-implements
+> `buildMouseLabel`'s `+${offset}` formatting; and the two drawer sections import
+> shared constants from `AddMouseDialog.client`, making a dialog a constants
+> provider for its siblings.
+> **DOC LAGS SOURCE: 6a, 6, 7 and 8d have LANDED in source 2026-09-22** (13's
+> reviewer drove the real punch store end to end, which is only possible if they
+> did) **but still show `[ ]`/`[~]` — their ticks and close notes are owed by the
+> pass carrying each reviewer verdict; this pass does not tick them.**
+> **NEW 2026-09-22, OWNER DECIDED, ONE developer in THIS ORDER — 8e THEN 8f:**
+> **8e `[ ]` — `punchLog` becomes the SINGLE SOURCE** (*"refactor this. I like
+> this simplification."*): `punchLog` holds every row active + tombstoned,
+> `grid.punches` becomes a projection off it (filter `deletedAt` → `PunchRef`),
+> and the SECOND WRITER — `mockColonyStore.commitIfOk`'s `findMintedPunch`
+> back-fill and its "`nextPunchId` advanced → find the punch at the pre-commit
+> id" HEURISTIC — is DELETED, removing the failure mode where a future mutation
+> minting two punches in one call silently loses one. Fixtures keep their nested
+> shape (seed INPUT; the store normalises on init). **The DTO contract does NOT
+> change** — `MouseCell.punches` stays active-only, so 6a's
+> `grep deletedAt packages/types/src/grid.ts` = 0 guard is repeated in 8e's AC.
+> WHY, for code that landed hours ago: it matches the real server — one `punches`
+> table, two queries, one `WHERE deleted_at IS NULL` (what 0026's partial index
+> is for).
+> **8f `[ ]` — `untagged` ALWAYS EXISTS and is NEVER REMOVED** (owner: *"we never
+> delete a untagged record. we keep together and if we see 1 active tag with
+> untagged then we can target which mouse is not tagged."*): creation ALWAYS
+> mints an `untagged` punch (not a choice), real tags are added BESIDE it, the
+> `untagged` row COEXISTS and is never tombstoned, and "needs tagging" = its only
+> active punch is `untagged` (a DERIVED definition, recorded — no indicator is
+> scoped). **This CLOSES the zero-active-punches FLOOR BY CONSTRUCTION** — a
+> mouse can never reach zero active punches. Scope: always-mint; the
+> AddMouseDialog punch-location select GOES; `untagged` rows cannot be removed
+> (how the refusal reads is the architect's, the AC only needs the row to
+> survive); and the SEED FIXTURES gain an `untagged` row per mouse so the
+> invariant holds in seed data, not only for mice created in-app — a fixture that
+> never reaches a path is exactly what hid 8c's defect for three reviews. Folded
+> in: the only real mock-coverage gap left, **two `ear` punches on one mouse**
+> (`ee`, Q41), added as a NEW fixture mouse (`untagged` + `ear` + `ear`) — never
+> by mutating an existing one, since 9b's close asserts all 21 seed mice compose
+> byte-identically. Every AC inspects the `punches` FIELD, never a render:
+> `untagged` and `toe` both render nothing. **8d is NOT un-ticked** — what it
+> shipped stands; its ACs (3)-second-clause and (6) are annotated RETIRED in
+> place. **MEMO, owner asked for a memo NOT a fix (no task, no rules change):**
+> 9a's anti-re-widening guard greps `lib/colonyMutations.ts`, but 8b moved
+> `updateMouse` + `UpdateMousePatch` to `lib/updateMouse.ts` and NO AC greps that
+> file — re-adding a label field to `UpdateMousePatch` today would trip nothing.
+> Candidate remedy recorded so it is not re-derived: a compile-time guard in
+> `lib/updateMouse.ts` (`type NoLabelKey<T> = 'mouseLabel' extends keyof T ? never
+> : T;`) rather than a grep, which survives a file move as 8b just demonstrated.
+> **8d — the `untagged` punch location
 > (owner DECIDED the value AND the default 2026-09-22): migration `0028`
 > re-ADDs the `punch_location` CHECK as `('toe','ear','other','untagged')` after
 > VERIFYING the constraint name in `pg_constraint`, `PunchLocation` gains the
@@ -214,8 +282,9 @@ Each task lists AC = deterministic acceptance criteria.
 > `buildMouseCell`, and 1-2 `untagged` fixture mice give the value seed coverage
 > (this moves the seed `maxPunchId` off 22 — step 7 asserts the EQUALITY, not the
 > literal). `untagged` renders nothing, same as `toe`; `mouseIdentity.ts`
-> unchanged. SEQUENCED AFTER 6a and 6. STILL OPEN: the zero-active-punches
-> FLOOR**, and NEW **9e —
+> unchanged. SEQUENCED AFTER 6a and 6. ~~STILL OPEN: the zero-active-punches
+> FLOOR~~ **[CLOSED 2026-09-22 by the owner, by construction — see 8f above]**,
+> and NEW **9e —
 > DELETE the dead code (owner decided 2026-09-22)**: `nextLitterCode` (zero
 > consumers, re-grepped; the live path is counter-based on purpose),
 > `apis/getMouseDetail.mock.api.ts` (zero importers) and the `MouseDetail` /
@@ -225,9 +294,11 @@ Each task lists AC = deterministic acceptance criteria.
 > **`untagged` PUNCH LOCATION — OWNER DECIDED 2026-09-22: ADOPT IT** (*"add this
 > type into enum for punchs table"*), overruling the architect's earlier
 > recommendation against it; **the design landed 2026-09-22 as task 8d above,
-> and the creation default is now `untagged`, not `toe`.** Still
+> and the creation default is now `untagged`, not `toe`.** ~~Still
 > OPEN (recorded, not designed): the ZERO-ACTIVE-PUNCHES
-> question (floor vs no floor) — adopting `untagged` did not pick a branch.
+> question (floor vs no floor) — adopting `untagged` did not pick a branch.~~
+> **[CLOSED 2026-09-22 — the OWNER settled it: `untagged` is always minted and
+> never tombstoned, so there IS a floor and it is STRUCTURAL. Task 8f.]**
 > Two collisions recorded on task 13 (formerly step 10):
 > `punch_location` is a CLOSED CHECK in `0026` (a fourth value is a migration),
 > and it may contradict shipped task 8c, which mints `location: 'toe'` at creation.
@@ -243,7 +314,8 @@ Each task lists AC = deterministic acceptance criteria.
 > generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
 > Record-Litter tx, surface cols I–N.
 > **SPLIT DEFERRED (main session, 2026-09-22):** `docs/phases/p0.7.tasks.md` is
-> ~1140 lines, past docs.md §1's 400 hard line, but a further split WAITS until
+> **1671 lines** (re-counted 2026-09-22; "~1140" was stale), far past docs.md
+> §1's 400 hard line, but a further split WAITS until
 > P0.7-b closes — splitting mid-flight moves files under in-progress tasks and §2
 > forbids archiving while the set has open work.
 > <!-- DETAIL: active, read on demand -->
