@@ -287,18 +287,16 @@ export function findCage(
     return undefined;
 }
 
-// Suggested next cage number for a fresh "new cage" field. Cage numbers are a
+// Suggested next cage code for a fresh "new cage" field. Cage codes are a
 // global integer sequence the lab already tracks by hand; this only pre-fills
-// a freely-editable guess. Falls back to '' when any existing cage number
+// a freely-editable guess. Falls back to '' when any existing cage code
 // isn't purely numeric — guessing past a non-numeric scheme would silently
 // propose a wrong sequence.
-export function suggestNextCageNumber(state: ColonyGrid): string {
-    const cageNumbers = state.lines.flatMap((l) =>
-        l.cages.map((c) => c.cageNumber)
-    );
-    if (cageNumbers.length === 0) return '';
+export function suggestNextCageCode(state: ColonyGrid): string {
+    const cageCodes = state.lines.flatMap((l) => l.cages.map((c) => c.code));
+    if (cageCodes.length === 0) return '';
     let max = 0;
-    for (const n of cageNumbers) {
+    for (const n of cageCodes) {
         if (!/^\d+$/.test(n)) return '';
         max = Math.max(max, parseInt(n, 10));
     }

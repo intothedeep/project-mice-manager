@@ -19,11 +19,11 @@
 // Split out of this file (P0.7-b 8b): updateMouse.ts (edits an existing
 // mouse — no call chain with the four add mutations below) and
 // colonyMutationHelpers.ts (buildMouseCell, mintPunch, projectPunches,
-// advanceLitterCounter, findCage, suggestNextCageNumber — pure helpers
+// advanceLitterCounter, findCage, suggestNextCageCode — pure helpers
 // shared by both).
 
 import type { ColonyGrid, GridLine } from '@repo/types';
-import { slotLabelSet, cageNumberSet } from '@/lib/colonySeed';
+import { slotLabelSet, cageCodeSet } from '@/lib/colonySeed';
 import {
     buildMouseCell,
     advanceLitterCounter,
@@ -50,7 +50,7 @@ export interface AddSlotInput {
 
 export interface AddCageInput {
     lineId: number;
-    cageNumber: number;
+    cageCode: number;
     slotLabel: string;
     mouse?: MouseSpec;
 }
@@ -58,7 +58,7 @@ export interface AddCageInput {
 export interface AddLineInput {
     lineName: string;
     nominalGenotypeColor?: string | null;
-    cageNumber: number;
+    cageCode: number;
     slotLabel: string;
     mouse?: MouseSpec;
 }
@@ -215,14 +215,14 @@ export function addCage(
     counters: Counters,
     input: AddCageInput
 ): { state: ColonyState; counters: Counters; result: AddMouseResult } {
-    const cageNumStr = String(input.cageNumber);
-    if (cageNumberSet(state.grid).has(cageNumStr)) {
+    const cageCodeStr = String(input.cageCode);
+    if (cageCodeSet(state.grid).has(cageCodeStr)) {
         return {
             state,
             counters,
             result: {
                 ok: false,
-                error: `Cage number "${input.cageNumber}" already exists — cage numbers are unique colony-wide.`,
+                error: `Cage number "${input.cageCode}" already exists — cage numbers are unique colony-wide.`,
             },
         };
     }
@@ -247,7 +247,7 @@ export function addCage(
                           ...l.cages,
                           {
                               cageId,
-                              cageNumber: cageNumStr,
+                              code: cageCodeStr,
                               location: null,
                               slots: [],
                           },
@@ -318,7 +318,7 @@ export function addLine(
 
     const inner = addCage(stateWithLine, countersWithLine, {
         lineId,
-        cageNumber: input.cageNumber,
+        cageCode: input.cageCode,
         slotLabel: input.slotLabel,
         mouse: input.mouse,
     });

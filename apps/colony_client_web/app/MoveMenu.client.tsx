@@ -89,7 +89,7 @@ export function MoveMenu({
 
     const crumb = [
         line?.lineName,
-        cage ? `cage ${cage.cageNumber}` : '…',
+        cage ? `cage ${cage.code}` : '…',
         slotIsNew
             ? `slot ${newLabel.trim() || '?'} (new)`
             : slotChoice != null
@@ -158,9 +158,7 @@ export function MoveMenu({
                             className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-sm hover:bg-accent"
                         >
                             <RadioGroupItem value={String(c.cageId)} />
-                            <span className="font-mono">
-                                cage {c.cageNumber}
-                            </span>
+                            <span className="font-mono">cage {c.code}</span>
                             {c.cageId === currentCageId ? (
                                 <span className="ml-auto text-[10px] text-muted-foreground">
                                     current

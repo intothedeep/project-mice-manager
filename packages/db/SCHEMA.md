@@ -44,7 +44,7 @@ CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 |---|---|---|---|---|
 | `id` | bigint | NOT NULL |  |  |
 | `line_id` | bigint | NOT NULL |  | → `mouse_lines` |
-| `cage_number` | text | NOT NULL |  |  |
+| `code` | text | NOT NULL |  |  |
 | `location` | text |  |  |  |
 | `status` | text |  |  |  |
 | `created_at` | timestamp with time zone | NOT NULL | `now()` |  |
@@ -52,7 +52,7 @@ CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 | `deleted_at` | timestamp with time zone |  |  |  |
 
 ```sql
-CREATE UNIQUE INDEX cages_cage_number_key ON public.cages USING btree (cage_number) WHERE (deleted_at IS NULL)
+CREATE UNIQUE INDEX cages_code_key ON public.cages USING btree (code) WHERE (deleted_at IS NULL)
 CREATE UNIQUE INDEX cages_pkey ON public.cages USING btree (id)
 ```
 

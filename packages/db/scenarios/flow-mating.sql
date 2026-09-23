@@ -7,10 +7,10 @@ CREATE TEMP TABLE w AS SELECT (SELECT id FROM users WHERE role='professor') prof
                               (SELECT id FROM users WHERE role='staff') staff;
 INSERT INTO colonies (name) VALUES ('MR');
 INSERT INTO mouse_lines (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
-INSERT INTO cages (line_id,cage_number) SELECT id,v FROM mouse_lines,(VALUES ('2475'),('2477')) t(v);
--- slots.label is globally unique; qualify with cage_number
+INSERT INTO cages (line_id,code) SELECT id,v FROM mouse_lines,(VALUES ('2475'),('2477')) t(v);
+-- slots.label is globally unique; qualify with cages.code
 INSERT INTO slots (cage_id,label)
-SELECT c.id, c.cage_number||'-A8' FROM cages c;
+SELECT c.id, c.code||'-A8' FROM cages c;
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT v,true,(SELECT prof FROM w) FROM (VALUES ('BJA'),('BJB')) t(v);
 -- R25: mouse_meta no longer has line_id; line_id lives on mice version rows

@@ -36,7 +36,7 @@ export interface CaseCard {
     // and 'mice' need this; other kinds leave it absent.
     subjectMouseId?: number | null;
     // subjectCageId: cases.subject_cage_id — the cage a subject_kind='cage'
-    // case points at. Its displayed CODE (cages.cage_number) is resolved from
+    // case points at. Its displayed CODE (cages.code) is resolved from
     // this id, so a renumbered cage renames its cases with it.
     subjectCageId?: number | null;
     // subjectLitterCode: litters.litter_code for subject_kind='litter'. The

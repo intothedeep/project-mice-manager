@@ -301,7 +301,7 @@ const COLONY_GRID: ColonyGrid = {
             cages: [
                 {
                     cageId: 1,
-                    cageNumber: '2413',
+                    code: '2413',
                     location: 'Rack A / Row 2',
                     slots: [
                         {
@@ -532,7 +532,7 @@ const COLONY_GRID: ColonyGrid = {
                 },
                 {
                     cageId: 2,
-                    cageNumber: '2414',
+                    code: '2414',
                     location: 'Rack A / Row 2',
                     slots: [
                         {
@@ -693,7 +693,7 @@ const COLONY_GRID: ColonyGrid = {
                 },
                 {
                     cageId: 5,
-                    cageNumber: '2415',
+                    code: '2415',
                     location: 'Rack A / Row 3',
                     slots: [
                         {
@@ -826,7 +826,7 @@ const COLONY_GRID: ColonyGrid = {
             cages: [
                 {
                     cageId: 3,
-                    cageNumber: '2501',
+                    code: '2501',
                     location: 'Rack B / Row 1',
                     slots: [
                         {
@@ -917,7 +917,7 @@ const COLONY_GRID: ColonyGrid = {
                 },
                 {
                     cageId: 4,
-                    cageNumber: '2502',
+                    code: '2502',
                     location: 'Rack B / Row 1',
                     slots: [
                         {
@@ -991,7 +991,7 @@ const COLONY_GRID: ColonyGrid = {
             cages: [
                 {
                     cageId: 6,
-                    cageNumber: '3101',
+                    code: '3101',
                     location: 'Rack C / Row 1',
                     slots: [
                         {

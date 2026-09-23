@@ -97,13 +97,13 @@ export function slotLabelSet(grid: ColonyGrid): Set<string> {
 }
 
 /**
- * Every cage number currently in the grid (cage_number is GLOBALLY unique).
- * Used to reject a duplicate new-cage number at add time.
+ * Every cage code currently in the grid (cages.code is GLOBALLY unique).
+ * Used to reject a duplicate new-cage code at add time.
  * Called with live `state`, not SEED_COLONY.
  */
-export function cageNumberSet(grid: ColonyGrid): Set<string> {
+export function cageCodeSet(grid: ColonyGrid): Set<string> {
     const set = new Set<string>();
-    for (const l of grid.lines) for (const c of l.cages) set.add(c.cageNumber);
+    for (const l of grid.lines) for (const c of l.cages) set.add(c.code);
     return set;
 }
 

@@ -14,10 +14,10 @@ CREATE TEMP TABLE w AS SELECT
   (SELECT id FROM users WHERE type='group') grp;
 INSERT INTO colonies (name) VALUES ('MouseRoomSheet');
 INSERT INTO mouse_lines (colony_id,name) SELECT id,'nNf1 flox;ccEGFP' FROM colonies;
-INSERT INTO cages (line_id,cage_number) SELECT id,v FROM mouse_lines,(VALUES ('2475'),('2482')) t(v);
+INSERT INTO cages (line_id,code) SELECT id,v FROM mouse_lines,(VALUES ('2475'),('2482')) t(v);
 -- slots.label is globally unique; give each cage its own labelled slot
 INSERT INTO slots (cage_id,label)
-SELECT id, cage_number||'-A8' FROM cages;
+SELECT id, code||'-A8' FROM cages;
 
 \echo '#### S1 import: 부모 2마리 (litter 포함 — 외부 쥐도 litter 를 받는다) ####'
 INSERT INTO litters (litter_code,is_from_outside,created_by)
@@ -28,7 +28,7 @@ SELECT id,litter_code,1,'2025-11-24',litter_code FROM litters;
 -- R25: line_id required on each mice version row; prev_id NULL for creation rows
 INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,line_id,actor_id,reason,effective_at)
 SELECT mm.id,
-       (SELECT c.id FROM cages c WHERE c.cage_number='2475'),
+       (SELECT c.id FROM cages c WHERE c.code='2475'),
        (SELECT s.id FROM slots s WHERE s.label='2475-A8'),
        'F',(SELECT id FROM mouse_lines),(SELECT prof FROM w),'import','2026-08-01'
 FROM mouse_meta mm;
@@ -125,7 +125,7 @@ SELECT DISTINCT ON (origin_task_id) origin_task_id,status FROM tasks ORDER BY or
 INSERT INTO mice (mouse_meta_id,cage_id,slot_id,sex,line_id,actor_id,reason,
                   transit_status,effective_at,idempotency_key,prev_id)
 SELECT prev.mouse_meta_id,
-       (SELECT c.id FROM cages c WHERE c.cage_number='2482'),
+       (SELECT c.id FROM cages c WHERE c.code='2482'),
        (SELECT s.id FROM slots s WHERE s.label='2482-A8'),
        'M',prev.line_id,(SELECT staff FROM w),'weaned + sexed','verified','2026-09-01',
        gen_random_uuid(),prev.id
@@ -152,7 +152,7 @@ SELECT DISTINCT ON (mouse_meta_id) is_alive,death_reason FROM mice
 WHERE mouse_meta_id=(SELECT min(id) FROM mouse_meta) ORDER BY mouse_meta_id,id DESC;
 
 \echo '#### S10 케이지 격자 (빈 케이지 포함, 살아있는 쥐만 집계) ####'
-SELECT c.cage_number,count(cur.mouse_meta_id) AS mice
+SELECT c.code,count(cur.mouse_meta_id) AS mice
 FROM cages c LEFT JOIN (SELECT DISTINCT ON (mouse_meta_id) * FROM mice
   WHERE deleted_at IS NULL ORDER BY mouse_meta_id,id DESC) cur
   ON cur.cage_id=c.id AND cur.is_alive=true

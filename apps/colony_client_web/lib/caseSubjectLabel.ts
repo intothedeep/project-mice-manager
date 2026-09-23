@@ -6,13 +6,13 @@ import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
 // a stored display string that could have gone stale beside the id it
 // duplicates (9dda31d did this for 'mouse'; this module covers the rest).
 
-// cageId -> the cage's CODE (GridCage.cageNumber, i.e. cages.cage_number).
+// cageId -> the cage's CODE (GridCage.code, i.e. cages.code).
 // Built by walking the rack, the same shape as buildMouseLabelIndex.
 export function buildCageCodeIndex(grid: ColonyGrid): Map<number, string> {
     const index = new Map<number, string>();
     for (const line of grid.lines) {
         for (const cage of line.cages) {
-            index.set(cage.cageId, cage.cageNumber);
+            index.set(cage.cageId, cage.code);
         }
     }
     return index;

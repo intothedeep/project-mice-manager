@@ -364,7 +364,7 @@ export function ColonyGridView() {
     } else {
         crumbs = [
             selLine ? `line: ${selLine.lineName}` : undefined,
-            selCage ? `cage: ${selCage.cageNumber}` : undefined,
+            selCage ? `cage: ${selCage.code}` : undefined,
             selSlot ? `slot ${selSlot.label}` : undefined,
             selMouse
                 ? `mouse: ${composeMouseLabel(mouseLabelOf(selMouse), reclipIndex.get(selMouse.metaId) ?? 0)}`
@@ -380,7 +380,7 @@ export function ColonyGridView() {
     const cageItems = colony.lines.flatMap((l) =>
         l.cages.map((c) => ({
             id: c.cageId,
-            label: `cage ${c.cageNumber}`,
+            label: `cage ${c.code}`,
             hint: l.lineName,
         }))
     );
@@ -389,7 +389,7 @@ export function ColonyGridView() {
             c.slots.map((s) => ({
                 id: s.slotId,
                 label: `slot ${s.label}`,
-                hint: `cage ${c.cageNumber}`,
+                hint: `cage ${c.code}`,
             }))
         )
     );
@@ -688,9 +688,7 @@ export function ColonyGridView() {
                                                             />
                                                         ) : null}
                                                         <CageLabel
-                                                            number={
-                                                                c.cageNumber
-                                                            }
+                                                            code={c.code}
                                                             count={countCageMice(
                                                                 c
                                                             )}
@@ -893,8 +891,8 @@ export function ColonyGridView() {
                                                                                                     mouse: m,
                                                                                                     lineName:
                                                                                                         l.lineName,
-                                                                                                    cageNumber:
-                                                                                                        c.cageNumber,
+                                                                                                    cageCode:
+                                                                                                        c.code,
                                                                                                     slotLabel:
                                                                                                         s.label,
                                                                                                 }
@@ -1632,12 +1630,12 @@ function CountBadge({ count, title }: { count: number; title: string }) {
 }
 
 function CageLabel({
-    number,
+    code,
     count,
     highlighted,
     onClick,
 }: {
-    number: string;
+    code: string;
     count: number;
     highlighted: boolean;
     onClick: () => void;
@@ -1653,7 +1651,7 @@ function CageLabel({
         >
             {highlighted ? <HlOverlay /> : null}
             <span className="font-mono text-[13px] font-bold text-foreground">
-                {number}
+                {code}
             </span>
             <CountBadge
                 count={count}

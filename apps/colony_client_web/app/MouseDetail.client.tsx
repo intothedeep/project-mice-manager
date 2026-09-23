@@ -39,7 +39,7 @@ function findMouseByMetaId(
 export interface SelectedMouse {
     mouse: MouseCell;
     lineName: string;
-    cageNumber: string;
+    cageCode: string;
     slotLabel: string;
 }
 
@@ -131,8 +131,8 @@ export function MouseDetailDrawer({
                                 </Badge>
                             </SheetTitle>
                             <p className="font-mono text-xs text-muted-foreground">
-                                {selected.lineName} › cage {selected.cageNumber}{' '}
-                                › slot {selected.slotLabel}
+                                {selected.lineName} › cage {selected.cageCode} ›
+                                slot {selected.slotLabel}
                             </p>
                         </SheetHeader>
 
