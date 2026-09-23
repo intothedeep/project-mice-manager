@@ -52,12 +52,15 @@ import { Combobox, type ComboOption } from '@/components/ui/combobox';
 // from the mock store. Replace with a POST to colony_server; the dialog
 // fields stay the same.
 
-const SELECT_CLASS =
+// Exported: task 13's IdentitySection/PunchSection (mouse-editing drawer)
+// reuse this select styling and these option lists rather than duplicating
+// them — one source of the field-select idiom for the whole drawer surface.
+export const SELECT_CLASS =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
-const SEX_OPTIONS: Sex[] = ['U', 'M', 'F'];
+export const SEX_OPTIONS: Sex[] = ['U', 'M', 'F'];
 
-const PUNCH_LOCATION_OPTIONS: PunchLocation[] = [
+export const PUNCH_LOCATION_OPTIONS: PunchLocation[] = [
     'untagged',
     'toe',
     'ear',

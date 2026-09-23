@@ -7,9 +7,10 @@ import { useTasks, useTaskLog } from '@/lib/mockStore';
 import { useColonyGrid } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
-import { formatDate } from '@/lib/dueDates';
 import { RoleSwitch } from '@/components/task-status';
 import { CaseList } from './CaseList.client';
+import { IdentitySection } from './IdentitySection.client';
+import { PunchSection } from './PunchSection.client';
 import {
     Sheet,
     SheetContent,
@@ -141,24 +142,18 @@ export function MouseDetailDrawer({
                                 </p>
                             ) : null}
 
-                            <Section label="Identity">
-                                <Field
-                                    k="genotype"
-                                    v={m.genotype}
-                                />
-                                <Field
-                                    k="dob"
-                                    v={formatDate(m.dob)}
-                                />
-                                <div className="flex items-baseline gap-2 text-sm">
-                                    <span className="w-14 shrink-0 text-xs text-muted-foreground">
-                                        sex
-                                    </span>
-                                    <span className="font-mono">
-                                        {m.isAlive ? m.sex : `${m.sex} (dead)`}
-                                    </span>
-                                </div>
-                            </Section>
+                            <IdentitySection
+                                key={metaId}
+                                mouse={m}
+                                reclipCount={
+                                    buildReclipIndex(cases).get(metaId) ?? 0
+                                }
+                            />
+
+                            <PunchSection
+                                key={metaId}
+                                mouse={m}
+                            />
 
                             {m.parents &&
                             (m.parents.father || m.parents.mother) ? (
@@ -304,17 +299,6 @@ function Section({
             </h3>
             {children}
         </section>
-    );
-}
-
-function Field({ k, v }: { k: string; v: string }) {
-    return (
-        <div className="flex items-baseline gap-2 text-sm">
-            <span className="w-14 shrink-0 text-xs text-muted-foreground">
-                {k}
-            </span>
-            <span className="font-mono">{v}</span>
-        </div>
     );
 }
 
