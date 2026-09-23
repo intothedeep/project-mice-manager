@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,4,5,8,8b,8c,9a,9b,9c,9d + 11 (inline-edit removal) + 13 (mouse-editing drawer) [x] + inline sex editor [x] SUPERSEDED-not-shipped; 6a + 6 + 7 + 8d LANDED-IN-SOURCE but not yet ticked (close notes owed); NEW 8e (`punches` single source) → NEW 8f (`untagged` always, never removed) + 9e + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,4,5,8,8b,8c,9a,9b,9c,9d + 11 (inline-edit removal) + 13 (mouse-editing drawer) + **6a, 7, 8d, 8e, 8f** [x] all reviewer PASS + inline sex editor [x] SUPERSEDED-not-shipped; **step 6 stays [~] — one AC clause unmet, BLOCKED-BY new 8g**; NEW 8g (restore reference-equality) → NEW 8h (`punchId` uniqueness guard) + 1 backlog item (path-copy `moveMouse`, no date) + 9e + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -228,12 +228,86 @@ Each task lists AC = deterministic acceptance criteria.
 > `buildMouseLabel`'s `+${offset}` formatting; and the two drawer sections import
 > shared constants from `AddMouseDialog.client`, making a dialog a constants
 > provider for its siblings.
-> **DOC LAGS SOURCE: 6a, 6, 7 and 8d have LANDED in source 2026-09-22** (13's
+> ~~**DOC LAGS SOURCE: 6a, 6, 7 and 8d have LANDED in source 2026-09-22** (13's
 > reviewer drove the real punch store end to end, which is only possible if they
 > did) **but still show `[ ]`/`[~]` — their ticks and close notes are owed by the
-> pass carrying each reviewer verdict; this pass does not tick them.**
-> **NEW 2026-09-22, OWNER DECIDED, ONE developer in THIS ORDER — 8e THEN 8f:**
-> **8e `[ ]` — `punches` becomes the SINGLE SOURCE** (*"refactor this. I like
+> pass carrying each reviewer verdict; this pass does not tick them.**~~
+> **[PAID 2026-09-22 — see the CLOSES block below.]**
+> **CLOSED 2026-09-22, all reviewer PASS at HEAD `23474e7`, verified by a closing
+> review that drove the real compiled pure layer with 41 probes including 400
+> randomised add/remove operations: 6a, 7, 8d, 8e, 8f `[x]`.** **6a** — every
+> criterion, incl. `grep deletedAt packages/types/src/grid.ts` = 0. **7** — seed
+> equality holds AS AN EQUALITY (44 active rows == summed fixture
+> `punches.length`), zero seeded tombstones, the store defines no punch counter
+> of its own, both wrappers one line; it closes while step 6 is still `[~]` (L4
+> shape, stated: 7 wraps 6's SHIPPED mutations). **8d** — PASS with TWO ACs
+> **RETIRED by 8f, stated as retired rather than passed** (the "creating with
+> `toe` chosen" clause and the "no location literal in `buildMouseCell`" clause
+> are actively contradicted by the shipped design), and ONE AC that could not be
+> re-run — the migration's CHECK behaviour, established by FILE-READ because
+> there was no live Postgres this session, recorded as file-read and NOT as a
+> claimed probe. **8e** (`20e020d`) — one append path, `findMintedPunch` gone,
+> creation punch present via all four rails. **8f** — was ISSUE on AC (8) (the
+> `'untagged'` entry in `PUNCH_LOCATION_OPTIONS` was still there), **FIXED in
+> `23474e7`** by MOVING the constant into `PunchSection` rather than filtering
+> it: 8f had deleted the dialog's select, leaving the dialog defining a list it
+> no longer used and exporting it to a sibling — the quality-gate smell the
+> review had separately flagged — and one move resolves both.
+> **STEP 6 STAYS `[~]`, BLOCKED-BY new 8g.** Its clause "every other mouse is
+> reference-equal" is UNMET: it HELD at 6's own commit `96f5a8d` and was broken
+> by 8e's `projectPunches`, which spreads every line, cage, slot and mouse
+> unconditionally — **not a decision 8e made** (8e's shape text says
+> `grid.punches` "becomes a PROJECTION", never "rebuild every object"). The
+> clause is restored AS WRITTEN by **8g**; it is NOT retired, because RETIRED is
+> the device for CLOSED tasks (8b→11, 8d→8f) and 6 is open.
+> **NEW 2026-09-22, in THIS ORDER — 8g THEN 8h, then one backlog item:**
+> **8g `[ ]` — restore step 6's reference-equality.** `projectPunches` rebuilds
+> every object, so the clause does not hold; 8g makes it hold — that is the whole
+> task. The guarantee is BOTTOM-UP and all five rules are required: mouse by
+> reference when its projected `PunchRef[]` is value-equal; slot when every mouse
+> was reused; cage when every slot; line when every cage; and the root may also be
+> reused, harmless because `commit` compares the `ColonyState` object.
+> SEED-ALIASING COST, stated not hidden: with reuse the initial projection returns
+> `SEED_COLONY` itself, so the first snapshot ALIASES the fixture — safe today
+> (every mutation is immutable-by-construction and `moveMouse` clones before
+> splicing) but `mockColonyStore.ts` says "never mutate SEED_COLONY arrays", so it
+> is an **AC, not an assumption**.
+> **8h `[ ]` — `punchId` uniqueness guard.** `mintPunch` owns the
+> `{grid, punches}` re-derivation plus a DEV-GATED duplicate-`punchId` guard at
+> `commit()` — the same species as `addPunch`'s `untagged` refusal, a store-level
+> rejection of a programmer error, NOT a test. REJECTED with its reason so it is
+> not re-proposed: a BRANDED `punchId` is genuinely structural but lands a
+> mock-era-only invariant in `packages/types` and needs blessed casts at
+> `seedPunches` and at the MVP2 deserialiser, where the server owns uniqueness and
+> the brand degrades to an explicit cast site. The guard has TWO HALVES with
+> DIFFERENT LIFESPANS: uniqueness SURVIVES MVP2 and then validates server
+> responses; `max(punchId) < nextPunchId` is MOCK-ERA ONLY.
+> **BACKLOG `[ ]`, no date — path-copy `moveMouse`.** The obvious fix does NOT
+> work: re-projecting after `structuredClone` **cannot** restore identity, because
+> the clone has already produced fresh mice and an identity-preserving projection
+> would faithfully reuse the clones. So routing `applyColonyMove` through
+> `commit()` alone is a NO-OP and is not worth a task; only a path-copy
+> `moveMouse` does anything. Deferred — drag-and-drop shipped, not worth
+> rewriting now.
+> **DEPLOY VERDICT 2026-09-22 (architect + reviewer agree): NOTHING FOUND BLOCKS
+> MVP1.** Every finding is value-correct at HEAD; the only observable is
+> re-render count on a demo-sized colony. 8g/8h are CONTRACT work, not incident
+> response.
+> **RECORD-ONLY from the closing review (no AC, no task):** the
+> `punches`/`punches` naming collision now inside task 7's AC text
+> (`ColonyState.punches` vs `MouseCell.punches` deliberately share a name, so the
+> AC reads "punches.length equals the sum of punches.length" — verified as
+> intended, text left as is); `colonySeed.maxPunchId`'s comment saying the
+> counter's source "moves to the log", a move that did not happen; 8f's scope text
+> naming "the mint in `buildMouseCell`" when the mint lives in `addMouse` via
+> `mintPunch`; 8d's "regenerate SCHEMA.md + ERD" scope item, not run and a no-op
+> diff anyway since SCHEMA.md records indexes and not CHECK constraints; and the
+> MVP-ladder L3 note that the mock fixture is isolated by FILENAME rather than by
+> its own directory, with a header calling it "anonymised-but-realistic" — the
+> opposite of the ladder's "unmistakable / marked values".
+> ~~**8e `[ ]`** — `punches` becomes the SINGLE SOURCE~~ **[CLOSED `[x]`, see
+> above; the historical description below is kept for its decision record]**
+> (*"refactor this. I like
 > this simplification."*): `punches` holds every row active + tombstoned,
 > `grid.punches` becomes a projection off it (filter `deletedAt` → `PunchRef`),
 > and the SECOND WRITER — `mockColonyStore.commitIfOk`'s `findMintedPunch`
@@ -246,7 +320,9 @@ Each task lists AC = deterministic acceptance criteria.
 > WHY, for code that landed hours ago: it matches the real server — one `punches`
 > table, two queries, one `WHERE deleted_at IS NULL` (what 0026's partial index
 > is for).
-> **8f `[ ]` — `untagged` ALWAYS EXISTS and is NEVER REMOVED** (owner: *"we never
+> ~~**8f `[ ]`**~~ **[CLOSED `[x]` 2026-09-22, see the CLOSES block above; the
+> description below is its decision record]** — **`untagged` ALWAYS EXISTS and
+> is NEVER REMOVED** (owner: *"we never
 > delete a untagged record. we keep together and if we see 1 active tag with
 > untagged then we can target which mouse is not tagged."*): creation ALWAYS
 > mints an `untagged` punch (not a choice), real tags are added BESIDE it, the
@@ -258,11 +334,15 @@ Each task lists AC = deterministic acceptance criteria.
 > (how the refusal reads is the architect's, the AC only needs the row to
 > survive); and the SEED FIXTURES gain an `untagged` row per mouse so the
 > invariant holds in seed data, not only for mice created in-app — a fixture that
-> never reaches a path is exactly what hid 8c's defect for three reviews. Folded
+> never reaches a path is exactly what hid 8c's defect for three reviews. ~~Folded
 > in: the only real mock-coverage gap left, **two `ear` punches on one mouse**
 > (`ee`, Q41), added as a NEW fixture mouse (`untagged` + `ear` + `ear`) — never
 > by mutating an existing one, since 9b's close asserts all 21 seed mice compose
-> byte-identically. Every AC inspects the `punches` FIELD, never a render:
+> byte-identically.~~ **[STUB CORRECTED 2026-09-22 — the detail file is right and
+> this clause was wrong: the owner ruled *"leave it as it is. leave a note."*, so
+> the `ee` fixture mouse was NOT added. 8f's AC (9) instead records the missing
+> `ee` seed coverage as DELIBERATE, in a comment beside the punch fixtures.]**
+> Every AC inspects the `punches` FIELD, never a render:
 > `untagged` and `toe` both render nothing. **8d is NOT un-ticked** — what it
 > shipped stands; its ACs (3)-second-clause and (6) are annotated RETIRED in
 > place. **MEMO, owner asked for a memo NOT a fix (no task, no rules change):**
@@ -314,7 +394,8 @@ Each task lists AC = deterministic acceptance criteria.
 > generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
 > Record-Litter tx, surface cols I–N.
 > **SPLIT DEFERRED (main session, 2026-09-22):** `docs/phases/p0.7.tasks.md` is
-> **1671 lines** (re-counted 2026-09-22; "~1140" was stale), far past docs.md
+> **1890 lines** (re-counted 2026-09-22 after the 6a/7/8d/8e/8f closes; it was
+> 1671 before them and "~1140" earlier still), far past docs.md
 > §1's 400 hard line, but a further split WAITS until
 > P0.7-b closes — splitting mid-flight moves files under in-progress tasks and §2
 > forbids archiving while the set has open work.
