@@ -14,7 +14,6 @@ import { GENE_CATALOG_CODES } from '@/apis/getGenes.mock.api';
 export const GENE_CODES: readonly string[] = GENE_CATALOG_CODES.filter(
     (code) => code !== 'WT'
 );
-export const LITTER_CODES = ['BCW', 'BCX', 'AZZ', 'BGX'] as const;
 
 export type FieldKind =
     'mouse' | 'cage' | 'litter' | 'genes' | 'date' | 'number' | 'text';

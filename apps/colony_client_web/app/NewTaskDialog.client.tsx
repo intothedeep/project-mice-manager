@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react';
 import type { TaskSignal } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import { addTask } from '@/lib/mockStore';
+import { useLitterCodes } from '@/lib/mockColonyStore';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
 import {
     GENE_CODES,
-    LITTER_CODES,
     TASK_TYPES,
     type FormField,
     type TaskTypeDef,
@@ -72,6 +72,13 @@ export function NewTaskDialog({
     // the user can still change it, and cascade types override via dueFromField.
     const [due, setDue] = useState(addDays(TODAY, 7));
     const [assignee, setAssignee] = useState('');
+
+    // Litter options come from LIVE colony state, never a hand-kept list: a
+    // litter exists only because a mouse carries its code, so the store's
+    // derivation is the only thing that knows which ones there are. Read at the
+    // component top (same as AddMouseDialog) and passed down, because
+    // taskTypes.ts is a static schema module and cannot call a hook.
+    const litterOptions = useLitterCodes();
 
     const def = useMemo(
         () => TYPES.find((t) => t.type === typeName) ?? TYPES[0]!,
@@ -188,6 +195,7 @@ export function NewTaskDialog({
                     >
                         <FieldInput
                             field={f}
+                            litterOptions={litterOptions}
                             value={values[f.key]}
                             onChange={(v) => setField(f.key, v)}
                         />
@@ -257,10 +265,12 @@ function Label({
 
 function FieldInput({
     field,
+    litterOptions,
     value,
     onChange,
 }: {
     field: FormField;
+    litterOptions: string[];
     value: string | string[] | undefined;
     onChange: (v: string | string[]) => void;
 }) {
@@ -273,7 +283,7 @@ function FieldInput({
                     ? MOUSE_OPTIONS
                     : field.kind === 'cage'
                       ? CAGE_OPTIONS
-                      : [...LITTER_CODES];
+                      : litterOptions;
             return (
                 <select
                     className={SELECT_CLASS}
