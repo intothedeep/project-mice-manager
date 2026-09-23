@@ -195,6 +195,15 @@ export function ColonyGridView() {
         return mouse ? genotypeOf(mouse) : null;
     };
 
+    // And the TINT for that composed string, off the same MouseCell. It must
+    // resolve with the genotype, not beside it: a stored copy survives a gene
+    // edit that nulls the parent's own colour and then tints the sub-cell for a
+    // genotype the mouse no longer has.
+    const resolveParentGenotypeColor = (metaId: number): string | null => {
+        const mouse = mouseByMetaId.get(metaId);
+        return mouse ? mouse.genotypeColor : null;
+    };
+
     const on = isFilterActive(filter);
     const match = useMemo(
         () => (m: MouseCell) => matchesMouse(m, filter),
@@ -871,6 +880,9 @@ export function ColonyGridView() {
                                                                                         }
                                                                                         resolveParentGenotype={
                                                                                             resolveParentGenotype
+                                                                                        }
+                                                                                        resolveParentGenotypeColor={
+                                                                                            resolveParentGenotypeColor
                                                                                         }
                                                                                         onOpen={() => {
                                                                                             setCaseDrawer(
@@ -1713,6 +1725,7 @@ function ParentRow({
     onJump,
     resolveLabel,
     resolveGenotype,
+    resolveGenotypeColor,
     divider,
 }: {
     tint: string;
@@ -1724,6 +1737,8 @@ function ParentRow({
     resolveLabel: (metaId: number) => string | null;
     // Same for the genotype, which an in-grid parent likewise no longer carries.
     resolveGenotype: (metaId: number) => string | null;
+    // And for its tint, which follows the string off the same MouseCell.
+    resolveGenotypeColor: (metaId: number) => string | null;
     divider?: boolean;
 }) {
     // min-h-0 + no flex-1: the parent cell is now a 2-row grid, so the track
@@ -1756,6 +1771,11 @@ function ParentRow({
         parent.metaId == null
             ? parent.genotype
             : resolveGenotype(parent.metaId);
+    // The tint resolves with the string it tints, never separately.
+    const genotypeColor =
+        parent.metaId == null
+            ? parent.genotypeColor
+            : resolveGenotypeColor(parent.metaId);
     return (
         <div className={base}>
             <button
@@ -1781,8 +1801,8 @@ function ParentRow({
             <span
                 title={genotype ?? undefined}
                 style={
-                    parent.genotypeColor
-                        ? { backgroundColor: `${parent.genotypeColor}22` }
+                    genotypeColor
+                        ? { backgroundColor: `${genotypeColor}22` }
                         : undefined
                 }
                 className="flex items-center truncate border-l border-border/40 px-1 font-mono text-[9px]"
@@ -1841,6 +1861,7 @@ function MouseRow({
     onJumpMouse,
     resolveParentLabel,
     resolveParentGenotype,
+    resolveParentGenotypeColor,
     onGenotype,
     onMate,
     onOpenCases,
@@ -1868,6 +1889,8 @@ function MouseRow({
     resolveParentLabel: (metaId: number) => string | null;
     // Same, for the parent's composed genotype — forwarded to ParentRow.
     resolveParentGenotype: (metaId: number) => string | null;
+    // Same, for that genotype's tint — forwarded to ParentRow.
+    resolveParentGenotypeColor: (metaId: number) => string | null;
     onGenotype: () => void;
     onMate: (color: string) => void;
     onOpenCases: (target: CaseDrawerTarget) => void;
@@ -2127,6 +2150,9 @@ function MouseRow({
                                 onJump={onJumpMouse}
                                 resolveLabel={resolveParentLabel}
                                 resolveGenotype={resolveParentGenotype}
+                                resolveGenotypeColor={
+                                    resolveParentGenotypeColor
+                                }
                             />
                             <ParentRow
                                 tint="bg-pink-100"
@@ -2134,6 +2160,9 @@ function MouseRow({
                                 onJump={onJumpMouse}
                                 resolveLabel={resolveParentLabel}
                                 resolveGenotype={resolveParentGenotype}
+                                resolveGenotypeColor={
+                                    resolveParentGenotypeColor
+                                }
                                 divider
                             />
                         </div>

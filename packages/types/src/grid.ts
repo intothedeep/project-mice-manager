@@ -74,7 +74,7 @@ export interface GeneRef {
     allelePat: string | null;
     // genes.sort_key, denormalised onto the ref exactly as `code` above is —
     // the display order is a property of the GENE, never of this mouse's row
-    // order (migration 0030 drops mice_genes.order_index). Significant for the
+    // order (migration 0031 drops mice_genes.order_index). Significant for the
     // rendered string ("PlpCre;Nf1 f/+" vs the reverse), so the composer sorts
     // on it instead of trusting array position.
     sortKey: number;
@@ -99,12 +99,14 @@ export interface MouseCaseTag {
 // surface does (see lib/mouseIdentity.ts + lib/mouseLabel.ts), so it never drifts from the
 // live punch/reclip state. An outside/unknown parent (metaId null) has no
 // MouseCell to resolve, so it keeps a plain snapshot string instead.
-// An in-grid parent carries NEITHER a label NOR a genotype: both are composed
-// from that parent's OWN MouseCell, resolved by metaId, so neither can drift
-// from the live rows (genotype: lib/genotype.ts genotypeOf over its GeneRef[]).
+// An in-grid parent carries NO label, NO genotype and NO genotype COLOUR: all
+// three are read off that parent's OWN MouseCell, resolved by metaId, so none
+// can drift from the live rows (genotype: lib/genotype.ts genotypeOf over its
+// GeneRef[]; colour: that MouseCell's own genotypeColor). The colour has to
+// travel with the string — a stored tint beside a composed genotype is a claim
+// about a genotype that no longer exists, which is exactly what it drifted into.
 export interface InGridParentCell {
     metaId: number;
-    genotypeColor: string | null; // tint for the parent's genotype sub-cell (same palette as MouseCell.genotypeColor)
 }
 
 export interface OutsideParentCell {

@@ -226,14 +226,8 @@ const COLONY_GRID: ColonyGrid = {
                                     genotypeColor: genoOf(G_PLPCRE_NF1_F_PLUS),
                                     mates: [],
                                     parents: {
-                                        father: {
-                                            metaId: 101,
-                                            genotypeColor: genoOf(G_NF1_F_PLUS),
-                                        },
-                                        mother: {
-                                            metaId: 102,
-                                            genotypeColor: genoOf(G_WT),
-                                        },
+                                        father: { metaId: 101 },
+                                        mother: { metaId: 102 },
                                     },
                                 },
                             ],
@@ -325,19 +319,12 @@ const COLONY_GRID: ColonyGrid = {
                                     mates: [],
                                     parents: {
                                         // Father is M4BCW (metaId 101) — the reclipped animal.
-                                        // In-grid arm carries no label: ParentRow resolves 101's
-                                        // MouseCell and composes it (base + .N), so it renders
-                                        // M4BCW.2 here instead of the bare M4BCW.
-                                        father: {
-                                            metaId: 101,
-                                            genotypeColor: genoOf(G_NF1_F_PLUS),
-                                        },
-                                        mother: {
-                                            metaId: 402,
-                                            genotypeColor: genoOf(
-                                                G_PLPCRE_AI14_PLUS_PLUS
-                                            ),
-                                        },
+                                        // In-grid arm carries NOTHING but metaId — no label, no
+                                        // genotype, no colour. ParentRow resolves 101's MouseCell
+                                        // and derives all three, so this renders M4BCW.2 rather
+                                        // than the bare M4BCW, and the tint follows 101's own.
+                                        father: { metaId: 101 },
+                                        mother: { metaId: 402 },
                                     },
                                 },
                                 {
@@ -707,14 +694,8 @@ const COLONY_GRID: ColonyGrid = {
                                     genotypeColor: geno(UNKNOWN_GENOTYPE),
                                     mates: [],
                                     parents: {
-                                        father: {
-                                            metaId: 601,
-                                            genotypeColor: genoOf(G_WT),
-                                        },
-                                        mother: {
-                                            metaId: 602,
-                                            genotypeColor: genoOf(G_WT),
-                                        },
+                                        father: { metaId: 601 },
+                                        mother: { metaId: 602 },
                                     },
                                 },
                             ],
