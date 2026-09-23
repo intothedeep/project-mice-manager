@@ -336,15 +336,16 @@
     against `M6BFA`/`M6BFAe`/`M6BFAee`/`M6BFAeee`/`M6+10BFAee` → `BFA`, and
     `M6EEE` → `EEE` (the suffix is lowercase-only, the capture is `[A-Z]`, so
     it can never steal an uppercase letter).
-42. **Third punch location (added 2026-09-16):** "somewhere"/`other` is a
-    placeholder — what is its real name, and does it add a suffix letter?
-    CONFLICT to settle in the same answer: §1's tag-suffix set is OPEN
-    (TEXT + lookup, unknown → warn not reject) and lists `(toe)` as a
-    RENDERED suffix; the punch design makes `punch_location` a CLOSED CHECK
-    and renders `toe` as NOTHING. Which wins — open set or closed CHECK, and
-    is `(toe)` ever rendered?
-    STILL OPEN 2026-09-22. It gates NOTHING on the creation path: `addMouse`
-    only ever mints `toe` (P0.7-b task 8c), so 8c is not blocked by this.
+42. **Third punch location — CLOSED 2026-09-22 (owner).** Owner's words:
+    *"close this. and delete all related contents. just write down do not
+    consider. it is just a placeholder."* `other` is a placeholder; there is
+    no decision to make and nothing to reason about further. The accumulated
+    analysis (real-name / suffix-letter framing, the open-set-vs-closed-CHECK
+    conflict, the "still open / gates nothing" annotation) was DELETED on the
+    owner's instruction — a deliberate exception to this file's
+    record-a-RESOLVED-line-never-rewrite rule, noted so it is not read as a
+    defect and restored. The number is kept so `plan §5 Q42` citations
+    resolve.
 43. **Tissue re-clip vs toe punch (added 2026-09-16):** is a `.N` re-clip
     (`lib/mouseLabel.ts`, counted from done Tissue-collection cases) the SAME
     event as a `toe` punch record? If so one representation should go. Ties

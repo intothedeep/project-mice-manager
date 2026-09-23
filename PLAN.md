@@ -55,13 +55,13 @@ Domain semantics carried from the real workbook (meeting_02):
 
 - Cell font color encodes state: **black = done, red = instruction, blue = plan/note**.
 - **Gray fill = sac → dead**; yellow = attention/flag.
-- Mouse ID grammar (rev. 2026-09-04, R3):
+- Mouse ID grammar (rev. 2026-09-22, R3):
   `[M|F]<number><litter-code><tag-suffix><.N?>` — sex prefix, pup number,
-  litter code (3 letters today, grows to up to 5 via rollover), **OPEN
-  tag-suffix set** (empty = foot/leg, `e` = ear, `(toe)` = toe, others
-  possible — TEXT + known-mapping lookup, unknown → warn not reject),
-  optional `.N` = count of done/verified Tissue-collection cases (derived,
-  never stored — see §5 Q43).
+  litter code (3 letters today, grows to up to 5 via rollover), tag suffix =
+  **one `e` per ACTIVE `ear` punch row** (two ears → `ee`, §5 Q41); `toe`
+  renders NOTHING, and so does `untagged` (the fourth `punch_location` value,
+  decided 2026-09-22, lands with P0.7-b task 8d); optional `.N` = count of
+  done/verified Tissue-collection cases (derived, never stored — see §5 Q43).
 - **Pup-number `+offset` renumber (POLICY, user 2026-09-15 — RESOLVES Open
   Question 2; the old "`+` encodes multiple mice" reading was WRONG).** A `+`
   in the pup-number position (`F3+10MBC`) is ONE mouse, not many. When a mouse
@@ -459,7 +459,8 @@ enforced at DB level.
   Detail: [docs/phases/p0.9.plan.md](./docs/phases/p0.9.plan.md)
 
 - **Punch records + mouse-identity label composition (architect design
-  2026-09-16 — GATED on §5 Q39–Q45; steps in TASKS P0.7-b):** `punches` table
+  2026-09-16 — was GATED on §5 Q39–Q45; that gate is CLOSED 2026-09-22, all
+  seven answered/dissolved/closed; steps in TASKS P0.7-b):** `punches` table
   (0026, FK → mouse_meta, CHECK toe|ear|other, no UNIQUE, soft-delete); `addMouse`
   is the sole minter of the implicit `toe` punch; label = read-time projection
   `sex · pupNumber · [+offset] · litterCode · [e…]` (mid position abolished, Q39);
@@ -483,8 +484,10 @@ enforced at DB level.
 > case does NOT mint a `toe` punch row** (*"tissue is independent each other with
 > toe"*) — `punches` records identification marks only, `.N` and punch rows are
 > DIFFERENT events, and it no longer gates P0.7-b task 13 (the 10+12 merge).
-> Gating what is being built right now: **Q42** alone (real name of the third
-> punch location); it does not gate task 8c. Q40 is DISSOLVED.
+> **Q42 CLOSED 2026-09-22 (owner): `other` is a placeholder** — no decision
+> needed, its accumulated analysis deleted on the owner's instruction (an
+> explicit exception to the RESOLVED-line rule below), number kept so citations
+> resolve. Q40 is DISSOLVED. **Nothing in §5 now gates current P0.7-b work.**
 > Record every answer as a RESOLVED / DECIDED / DISSOLVED line UNDER its
 > question — never rewrite or renumber a question.
 > Detail: [docs/phases/open-questions.plan.md](./docs/phases/open-questions.plan.md)

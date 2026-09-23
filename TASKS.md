@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 4 = professor GATE; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + NEW 8d (`untagged` punch location) + 9e + NEW 13 (10+12 MERGED — the mouse-editing drawer) + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,4,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + NEW 8d (`untagged` punch location) + 9e + NEW 13 (10+12 MERGED — the mouse-editing drawer) + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -124,14 +124,13 @@ Each task lists AC = deterministic acceptance criteria.
 > written justification: each add mutation's input type is coupled to the function
 > below it, so splitting further cuts an artificial seam) — recorded on the task
 > so it is not re-litigated.
-> Step 4 is the professor GATE — Q39/Q41/Q44 answered, Q40 dissolved, **Q45
-> RESOLVED 2026-09-18** (migration 0027 `pup_number_offsets` +
-> `MouseCell.pupOffsets`); **Q43-narrow RESOLVED 2026-09-22 (owner:
-> *"tissue is independent each other with toe"* — a Tissue-collection case does
-> NOT mint a `toe` punch row; `.N` and punch rows are DIFFERENT events, one mint
-> site)**, leaving only **Q42**, which was never recorded as a blocker on 10,
-> 12 or 13 and by its own text gates nothing on the creation path — so the step-4
-> GATE may now hold nothing. Not closed here; Q42 left untouched.
+> **Step 4 (professor GATE) CLOSED 2026-09-22 — it holds nothing.** Q39/Q41/
+> Q43-main/Q44 answered, Q40 dissolved, Q45 RESOLVED 2026-09-18 (migration 0027
+> `pup_number_offsets` + `MouseCell.pupOffsets`), Q43-narrow RESOLVED 2026-09-22
+> (owner: *"tissue is independent each other with toe"* — a Tissue-collection
+> case does NOT mint a `toe` punch row; `.N` and punch rows are DIFFERENT events,
+> one mint site), **Q42 CLOSED 2026-09-22 (owner: `other` is a placeholder,
+> nothing to decide)**. No open question gates P0.7-b any more.
 > **PUNCH TOMBSTONES — OWNER DECIDED 2026-09-22, option B** ("B: correct.
 > because we can update punch record's deleted_at"): `MouseCell.punches` stays
 > ACTIVE ROWS ONLY and a removed punch is tombstoned in a separate append-only
@@ -229,10 +228,9 @@ Each task lists AC = deterministic acceptance criteria.
 > and the creation default is now `untagged`, not `toe`.** Still
 > OPEN (recorded, not designed): the ZERO-ACTIVE-PUNCHES
 > question (floor vs no floor) — adopting `untagged` did not pick a branch.
-> Three collisions recorded on task 13 (formerly step 10):
+> Two collisions recorded on task 13 (formerly step 10):
 > `punch_location` is a CLOSED CHECK in `0026` (a fourth value is a migration),
-> **plan §5 Q42 is open and asks exactly whether that CHECK is closed**, and it
-> may contradict shipped task 8c, which mints `location: 'toe'` at creation.
+> and it may contradict shipped task 8c, which mints `location: 'toe'` at creation.
 > 8c is NOT marked defective. Recorded,
 > not actioned: `NewTaskDialog.client.tsx` imports `SEED_COLONY` instead of reading
 > the live store (`:5`, consumed at `:35` + `:42`; the only UI file doing so) —
