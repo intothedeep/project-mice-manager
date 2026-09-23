@@ -126,7 +126,14 @@ export interface NewTaskInput {
     def: TaskTypeDef;
     values: Record<string, string | string[]>;
     signal: TaskSignal;
+    // Stored ONLY for subject kinds with nothing to resolve (cage, litter,
+    // mate, slot, mice). A mouse-subject case carries subjectMouseId instead
+    // and its name is composed at read time.
     subjectLabel: string | null;
+    // The picked mouse's metaId for def.subjectKind === 'mouse'. The dialog
+    // pickers carry ids, so no label lookup is needed (and none is done — two
+    // mice may display the same name, as 102/402 did).
+    subjectMouseId: number | null;
     detail: string | null;
     dueDate: string | null;
     assignee: string | null;
@@ -139,8 +146,9 @@ export interface NewTaskInput {
 // Batch path: mice[] present → ONE case with subjectKind='mice', all metaIds
 // in the mice[] field. No per-mouse cases.
 // Single-subject path: mice absent → one case, subjectKind from def.subjectKind,
-// subjectMouseId set when def.subjectKind === 'mouse' and a metaId is available
-// in input (NOT resolved from mouseLabel to avoid the 102-vs-402 ambiguity).
+// subjectMouseId carried through from the dialog's picker (NOT resolved from a
+// mouseLabel — that is the 102-vs-402 ambiguity). A mouse-subject case stores
+// NO label: its name is resolved from subjectMouseId at read time.
 // For a Mate, auto-enqueues plug-check + delivery into Upcoming.
 export function addTask(input: NewTaskInput): void {
     const caseId = nextCaseId++;
@@ -173,17 +181,15 @@ export function addTask(input: NewTaskInput): void {
         };
     } else {
         // Single-subject path.
+        const isMouseSubject = input.def.subjectKind === 'mouse';
         caseRow = {
             id: caseId,
             caseType: input.def.type,
             signal: input.signal,
             status: 'todo',
             subjectKind: input.def.subjectKind,
-            subjectLabel: input.subjectLabel,
-            // subjectMouseId is not available from the dialog (the dialog passes
-            // mouseLabel strings, not metaIds). Set null here; the real server
-            // will resolve the FK. Avoids the 102-vs-402 label-lookup bug.
-            subjectMouseId: null,
+            subjectLabel: isMouseSubject ? null : input.subjectLabel,
+            subjectMouseId: isMouseSubject ? input.subjectMouseId : null,
             detail: input.detail,
             createdAt: TODAY,
             dueDate: input.dueDate,

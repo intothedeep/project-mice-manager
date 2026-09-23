@@ -1045,6 +1045,9 @@ export function ColonyGridView() {
                             values: {},
                             signal: 'instruction',
                             subjectLabel: ctxMenu.mouse.mouseLabel,
+                            // Batch path (mice below): the case is subjectKind
+                            // 'mice', which has no single-mouse FK slot.
+                            subjectMouseId: null,
                             detail: null,
                             dueDate: null,
                             assignee: null,

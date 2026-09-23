@@ -10,7 +10,8 @@ import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { useTasks, setTaskStatus } from '@/lib/mockStore';
 import { formatDate } from '@/lib/dueDates';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
-import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
+import { buildMouseLabelIndex } from '@/lib/mouseLabel';
+import { useColonyGrid } from '@/lib/mockColonyStore';
 import { CaseTimeline } from './CaseTimeline.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
 import { Button } from '@/components/ui/button';
@@ -35,8 +36,14 @@ export function TasksView() {
     // whose display depends on when you open it cannot be checked.
     const today = TODAY;
 
-    // Reclip index (T5): same helper as grid — one pass over all cases.
-    const reclipIndex = useMemo(() => buildReclipIndex(tasks), [tasks]);
+    // metaId -> displayed mouse name, the SAME index the grid and the new-task
+    // dialog read. A mouse-subject case stores no name of its own, so this is
+    // the only place its badge can get one — and the only name it can get.
+    const grid = useColonyGrid();
+    const mouseLabels = useMemo(
+        () => buildMouseLabelIndex(grid, tasks),
+        [grid, tasks]
+    );
 
     // act uses the case id (c.id) — each card represents one case.
     function act(c: ClientCaseCard, to: CaseTaskStatus) {
@@ -100,7 +107,7 @@ export function TasksView() {
                                             task={c}
                                             role={role}
                                             today={today}
-                                            reclipIndex={reclipIndex}
+                                            mouseLabels={mouseLabels}
                                             onAct={act}
                                         />
                                     ))
@@ -118,29 +125,29 @@ function TaskItem({
     task,
     role,
     today,
-    reclipIndex,
+    mouseLabels,
     onAct,
 }: {
     task: ClientCaseCard;
     role: Role;
     today: string;
-    reclipIndex: Map<number, number>;
+    mouseLabels: Map<number, string>;
     onAct: (c: ClientCaseCard, to: CaseTaskStatus) => void;
 }) {
     const actions = availableActions(role, task.status);
     const overdue = isOverdue(task, today);
     const cancelled = task.status === 'cancelled';
 
-    // Compose the subject label with the reclip suffix when the case targets
-    // a single mouse (subjectKind='mouse'). Batch/litter/cage labels stay as-is.
-    const displaySubjectLabel = task.subjectLabel
-        ? task.subjectMouseId != null
-            ? composeMouseLabel(
-                  task.subjectLabel,
-                  reclipIndex.get(task.subjectMouseId) ?? 0
-              )
-            : task.subjectLabel
-        : null;
+    // A mouse-subject case is named by resolving its subjectMouseId, never by a
+    // stored copy — that copy went stale the moment the mouse was renumbered.
+    // Cage, litter, mate and batch labels have no single id to resolve from and
+    // are still stored, so they fall through.
+    const displaySubjectLabel =
+        (task.subjectMouseId != null
+            ? mouseLabels.get(task.subjectMouseId)
+            : null) ??
+        task.subjectLabel ??
+        null;
 
     return (
         <div

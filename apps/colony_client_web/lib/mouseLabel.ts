@@ -1,4 +1,6 @@
+import type { ColonyGrid } from '@repo/types';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
+import { mouseLabelOf } from '@/lib/mouseIdentity';
 
 // Reclip count for a single mouse: number of Tissue collection cases that
 // reached the "tissue taken and stored" milestone (status done or verified),
@@ -41,4 +43,34 @@ export function buildReclipIndex(cases: ClientCaseCard[]): Map<number, number> {
 // N <= 1 → base (no suffix); N === 2 → `base.2`; N === 3 → `base.3`; etc.
 export function composeMouseLabel(base: string, count: number): string {
     return count >= 2 ? `${base}.${count}` : base;
+}
+
+// metaId -> the FULLY composed mouse label (base + reclip suffix), walking the
+// rack in grid order. The ONE place the two layers are joined: mouseIdentity
+// builds the base, composeMouseLabel adds the ".N", and every render site that
+// needs a mouse's displayed name reads it from here instead of keeping a copy.
+// Insertion order is the rack walk, so callers that need a picker list can use
+// the Map's own order rather than sorting again.
+export function buildMouseLabelIndex(
+    grid: ColonyGrid,
+    cases: ClientCaseCard[]
+): Map<number, string> {
+    const reclip = buildReclipIndex(cases);
+    const index = new Map<number, string>();
+    for (const line of grid.lines) {
+        for (const cage of line.cages) {
+            for (const slot of cage.slots) {
+                for (const mouse of slot.mice) {
+                    index.set(
+                        mouse.metaId,
+                        composeMouseLabel(
+                            mouseLabelOf(mouse),
+                            reclip.get(mouse.metaId) ?? 0
+                        )
+                    );
+                }
+            }
+        }
+    }
+    return index;
 }

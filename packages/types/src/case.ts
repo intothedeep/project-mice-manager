@@ -25,7 +25,11 @@ export interface CaseCard {
     signal: TaskSignal; // resolved from cases.signal_id -> signals.type
     status: TaskStatus; // cases.current_status (denorm cache)
     subjectKind: TaskSubjectKind | null; // null when no specific subject entity
-    subjectLabel: string | null; // e.g. 'M4BCW', 'cage 2413', 'litter BCW'
+    // Stored label for subject kinds with nothing to resolve: 'cage 2413',
+    // 'litter BCW', a mate's 'F6AYL × M4BCW'. A subject_kind='mouse' case
+    // carries NULL here — its name is composed from subjectMouseId at read
+    // time, so the two can never disagree.
+    subjectLabel: string | null;
     // subjectMouseId: the resolved mouse_meta.id for single-subject 'mouse' cases.
     // Also present on 'mice' batch cases (always null — membership is in case_mice).
     // Optional for backward compat — consumers that only read subject_kind='mouse'
