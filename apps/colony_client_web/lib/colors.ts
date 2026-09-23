@@ -1,4 +1,5 @@
 import type { Sex } from '@repo/types';
+import { TODAY } from '@/lib/dueDates';
 
 // RULE-DERIVED colour channels — pure functions of a mouse's own fields, computed
 // at render. The ASSIGNED channels (genotype / line / mate) are NOT here: they
@@ -41,10 +42,18 @@ const OLD_DAYS: Record<Sex, number | null> = {
     U: null,
 };
 
+// `now` defaults to the pinned TODAY, never the real clock. The fixture is
+// authored against a fixed date, so a real `new Date()` silently ages it: the
+// three newest mice drifted from baby to adult between 2026-09-08 and
+// 2026-09-23, and with them the per-slot ADULT count that drives the
+// over-capacity warning. A mock whose display depends on when you open it
+// cannot be checked against a written expectation.
+// SERVER ERA: the caller passes the real date; the default goes away with the
+// mock, not before.
 export function lifeStage(
     dob: string | null,
     sex: Sex,
-    now: Date = new Date()
+    now: Date = new Date(TODAY)
 ): LifeStage {
     if (!dob) return 'adult'; // unknown dob → neutral (no fill)
     const ageDays = (now.getTime() - new Date(dob).getTime()) / 86_400_000;

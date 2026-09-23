@@ -5,6 +5,7 @@ import { isOverdue } from '@repo/types';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { availableActions } from '@/lib/taskFlow';
+import { TODAY } from '@/lib/dueDates';
 import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { useTasks, setTaskStatus } from '@/lib/mockStore';
 import { formatDate } from '@/lib/dueDates';
@@ -26,17 +27,13 @@ const COLUMNS: { status: CaseTaskStatus; label: string; hint: string }[] = [
     { status: 'cancelled', label: 'Cancelled', hint: 'withdrawn' },
 ];
 
-// Derive today as a local ISO date (YYYY-MM-DD). Using Intl to avoid UTC
-// midnight drift that toISOString() introduces near midnight.
-function localToday(): string {
-    return new Intl.DateTimeFormat('en-CA').format(new Date());
-}
-
 export function TasksView() {
     const tasks = useTasks();
     const [role, setRole] = useState<Role>('staff');
     const [creating, setCreating] = useState(false);
-    const today = localToday();
+    // Pinned, not the real clock — see lib/colors.ts lifeStage for why a mock
+    // whose display depends on when you open it cannot be checked.
+    const today = TODAY;
 
     // Reclip index (T5): same helper as grid — one pass over all cases.
     const reclipIndex = useMemo(() => buildReclipIndex(tasks), [tasks]);
