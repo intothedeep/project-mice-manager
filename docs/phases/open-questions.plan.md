@@ -503,8 +503,17 @@
     is whether such a rule belongs in the schema at all, in the picker, or
     nowhere (the lab may legitimately write `WT` to mean "wild type at the
     locus we care about"). Needs the professor, not an architect.
-49. **Should the gene PICKERS follow `sort_key` too? (added 2026-09-23 —
-    OPEN, nothing assumed, nothing changed.)** Since `11d0322` the GRID renders
+49. **Should the gene PICKERS follow `sort_key` too? — RESOLVED 2026-09-23
+    (owner: "yes"). One order everywhere: the pickers now sort by `sort_key`,
+    so `PlpCre` is first in the picker exactly as it is in the composed
+    genotype. Implemented by deriving `GENE_CATALOG_CODES` from a SORTED copy
+    rather than from the array as written, which also makes the array's own
+    order meaningless — `sort_key` is now the single source of display order,
+    so the two cannot drift the way a second hand-kept list would. Verified
+    against the real modules: genotype picker `PlpCre · Nf1 · Ai14 · ccEGFP ·
+    WT`, "genes to check" the same minus `WT`, while the array is still written
+    `Nf1`-first and provably no longer matters. The original question follows.**
+    Since `11d0322` the GRID renders
     a composed genotype in catalogue `sort_key` order, so `PlpCre` (10) comes
     first. The badge pickers still list genes in CATALOGUE ARRAY order, where
     `Nf1` is first (`apis/getGenes.mock.api.ts:25-34` — `GENE_CATALOG_CODES`

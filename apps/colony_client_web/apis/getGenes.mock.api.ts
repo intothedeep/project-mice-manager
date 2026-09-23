@@ -34,8 +34,15 @@ const GENES: Gene[] = [
     { geneId: 5, code: 'WT', label: 'Wild type (no marker)', sortKey: 50 },
 ];
 
-// Codes only, in catalogue order — what the badge pickers render.
-export const GENE_CATALOG_CODES: readonly string[] = GENES.map((g) => g.code);
+// Codes only, in sortKey order — what the badge pickers render. Sorted, NOT in
+// the order the array above happens to be written: the pickers must list genes
+// the same way the grid composes them (PlpCre first), or the same two genes read
+// in one order in the picker and the other in the cell. The array's own order is
+// therefore MEANINGLESS — sortKey is the single source of display order, so the
+// two cannot drift apart the way a second hand-kept list would.
+export const GENE_CATALOG_CODES: readonly string[] = [...GENES]
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map((g) => g.code);
 
 // The catalogue's sortKey for a code — what mintGeneRefs copies onto a new row
 // (the server will JOIN genes for the same value).

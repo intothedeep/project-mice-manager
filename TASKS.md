@@ -157,9 +157,11 @@ Each task lists AC = deterministic acceptance criteria.
 > value-correct). **THERE IS NO DATABASE — owner 2026-09-23, *"no db yet"*:**
 > migrations `0001`–`0030` are paper contracts, nothing is "unapplied", and
 > `packages/db/SCHEMA.md` is a FOSSIL that stops at `0027` while its banner
-> still claims it was generated from a live `colony_dev` — recorded as a
-> finding, NOT edited (owner deciding). STILL OPEN: `plan §5 Q49`, whether the
-> gene pickers should follow `sort_key` too. Detail (split out the day it opened, docs.md §1):
+> claimed it was generated from a live `colony_dev` — FIXED 2026-09-23 in
+> `2722c62`, in the script as well as the file, since the banner is generated
+> and a file-only fix would be erased on the next run. `plan §5 Q49` RESOLVED
+> the same day (owner: "yes"): the gene pickers now sort by `sort_key`, one
+> order everywhere. Detail (split out the day it opened, docs.md §1):
 > [docs/phases/p0.7-c.tasks.md](./docs/phases/p0.7-c.tasks.md)
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.7.tasks.md](./docs/phases/p0.7.tasks.md)

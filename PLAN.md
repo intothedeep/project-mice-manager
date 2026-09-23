@@ -488,7 +488,8 @@ enforced at DB level.
 
 > Current state: 49 numbered questions, Q1–Q49, **numbering preserved in the
 > split file** so citations of the form `plan §5 Q43` still resolve.
-> Newest movement: **Q49 ADDED 2026-09-23** — should the gene PICKERS follow
+> Newest movement: **Q49 RESOLVED 2026-09-23** (owner: "yes" — pickers now sort by
+> `sort_key`, one order everywhere). It had asked whether the gene PICKERS should follow
 > `sort_key` too? Since `11d0322` the grid renders in `sort_key` order (PlpCre
 > first) while the pickers still list catalogue-array order (Nf1 first); owner's
 > call, nothing assumed. Pick ORDER itself no longer reaches the rendered string
