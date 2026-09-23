@@ -50,33 +50,44 @@ const geno = (g: string): string | null => GENO[g] ?? null;
 //
 // 'WT' is an ordinary row, not the empty state — see apis/getGenes.mock.api.ts.
 //
-// ALLELES: null = zygosity NOT RECORDED, which is what the markers that have no
+// ALLELES are MATERNAL THEN PATERNAL — parent of origin (owner decision
+// 2026-09-17): alleleMat is the LEFT side of the rendered pair, so
+// G_NF1_F_PLUS's alleleMat 'f' means the floxed copy came from the mother and
+// renders "Nf1 f/+". The mirror mouse ("Nf1 +/f") is a different animal, never a
+// respelling, so no code sorts the pair.
+//
+// null = zygosity NOT RECORDED, which is what the markers that have no
 // zygosity to record carry ('WT', the 'PlpCre' driver) — those render as the
 // bare code. An explicit '+' is a RECORDED wild-type allele, which is why
 // G_NF1_PLUS_PLUS renders "Nf1 +/+" while G_WT renders "WT". The two are
 // different facts; see lib/genotype.ts.
+//
+// sortKey is the CATALOGUE's display order (apis/getGenes.mock.api.ts), copied
+// onto each row exactly as the server will JOIN it: PlpCre 10, Nf1 20, Ai14 30,
+// ccEGFP 40, WT 50. It is why 'PlpCre;Ai14 +/+' renders in that order no matter
+// how these arrays are written.
 const G_WT: GeneRef[] = [
-    { code: 'WT', allelePat: null, alleleMat: null, orderIndex: 0 },
+    { code: 'WT', alleleMat: null, allelePat: null, sortKey: 50 },
 ];
 const G_NF1_F_PLUS: GeneRef[] = [
-    { code: 'Nf1', allelePat: 'f', alleleMat: '+', orderIndex: 0 },
+    { code: 'Nf1', alleleMat: 'f', allelePat: '+', sortKey: 20 },
 ];
 const G_NF1_PLUS_PLUS: GeneRef[] = [
-    { code: 'Nf1', allelePat: '+', alleleMat: '+', orderIndex: 0 },
+    { code: 'Nf1', alleleMat: '+', allelePat: '+', sortKey: 20 },
 ];
 const G_NF1_F_F: GeneRef[] = [
-    { code: 'Nf1', allelePat: 'f', alleleMat: 'f', orderIndex: 0 },
+    { code: 'Nf1', alleleMat: 'f', allelePat: 'f', sortKey: 20 },
 ];
 const G_AI14_F_F: GeneRef[] = [
-    { code: 'Ai14', allelePat: 'f', alleleMat: 'f', orderIndex: 0 },
+    { code: 'Ai14', alleleMat: 'f', allelePat: 'f', sortKey: 30 },
 ];
 const G_PLPCRE_AI14_PLUS_PLUS: GeneRef[] = [
-    { code: 'PlpCre', allelePat: null, alleleMat: null, orderIndex: 0 },
-    { code: 'Ai14', allelePat: '+', alleleMat: '+', orderIndex: 1 },
+    { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
+    { code: 'Ai14', alleleMat: '+', allelePat: '+', sortKey: 30 },
 ];
 const G_PLPCRE_NF1_F_PLUS: GeneRef[] = [
-    { code: 'PlpCre', allelePat: null, alleleMat: null, orderIndex: 0 },
-    { code: 'Nf1', allelePat: 'f', alleleMat: '+', orderIndex: 1 },
+    { code: 'PlpCre', alleleMat: null, allelePat: null, sortKey: 10 },
+    { code: 'Nf1', alleleMat: 'f', allelePat: '+', sortKey: 20 },
 ];
 
 // Colour for a gene set, keyed through the SAME composer the grid renders with

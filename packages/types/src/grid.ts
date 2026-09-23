@@ -59,18 +59,25 @@ export interface PunchRef {
 // mice_genes, so no `deletedAt` appears here (grid.ts carries no tombstones).
 export interface GeneRef {
     code: string;
-    // Paternal / maternal allele, rendered `code allelePat/alleleMat`.
+    // MATERNAL THEN PATERNAL — parent of origin, rendered
+    // `code alleleMat/allelePat` (owner decision 2026-09-17). The LEFT allele
+    // is the mother's: "Nf1 f/+" and "Nf1 +/f" are DIFFERENT MICE, so nothing
+    // sorts or normalises the pair. Declared in render order on purpose; this
+    // has been inverted once already (see migration 0029's header).
+    //
     // NULL = NOT RECORDED, which is what a marker with no zygosity to record
     // ('PlpCre', 'WT') carries and what a new row is minted with. Both NULL
     // renders the bare code. '+' is a RECORDED wild-type allele and is a
     // DIFFERENT fact from NULL — "Nf1 +/+" vs "PlpCre" is that difference on
     // screen. `| null` rather than `?` so every reader must handle it.
-    allelePat: string | null;
     alleleMat: string | null;
-    // mice_genes.order_index — the ORDER the markers are written in. Significant
-    // for the rendered string ("PlpCre +/+;Nf1 f/+" vs the reverse), so the
-    // composer sorts on it instead of trusting array position.
-    orderIndex: number;
+    allelePat: string | null;
+    // genes.sort_key, denormalised onto the ref exactly as `code` above is —
+    // the display order is a property of the GENE, never of this mouse's row
+    // order (migration 0030 drops mice_genes.order_index). Significant for the
+    // rendered string ("PlpCre;Nf1 f/+" vs the reverse), so the composer sorts
+    // on it instead of trusting array position.
+    sortKey: number;
 }
 
 // Under Task model v2 the case is the primary entity and a task is a child

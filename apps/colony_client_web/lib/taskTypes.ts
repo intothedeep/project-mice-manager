@@ -1,10 +1,19 @@
 import type { TaskSubjectKind } from '@repo/types';
+import { GENE_CATALOG_CODES } from '@/apis/getGenes.mock.api';
 
 // Data-driven form schema for creating tasks. task_type selects which extra
 // fields appear; the extra values land in the task's `direction` payload (the
 // tasks.direction jsonb). Adding a new task type = one entry here.
 
-export const GENE_CODES = ['Nf1', 'PlpCre', 'Ai14', 'ccEGFP'] as const;
+// The gene catalogue MINUS 'WT' — derived, never a second hand-kept list, so a
+// gene added to the catalogue cannot silently go missing from this picker.
+// 'WT' is excluded because it is not a marker anyone can CHECK FOR: it is the
+// absence of markers, which is what a genotyping result reports when no gene is
+// found. Assigning a genotype does offer it (that picker uses the full
+// catalogue); asking "which genes should we check" cannot.
+export const GENE_CODES: readonly string[] = GENE_CATALOG_CODES.filter(
+    (code) => code !== 'WT'
+);
 export const LITTER_CODES = ['BCW', 'BCX', 'AZZ', 'BGX'] as const;
 
 export type FieldKind =

@@ -12,11 +12,21 @@
 -- observed allele pair and made "all mice carrying Nf1" a text-pattern query —
 -- the exact defect 0014 set out to fix, left half-done.
 --
--- The two columns are the paternal and maternal allele, in that order: a
--- rendered marker is `code allele_pat/allele_mat` (e.g. code 'Nf1' +
--- ('f','+') -> "Nf1 f/+"). A mouse's genotype is its live mice_genes rows in
--- order_index order, joined with ';'. It is COMPOSED AT READ TIME and never
--- stored (same rule as the rendered mouse label).
+-- THE LEFT ALLELE IS MATERNAL. The pair is PARENT OF ORIGIN ordered, maternal
+-- then paternal (owner decision 2026-09-17, reaffirmed 2026-09-23): a rendered
+-- marker is `code allele_mat/allele_pat`, so code 'Nf1' with allele_mat 'f' and
+-- allele_pat '+' -> "Nf1 f/+" = the FLOXED copy came from the mother. "f/+" and
+-- "+/f" are therefore DIFFERENT MICE, not two spellings of one, and nothing may
+-- sort or normalise the stored pair — that would destroy parent of origin with
+-- no way to recover it. (Symmetric pairs, 'f/f' and '+/+', are unaffected.)
+-- The columns are declared in that same order below so the DDL, the DTO
+-- (GeneRef) and the rendered string all read maternal-first; this has been
+-- inverted once already.
+--
+-- A mouse's genotype is its live mice_genes rows joined with ';'. It is
+-- COMPOSED AT READ TIME and never stored (same rule as the rendered mouse
+-- label). The row ORDER is the catalogue's genes.sort_key — see 0030, which
+-- supersedes the "order_index order" this header first claimed.
 --
 -- BOTH NULLABLE, NO DEFAULT (owner 2026-09-23: "부, 모 모두 default null").
 -- NULL means zygosity IS NOT RECORDED for this row, which is the normal state
@@ -33,5 +43,5 @@
 -- DELIBERATELY no zygosity enum, no CHECK, no validation (owner: "I will add
 -- more logic later, at this time just add 2 columns").
 ALTER TABLE mice_genes
-    ADD COLUMN allele_pat TEXT,
-    ADD COLUMN allele_mat TEXT;
+    ADD COLUMN allele_mat TEXT,
+    ADD COLUMN allele_pat TEXT;

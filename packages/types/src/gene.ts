@@ -14,4 +14,10 @@ export interface Gene {
     geneId: number;
     code: string;
     label: string | null; // human-readable name; null when only the code is known
+    // genes.sort_key (migration 0030) — DISPLAY ORDER OF THE GENE, a property of
+    // the catalogue and not of any one mouse's rows. It reproduces the lab's own
+    // writing order: the professor writes 'PlpCre;Nf1 f/+', which is why PlpCre
+    // sorts before Nf1. Seeded with GAPS (10/20/30/40/50) so a new gene can be
+    // slotted between two existing ones without renumbering the catalogue.
+    sortKey: number;
 }
