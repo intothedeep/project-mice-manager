@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x]; 4 = professor GATE; 6 + sex-editor [~] IN FLIGHT; 7 + 9e + 10 + SEED_COLONY note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x]; 4 = professor GATE; 6 + sex-editor [~] IN FLIGHT; NEW 6a + 7 + 9e + 10 + SEED_COLONY note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -129,18 +129,41 @@ Each task lists AC = deterministic acceptance criteria.
 > `MouseCell.pupOffsets`); only **Q42** and **Q43's narrower sub-question** (does
 > a Tissue-collection case also mint a `toe` punch row?) remain, and Q43-narrow
 > gates step 10 only.
+> **PUNCH TOMBSTONES — OWNER DECIDED 2026-09-22, option B** ("B: correct.
+> because we can update punch record's deleted_at"): `MouseCell.punches` stays
+> ACTIVE ROWS ONLY and a removed punch is tombstoned in a separate append-only
+> PUNCH LOG served by its own selector, mirroring `useTaskLog()`. Step 6's
+> in-flight implementation had flipped `punches` to carry tombstones, against
+> plan §4, `0026`'s `WHERE deleted_at IS NULL` index, `grid.ts`'s header and
+> `rules/core.md`'s "mask at read". B RESTORES plan §4 — §4 is unchanged. New
+> task **6a (punch history contract)** carries the type/store work and BLOCKS 6;
+> step 6's AC was REWRITTEN (the old one is the defect — see below) and its
+> in-flight work REBASES rather than restarts; step 7 grows to own the
+> `punchLog` seed + `usePunchLog(metaId)`; step 10's AC is unchanged and only
+> TIGHTENED to name the selector. SIXTH AC defect logged in the phase file's
+> PATTERN block, a NEW SUB-SHAPE: an AC that silently MANDATES a schema change
+> because the state shape it operates on has no room for what it demands.
 > **IN FLIGHT (developers dispatched 2026-09-22): step 6** `lib/punchMutations.ts`
-> (its sequencing condition is satisfied — 8c landed `Counters.nextPunchId`; the
-> NEW-module requirement now stands on SRP alone, since 8b took the file to 307)
-> **and the inline sex editor**, whose design question the OWNER DECIDED
-> 2026-09-22: **the control goes in the mouse-detail drawer, not the grid cell.**
-> Still open: 7 (BLOCKED-BY 6), 10 (BLOCKED-BY 7 + Q43-narrow), and NEW **9e —
+> (the NEW-module requirement stands on SRP alone, since 8b took the file to 307;
+> now BLOCKED-BY 6a) **and the inline sex editor**, whose design question the
+> OWNER DECIDED 2026-09-22: **the control goes in the mouse-detail drawer, not
+> the grid cell.**
+> Still open: 6a (blocks 6), 7 (BLOCKED-BY 6), 10 (BLOCKED-BY 6a + 7 +
+> Q43-narrow), and NEW **9e —
 > DELETE the dead code (owner decided 2026-09-22)**: `nextLitterCode` (zero
 > consumers, re-grepped; the live path is counter-based on purpose),
 > `apis/getMouseDetail.mock.api.ts` (zero importers) and the `MouseDetail` /
 > `GeneCall` / `HistoryEvent` types that die with it — explicitly NOT a 9c-style
 > knowledge move, since `GeneCall`'s baked `"f/+"` allele is the old genotype
-> model P1 abolishes; sequenced AFTER step 6 (shared `packages/types`). Recorded,
+> model P1 abolishes; sequenced AFTER 6a and step 6 (shared `packages/types`).
+> ALSO OPEN, architect owns the ruling (recorded, not designed): the
+> ZERO-ACTIVE-PUNCHES question is still UNDECIDED (floor vs no floor), and the
+> owner answered it with a PROPOSAL rather than a pick — a new `untagged` punch
+> type for pups that arrive with no tag. Three collisions recorded on step 10:
+> `punch_location` is a CLOSED CHECK in `0026` (a fourth value is a migration),
+> **plan §5 Q42 is open and asks exactly whether that CHECK is closed**, and it
+> may contradict shipped task 8c, which mints `location: 'toe'` at creation.
+> 8c is NOT marked defective. Recorded,
 > not actioned: `NewTaskDialog.client.tsx` imports `SEED_COLONY` instead of reading
 > the live store (`:5`, consumed at `:35` + `:42`; the only UI file doing so) —
 > mock module feeding a real UI list, MVP-ladder L3, pre-existing —
