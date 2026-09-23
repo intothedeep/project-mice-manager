@@ -108,7 +108,7 @@ export function NewTaskDialog({
         [grid]
     );
     const cageOptions = useMemo(
-        () => grid.lines.flatMap((l) => l.cages.map((c) => c.cageNumber)),
+        () => grid.lines.flatMap((l) => l.cages.map((c) => c.code)),
         [grid]
     );
 

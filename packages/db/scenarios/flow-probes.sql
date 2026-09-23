@@ -7,8 +7,8 @@ INSERT INTO users (display_name,role) VALUES ('P','professor');
 CREATE TEMP TABLE u AS SELECT max(id) id FROM users;
 INSERT INTO colonies (name) VALUES ('MR');
 INSERT INTO mouse_lines (colony_id,name) SELECT id,'n' FROM colonies;
-INSERT INTO cages (line_id,cage_number) SELECT id,'2475' FROM mouse_lines;
--- slots.label is globally unique; qualify with cage_number
+INSERT INTO cages (line_id,code) SELECT id,'2475' FROM mouse_lines;
+-- slots.label is globally unique; qualify with cages.code
 INSERT INTO slots (cage_id,label) SELECT id,'2475-A1' FROM cages;
 INSERT INTO litters (litter_code,is_from_outside,created_by) SELECT 'BJA',true,(SELECT id FROM u);
 INSERT INTO mouse_meta (litter_id,litter_code,pup_number) SELECT id,'BJA',1 FROM litters;
@@ -77,8 +77,8 @@ INSERT INTO users (display_name,role) VALUES ('P2','professor');
 CREATE TEMP TABLE u2 AS SELECT max(id) id FROM users;
 INSERT INTO colonies (name) VALUES ('MR2');
 INSERT INTO mouse_lines (colony_id,name) SELECT id,'n' FROM colonies WHERE name='MR2';
-INSERT INTO cages (line_id,cage_number) SELECT id,'9001' FROM mouse_lines WHERE name='n';
-INSERT INTO slots (cage_id,label) SELECT id,'9001-A1' FROM cages WHERE cage_number='9001';
+INSERT INTO cages (line_id,code) SELECT id,'9001' FROM mouse_lines WHERE name='n';
+INSERT INTO slots (cage_id,label) SELECT id,'9001-A1' FROM cages WHERE code='9001';
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT v,true,(SELECT id FROM u2) FROM (VALUES ('CAA'),('CAB')) t(v);
 INSERT INTO mouse_meta (litter_id,litter_code,pup_number)
@@ -109,7 +109,7 @@ WITH n AS (SELECT nextval('tasks_id_seq') id)
 INSERT INTO tasks (id,origin_task_id,task_type,status,actor_role,created_by,
                    subject_cage_id,assigned_to,direction)
 SELECT id,id,'wean','open','professor',(SELECT id FROM u2),
-       (SELECT id FROM cages WHERE cage_number='9001'),(SELECT id FROM u2),'{"count":3}' FROM n;
+       (SELECT id FROM cages WHERE code='9001'),(SELECT id FROM u2),'{"count":3}' FROM n;
 SAVEPOINT bad7;
 INSERT INTO tasks (origin_task_id,task_type,status,from_status,actor_role,created_by)
 SELECT origin_task_id,task_type,'done','open','staff',created_by FROM tasks WHERE id=origin_task_id;
@@ -156,14 +156,14 @@ INSERT INTO users (display_name,role) VALUES ('PCAS','professor');
 CREATE TEMP TABLE u3 AS SELECT max(id) id FROM users;
 INSERT INTO colonies (name) VALUES ('MR3');
 INSERT INTO mouse_lines (colony_id,name) SELECT id,'casline' FROM colonies WHERE name='MR3';
-INSERT INTO cages (line_id,cage_number) SELECT id,'CASXX' FROM mouse_lines WHERE name='casline';
+INSERT INTO cages (line_id,code) SELECT id,'CASXX' FROM mouse_lines WHERE name='casline';
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT 'CASA',true,(SELECT id FROM u3);
 INSERT INTO mouse_meta (litter_id,litter_code,pup_number)
 SELECT id,'CASA',1 FROM litters WHERE litter_code='CASA';
 -- Creation row: prev_id NULL
 INSERT INTO mice (mouse_meta_id,cage_id,line_id,sex,actor_id,reason)
-SELECT mm.id,(SELECT id FROM cages WHERE cage_number='CASXX'),
+SELECT mm.id,(SELECT id FROM cages WHERE code='CASXX'),
        (SELECT id FROM mouse_lines WHERE name='casline'),
        'F',(SELECT id FROM u3),'import'
 FROM mouse_meta mm WHERE litter_code='CASA';
@@ -173,7 +173,7 @@ WHERE mouse_meta_id=(SELECT id FROM mouse_meta WHERE litter_code='CASA');
 
 \echo '   -- Append A: prev_id = head (succeeds)'
 INSERT INTO mice (mouse_meta_id,cage_id,line_id,sex,actor_id,reason,prev_id)
-SELECT h.mouse_meta_id,(SELECT id FROM cages WHERE cage_number='CASXX'),
+SELECT h.mouse_meta_id,(SELECT id FROM cages WHERE code='CASXX'),
        (SELECT id FROM mouse_lines WHERE name='casline'),
        'F',(SELECT id FROM u3),'append A',h.head_id
 FROM head3 h;
@@ -181,7 +181,7 @@ FROM head3 h;
 \echo '   -- Append B: same prev_id = head -> must be rejected by mice_prev_cas_key'
 SAVEPOINT cas_b;
 INSERT INTO mice (mouse_meta_id,cage_id,line_id,sex,actor_id,reason,prev_id)
-SELECT h.mouse_meta_id,(SELECT id FROM cages WHERE cage_number='CASXX'),
+SELECT h.mouse_meta_id,(SELECT id FROM cages WHERE code='CASXX'),
        (SELECT id FROM mouse_lines WHERE name='casline'),
        'M',(SELECT id FROM u3),'append B must fail',h.head_id
 FROM head3 h;
@@ -199,7 +199,7 @@ INSERT INTO users (display_name,role) VALUES ('PNotes','professor');
 CREATE TEMP TABLE u4 AS SELECT max(id) id FROM users;
 INSERT INTO colonies (name) VALUES ('MR4');
 INSERT INTO mouse_lines (colony_id,name) SELECT id,'n4' FROM colonies WHERE name='MR4';
-INSERT INTO cages (line_id,cage_number) SELECT id,'NTXX' FROM mouse_lines WHERE name='n4';
+INSERT INTO cages (line_id,code) SELECT id,'NTXX' FROM mouse_lines WHERE name='n4';
 INSERT INTO litters (litter_code,is_from_outside,created_by)
 SELECT 'NLIT',true,(SELECT id FROM u4);
 INSERT INTO mouse_meta (litter_id,litter_code,pup_number)
@@ -225,7 +225,7 @@ SELECT id,id,
 -- (c) Cage-level note
 WITH n AS (SELECT nextval('notes_id_seq') id)
 INSERT INTO notes (id,origin_note_id,cage_id,note_type,signal_id,body,actor_id)
-SELECT id,id,(SELECT id FROM cages WHERE cage_number='NTXX'),
+SELECT id,id,(SELECT id FROM cages WHERE code='NTXX'),
        'cage_task',(SELECT id FROM signals WHERE type='plan'),
        'refill bedding',(SELECT id FROM u4) FROM n;
 \echo '   -> (c) cage-level note inserted'

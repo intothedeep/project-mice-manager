@@ -37,7 +37,7 @@ import {
     type RemovePunchInput,
 } from '@/lib/punchMutations';
 import {
-    suggestNextCageNumber as pureSuggestNextCageNumber,
+    suggestNextCageCode as pureSuggestNextCageCode,
     projectPunches,
     assertPunchInvariants,
     type ColonyState,
@@ -162,10 +162,10 @@ export function peekNextLitterCode(): string {
     return formatLitterCode(counters.nextLitterOrd);
 }
 
-// Suggested next cage number for the "new cage" field default — read-only,
+// Suggested next cage code for the "new cage" field default — read-only,
 // derived from current state (no counter advance).
-export function suggestNextCageNumber(): string {
-    return pureSuggestNextCageNumber(state.grid);
+export function suggestNextCageCode(): string {
+    return pureSuggestNextCageCode(state.grid);
 }
 
 // ---- public writes (thin wrappers) -----------------------------------------

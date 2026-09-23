@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { addLine, suggestNextCageNumber } from '@/lib/mockColonyStore';
+import { addLine, suggestNextCageCode } from '@/lib/mockColonyStore';
 import {
     Dialog,
     DialogContent,
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 // Small dialog for creating a new mouse line (+ line tail affordance).
 // Collects lineName (required), an optional hex color for nominalGenotypeColor,
 // and — since line >= 1 cage is a structural invariant (colonyMutations.ts) —
-// the first cage number + slot label. No mouse: this dialog never created one.
+// the first cage code + slot label. No mouse: this dialog never created one.
 
 export function AddLineDialog({
     open,
@@ -28,17 +28,17 @@ export function AddLineDialog({
     const [color, setColor] = useState('');
     // Recomputed on OPEN, not at mount: this dialog stays mounted for the
     // life of the page, so a mount-time suggestion goes stale the moment a
-    // cage is added elsewhere and then pre-fills a duplicate number.
-    const [cageNumber, setCageNumber] = useState('');
+    // cage is added elsewhere and then pre-fills a duplicate code.
+    const [cageCode, setCageCode] = useState('');
     const [slotLabel, setSlotLabel] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-    const cageNum = parseInt(cageNumber.trim(), 10);
+    const cageCodeNum = parseInt(cageCode.trim(), 10);
     const isMissing =
         lineName.trim() === '' ||
-        cageNumber.trim() === '' ||
-        isNaN(cageNum) ||
-        cageNum < 1 ||
+        cageCode.trim() === '' ||
+        isNaN(cageCodeNum) ||
+        cageCodeNum < 1 ||
         slotLabel.trim() === '';
 
     function submit() {
@@ -46,7 +46,7 @@ export function AddLineDialog({
         const result = addLine({
             lineName: lineName.trim(),
             nominalGenotypeColor: color.trim() || null,
-            cageNumber: cageNum,
+            cageCode: cageCodeNum,
             slotLabel: slotLabel.trim(),
         });
         if (!result.ok) {
@@ -62,13 +62,13 @@ export function AddLineDialog({
     // as a cage is created elsewhere and would then pre-fill a duplicate.
     useEffect(() => {
         if (!open) return;
-        setCageNumber(suggestNextCageNumber());
+        setCageCode(suggestNextCageCode());
     }, [open]);
 
     function reset() {
         setLineName('');
         setColor('');
-        setCageNumber(suggestNextCageNumber());
+        setCageCode(suggestNextCageCode());
         setSlotLabel('');
         setError(null);
     }
@@ -119,9 +119,9 @@ export function AddLineDialog({
                         type="number"
                         min={1}
                         placeholder="e.g. 12"
-                        value={cageNumber}
+                        value={cageCode}
                         onChange={(e) => {
-                            setCageNumber(e.target.value);
+                            setCageCode(e.target.value);
                             setError(null);
                         }}
                     />

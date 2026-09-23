@@ -32,7 +32,7 @@ migration change; a scenario that stops working is a regression.
    No exactly-one CHECK — zero and multiple targets are both legal.
 8. **audit_logs** no longer has `updated_at`/`deleted_at`; has `request_id` and
    `on_behalf_of_id`; UPDATE/DELETE are REVOKEd FROM PUBLIC (immutable).
-9. **slots.label is globally unique** — scenarios use `cage_number||'-'||label`
+9. **slots.label is globally unique** — scenarios use `cages.code||'-'||label`
    patterns to avoid collisions between cages.
 
 ## Post-R25 genotype model (migrations 0029–0031)

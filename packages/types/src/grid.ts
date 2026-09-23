@@ -13,7 +13,7 @@ import type { GeneKind } from './gene';
 // Full hierarchy: colony › line › cage › slot › mouse.
 //   colony  → colonies
 //   line    → mouse_lines (colony_id)
-//   cage    → cages       (line_id, cage_number)
+//   cage    → cages       (line_id, code)
 //   slot    → slots       (cage_id, label)   — its own level, holds many mice
 //   mouse   → mice        (cage_id, slot_id) — head row per mouse_meta
 
@@ -197,7 +197,7 @@ export interface GridSlot {
 
 export interface GridCage {
     cageId: number;
-    cageNumber: string; // e.g. "2413"
+    code: string; // the cage's human-facing identifier, e.g. "2413"
     location: string | null;
     slots: GridSlot[];
 }

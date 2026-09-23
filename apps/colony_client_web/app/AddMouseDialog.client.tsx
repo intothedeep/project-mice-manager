@@ -7,7 +7,7 @@ import {
     addCage,
     addSlot,
     peekNextLitterCode,
-    suggestNextCageNumber,
+    suggestNextCageCode,
     useColonyGrid,
     useLitterCodes,
     type AddCageInput,
@@ -37,7 +37,7 @@ import { GENE_CATALOG_CODES } from '@/apis/getGenes.mock.api';
 //   pupNumber — integer ≥ 1
 //   dob       — date (defaults to today)
 //   line      — pick from the live colony's lines (filters cage options)
-//   cage      — combobox over cage numbers; typing a new number creates a cage
+//   cage      — combobox over cage codes; typing a new code creates a cage
 //   slot      — combobox over slot labels; empty = first slot; typing = new slot
 //   genotype  — gene badges (multi-select over the gene catalogue); picking
 //               NOTHING is valid and means "not genotyped" ('?'), which is what
@@ -106,7 +106,7 @@ export function buildSubmitAction(params: {
     needsMouse: boolean;
     mouse: MouseSpec;
     lineId: number;
-    newCageNumber: number;
+    newCageCode: number;
     slotLabel: string;
     cageId?: number;
     existingSlotId?: number;
@@ -117,7 +117,7 @@ export function buildSubmitAction(params: {
         needsMouse,
         mouse,
         lineId,
-        newCageNumber,
+        newCageCode,
         slotLabel,
         cageId,
         existingSlotId,
@@ -128,7 +128,7 @@ export function buildSubmitAction(params: {
             kind: 'cage',
             input: {
                 lineId,
-                cageNumber: newCageNumber,
+                cageCode: newCageCode,
                 slotLabel,
                 mouse: needsMouse ? mouse : undefined,
             },
@@ -171,7 +171,7 @@ export function AddMouseDialog({
                 lineName: l.lineName,
                 cages: l.cages.map((c) => ({
                     cageId: c.cageId,
-                    cageNumber: c.cageNumber,
+                    code: c.code,
                     slots: c.slots.map((s) => ({
                         slotId: s.slotId,
                         label: s.label,
@@ -207,7 +207,7 @@ export function AddMouseDialog({
     const [dob, setDob] = useState(TODAY);
     const [lineId, setLineId] = useState<number>(colony.lines[0]?.lineId ?? 0);
     const [cageValue, setCageValue] = useState<string>(
-        colony.lines[0]?.cages[0]?.cageNumber ?? ''
+        colony.lines[0]?.cages[0]?.code ?? ''
     );
     const [slotValue, setSlotValue] = useState('');
     // Container rails default OFF: creating an empty slot is the common case
@@ -239,7 +239,7 @@ export function AddMouseDialog({
                 if (cage) {
                     // The cage's owning line must be selected so cageOptions includes it.
                     resolvedLineId = l.lineId;
-                    resolvedCageValue = cage.cageNumber;
+                    resolvedCageValue = cage.code;
                     if (initialSlotId !== undefined) {
                         const slot = cage.slots.find(
                             (s) => s.slotId === initialSlotId
@@ -251,11 +251,11 @@ export function AddMouseDialog({
             }
         } else if (initialLineId !== undefined) {
             // Only line prefilled — open in NEW-CAGE mode (empty field, never the
-            // line's existing first cage) with a freely-editable next-number guess.
-            resolvedCageValue = suggestNextCageNumber();
+            // line's existing first cage) with a freely-editable next-code guess.
+            resolvedCageValue = suggestNextCageCode();
         } else {
             // No prefill: default to line[0] cage[0].
-            resolvedCageValue = colony.lines[0]?.cages[0]?.cageNumber ?? '';
+            resolvedCageValue = colony.lines[0]?.cages[0]?.code ?? '';
         }
 
         setSex('U');
@@ -274,11 +274,11 @@ export function AddMouseDialog({
     const selectedLine = lineOptions.find((l) => l.lineId === lineId);
     const cages = selectedLine?.cages ?? [];
     const cageOptions: ComboOption[] = cages.map((c) => ({
-        value: c.cageNumber,
-        label: `cage ${c.cageNumber}`,
+        value: c.code,
+        label: `cage ${c.code}`,
     }));
     const cageMatch = cages.find(
-        (c) => c.cageNumber.toLowerCase() === cageValue.trim().toLowerCase()
+        (c) => c.code.toLowerCase() === cageValue.trim().toLowerCase()
     );
     const isNewCage = cageValue.trim() !== '' && !cageMatch;
 
@@ -303,13 +303,13 @@ export function AddMouseDialog({
     // --- validation ---
     const pupNum = parseInt(pupNumber, 10);
     const litterOk = parseLitterCode(litterValue.trim()) !== null;
-    const newCageNum = isNewCage ? parseInt(cageValue.trim(), 10) : NaN;
+    const newCageCodeNum = isNewCage ? parseInt(cageValue.trim(), 10) : NaN;
     const mouseMissing =
         needsMouse &&
         (!litterOk || !pupNumber || isNaN(pupNum) || pupNum < 1 || !dob);
     const containerMissing =
         cageValue.trim() === '' ||
-        (isNewCage && (isNaN(newCageNum) || newCageNum < 1)) ||
+        (isNewCage && (isNaN(newCageCodeNum) || newCageCodeNum < 1)) ||
         ((isNewCage || mode === 'slot') && slotValue.trim() === '');
     // Nothing would happen: existing cage + existing/first slot + toggle off.
     const nothingToSubmit = !isNewCage && !isNewSlot && !needsMouse;
@@ -324,8 +324,8 @@ export function AddMouseDialog({
         // title still says "Add cage" — a dead end with no message.
         setCageValue(
             mode === 'cage'
-                ? suggestNextCageNumber()
-                : (line?.cages[0]?.cageNumber ?? '')
+                ? suggestNextCageCode()
+                : (line?.cages[0]?.code ?? '')
         );
         setSlotValue('');
         setError(null);
@@ -359,7 +359,7 @@ export function AddMouseDialog({
             needsMouse,
             mouse,
             lineId,
-            newCageNumber: newCageNum,
+            newCageCode: newCageCodeNum,
             slotLabel: slotValue.trim(),
             cageId: cageMatch?.cageId,
             existingSlotId: slotMatch?.slotId ?? cageMatch?.slots[0]?.slotId,

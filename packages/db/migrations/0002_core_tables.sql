@@ -182,13 +182,15 @@ CREATE TRIGGER mouse_lines_set_updated_at
     BEFORE UPDATE ON mouse_lines
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- cage_number is UNIQUE alone (not scoped to mouse line) — plan Q12, low risk
--- and consistent with the workbook's single cage_number_seq.
+-- code is the cage's human-facing identifier, renamed from cage_number
+-- (owner, 2026-09-23). UNIQUE alone (not scoped to mouse line) — plan Q12, low
+-- risk and consistent with the workbook's single cage_number_seq (the
+-- workbook's own name, not a DB object).
 -- Partial unique: tombstone + reimport must not abort (D1 soft-delete bug class).
 CREATE TABLE cages (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     line_id    BIGINT      NOT NULL REFERENCES mouse_lines (id),
-    cage_number     TEXT        NOT NULL,
+    code            TEXT        NOT NULL,
     location        TEXT,
     status          TEXT,
     import_batch_id BIGINT REFERENCES import_batches (id),
@@ -199,8 +201,8 @@ CREATE TABLE cages (
     deleted_at      TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX cages_cage_number_key
-    ON cages (cage_number)
+CREATE UNIQUE INDEX cages_code_key
+    ON cages (code)
     WHERE deleted_at IS NULL;
 
 CREATE TRIGGER cages_set_updated_at
