@@ -75,12 +75,17 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.3.tasks.md](./docs/phases/p0.3.tasks.md)
 
-### P0.4 ETL (`apps/colony_server` helpers) — P0-a — TODO (5 [ ])
+### P0.4 ETL (`apps/colony_server` helpers) — P0-a — TODO (7 [ ])
 
 > Breeders-only synchronous exceljs import (one tx, cage-before-slot), slot-label
 > dedupe/relabel at import (Q19 global-unique), idempotent upsert by
 > (litter_id, pup_number), raw_sheet_rows archival of all 9 sheets, import-error
-> report endpoint + UI. <!-- DETAIL: active, read on demand -->
+> report endpoint + UI. **+2 MOVED IN 2026-09-23 from P0.7** (still P0-b): the
+> parents parser and the Breeders cols I–N surface — both consume data that only
+> an import produces, and there is no imported spreadsheet, so neither could
+> start in an MVP1 list. The I–N task's sources were re-aimed in the move
+> (`mouse_events` is gone, `0016`; M/N are `cases`+`tasks`).
+> <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.4.tasks.md](./docs/phases/p0.4.tasks.md)
 
 ### P0.5 Seed data — P0-a
@@ -90,13 +95,19 @@ Each task lists AC = deterministic acceptance criteria.
       AC: `seed` command populates an empty local DB; prototype + full test suite
       run green without the live file present.
 
-### P0.6 Server API + UI — P0-a — IN PROGRESS (1 [x] mock-UI suite archived · 17 [ ])
+### P0.6 Server API + UI — P0-a — IN PROGRESS (1 [x] mock-UI suite archived · 19 [ ])
 
 > **NOT MVP-blocking (user, 2026-09-17):** the MVP is mock data + mock APIs only;
 > server + persistence is Phase 2 (plan §3 POLICY). The server-side items in this
 > phase — endpoints, MOVE transaction, repositories, `appendVersion`, audit writes
 > — are Phase 2 work. Only the mock-UI items here are on the MVP path.
 
+> **+2 MOVED IN 2026-09-23 from P0.7** (still P0-b, both need a database and
+> there is none): litter-code allocation at INSERT — most of it already exists
+> (`0002:243` `CREATE SEQUENCE litter_code_seq START 1612` → first code `BIZ`;
+> codec at `lib/litterCode.ts`), what is left is the wiring — and the
+> CREATE-LITTER transaction, whose "any failure rolls back everything" needs a
+> real transaction. Its UI half stayed in P0.7 as mock-era work.
 > Mock-UI prototype suite DONE (archived). Open: register-mouse/litter wizard
 > (design only), rendering-perf at scale (analysis only), task assignment + group
 > eligibility, `appendVersion` helper (mice/mates/notes — tasks superseded by
@@ -107,7 +118,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (add-mouse v1 [x] archived · **P0.7-b DONE [x] — all 23 tasks closed and ARCHIVED 2026-09-23** · **P0.7-c genotype-as-gene-rows: 3 [x] shipped, 2 [ ] open, split to `docs/phases/p0.7-c.tasks.md`** · open: 6 base tasks [ ] + BACKLOG path-copy `moveMouse` [ ] + `SEED_COLONY` note [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (add-mouse v1 [x] archived · **P0.7-b DONE [x] — all 23 tasks closed and ARCHIVED 2026-09-23** · **P0.7-c genotype-as-gene-rows: 3 [x] shipped, 2 [ ] open, split to `docs/phases/p0.7-c.tasks.md`** · open: **3** base tasks [ ] after the 2026-09-23 MVP2 reclassification (4 of the 6 moved out) + BACKLOG path-copy `moveMouse` [ ] + `SEED_COLONY` note [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). **P0.7-b is DONE and ARCHIVED
 > 2026-09-23:** all 23 implementation tasks (1, 2, 3, 4, 5, 6, 6a, 7, 8, 8b, 8c,
@@ -118,9 +129,24 @@ Each task lists AC = deterministic acceptance criteria.
 > mutations, the always-minted never-removed `untagged` punch, the read-time
 > label projection (no stored label anywhere), and the mouse-editing drawer.
 > Deploy verdict 2026-09-22 (architect + reviewer): nothing found blocks MVP1.
-> STILL OPEN in `docs/phases/p0.7.tasks.md`: the six base P0-b tasks (litter-code
-> generator, pup-ID generator, parents parser, `task_offset_rule` + auto tasks,
-> Record-Litter tx, surface cols I–N), the BACKLOG path-copy `moveMouse` (no
+> **RECLASSIFIED 2026-09-23 (owner: "update docs for mvp2") — the six base P0-b
+> tasks are now THREE.** Four were MVP2 work sitting in an MVP1 list
+> (`.claude/CLAUDE.md` §System build phasing), each blocked on something that
+> does not exist: the litter-code generator (the counter is a Postgres SEQUENCE,
+> `0002:243`; only the INSERT-time wiring is left) and the CREATE-LITTER
+> transaction ("any failure rolls back everything" = a real transaction) MOVED
+> to `docs/phases/p0.6.tasks.md`; the parents parser (needs real col-P values)
+> and the Breeders cols I–N surface (renders rows an import produces) MOVED to
+> `docs/phases/p0.4.tasks.md`. A forwarding table in `p0.7.tasks.md` points at
+> all four. STAYING, all startable with no DB and no spreadsheet: the pup-ID
+> generator — **its spec was WRONG and is corrected**, the generated form is
+> `U1BIZ`, not the bare `1BIZ` it claimed (owner, `check.md` C-4; the shipped
+> grammar always emits a sex letter, `lib/mouseIdentity.ts:28,32`) — the
+> `task_offset_rule` config (it DELETES the disagreeing `+10`/`+5` plug-check
+> literals; the professor's numbers gate the P1 refinement task, not this one),
+> and the mock-era Record Litter UI (plan §3 P0-b v2, the MVP1 half of the old
+> combined task). STILL OPEN in `docs/phases/p0.7.tasks.md` besides those three:
+> the BACKLOG path-copy `moveMouse` (no
 > date), the `NewTaskDialog`/`SEED_COLONY` note (architect's), the
 > `x_`-inert-inside-`packages/` note (owner's), and the AC-defect PATTERN block,
 > which stays LIVE because it is guidance for writing future ACs.
@@ -233,7 +259,8 @@ Each task lists AC = deterministic acceptance criteria.
       from logs is explicitly NOT claimed — plan §4 defers fold-on-read.)
 - [ ] Pedigree/generation tree (added 2026-09-04): family tree over
       litters.mother_mouse_id/father_mouse_id + mice.litter_id — depends on
-      the P0-b parents parser.
+      the P0-b parents parser (MOVED 2026-09-23 into P0.4 —
+      `docs/phases/p0.4.tasks.md` — still a P0-b deliverable).
       AC: for a seeded 3-generation family, the tree renders exactly the
       parent→litter→pup edges present in DB; mice with no litter render as
       roots; no cycle crashes the view (cycle → explicit error state).

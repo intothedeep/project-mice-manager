@@ -27,14 +27,18 @@ on them today.
 | Event | Timing now in use | Source | Confirm or correct |
 |---|---|---|---|
 | Plug check, after mating | **+10 days** | shown on the Upcoming screen | ? |
-| Plug check, after mating | **+5 days** | a second, unused copy in the server code | ? |
+| Plug check, after mating | **+5 days** | the server's SOP checker | ? |
 | Expected delivery, after mating | **+20 days** | shown on Upcoming | ? |
 | Wean, after birth | **+21 days** | shown on Upcoming | ? |
 | Genotyping, after birth | **+21 days** | shown on Upcoming | ? |
+| Minimum age to genotype | **21 days** | the server's SOP checker | ? |
 
-**The plug-check number exists twice and disagrees with itself** — +10 in what you
-see, +5 in a piece of server code that nothing currently calls. Only one can be
-right. Whatever you decide, these move into a settings table so they can be changed
+**The plug-check number exists twice and the two disagree** — +10 in what you see on
+screen, +5 in the server's SOP checker. Both are live code, not one live and one
+dead: the checker passes its own value whenever it runs. They simply never meet
+today, because the screen does not call the checker. Only one can be right.
+
+Whatever you decide, these move into a settings table so they can be changed
 without a programmer (③, not built).
 
 Two more, smaller:

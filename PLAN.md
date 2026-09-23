@@ -232,7 +232,9 @@ live file; every mutation audit-logged.
   between two snapshots' high-water marks into an ordered, steppable diff —
   extends the changelog engine above.
 - **Pedigree/generation tree (added 2026-09-04):** family tree from
-  litter.mother/father + mouse.litter_id — needs the P0-b parents parser.
+  litter.mother/father + mouse.litter_id — needs the P0-b parents parser
+  (MOVED 2026-09-23 into P0.4, `docs/phases/p0.4.tasks.md`: it needs an
+  imported workbook, so it could not sit in the MVP1 list).
 - **Genotyping subsystem (PROMOTED P2→P1, 2026-09-04):** role-gated testing
   ticket — director picks mouse + markers → staff fill discovered allele per
   marker incl. (-)/?/dnw across prep-stages (>p15 vs Pup) and dates → combined
