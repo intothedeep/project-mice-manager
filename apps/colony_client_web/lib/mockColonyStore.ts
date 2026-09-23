@@ -173,11 +173,16 @@ function commit<R extends { ok: boolean }>(r: {
     counters: Counters;
     result: R;
 }): R {
-    counters = r.counters;
+    // Assert BEFORE assigning anything: assertPunchInvariants throws, and a
+    // rejected write that had already advanced `counters` would leave the id
+    // sequence one ahead with nothing committed.
     if (r.state !== state) {
-        assertPunchInvariants(r.state.punches, counters);
+        assertPunchInvariants(r.state.punches, r.counters);
+        counters = r.counters;
         state = r.state;
         emit();
+    } else {
+        counters = r.counters;
     }
     return r.result;
 }

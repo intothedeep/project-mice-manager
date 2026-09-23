@@ -22,10 +22,15 @@ import { parseLitterCode } from '@/lib/litterCode';
 // over one `punches` table (one `WHERE deleted_at IS NULL`, one without —
 // migration 0026's partial index exists for exactly that). This is
 // mock-store state, not a DTO — it does not belong in packages/types.
-// `readonly` here (LOCAL to this file, never in packages/types — the
-// invariant it protects is mock-era only) makes the single-writer property
-// structural: a caller can no longer push/splice this array in place, only
-// produce a new one through mintPunch/deriveColonyState below.
+// `readonly` here is LOCAL to this file, never packages/types — the invariant
+// it protects is mock-era only. It stops an in-place push/splice on this
+// reference and NOTHING MORE. The single-writer property is ENFORCED, not
+// structural: a caller can still hand-build `[...state.punches, row]` and, if
+// the id happens to be unique and the counter ahead, assertPunchInvariants
+// passes it and the log and grid silently diverge for that mouse. The guard
+// checks the log's internal consistency, never that a write came through
+// mintPunch/deriveColonyState. Making it structural needs a branded punchId,
+// which the 8h ruling rejected on cost.
 export interface ColonyState {
     grid: ColonyGrid;
     readonly punches: readonly PunchRow[];
