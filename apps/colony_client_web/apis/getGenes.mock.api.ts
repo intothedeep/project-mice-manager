@@ -32,7 +32,13 @@ const GENES: Gene[] = [
         label: 'Cre-conditional EGFP reporter',
         sortKey: 40,
     },
-    { geneId: 5, code: 'WT', label: 'Wild type (no marker)', sortKey: 50 },
+    {
+        geneId: 5,
+        code: 'ccEGFP(hmo)',
+        label: 'Cre-conditional EGFP reporter, homozygous',
+        sortKey: 45,
+    },
+    { geneId: 6, code: 'WT', label: 'Wild type (no marker)', sortKey: 50 },
 ];
 
 // Codes only, in sortKey order — what the badge pickers render. Sorted, NOT in

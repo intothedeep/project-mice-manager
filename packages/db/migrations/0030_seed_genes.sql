@@ -56,5 +56,6 @@ VALUES ('Nf1', 'Neurofibromin 1 (floxed)'),
        ('PlpCre', 'Plp1-CreERT2 driver'),
        ('Ai14', 'Ai14 tdTomato reporter'),
        ('ccEGFP', 'Cre-conditional EGFP reporter'),
+       ('ccEGFP(hmo)', 'Cre-conditional EGFP reporter, homozygous'),
        ('WT', 'Wild type (no marker)')
 ON CONFLICT (code) WHERE deleted_at IS NULL DO NOTHING;
