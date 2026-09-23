@@ -60,6 +60,10 @@ FLOWS.md     SNAPSHOT of what the app does, written for the professor. An
              output artifact, NOT a living doc: no read guard, no lifecycle,
              and it goes stale by design. PLAN.md is the intent record; if
              the two disagree, PLAN.md wins and FLOWS.md is out of date
+check.md     OWNER's checklist: what to ask the professor, what to verify by
+             hand in a browser, and which decisions are parked. Also an
+             output artifact, not a living doc. Supersedes the gitignored
+             x_temp.md, which is left alone
 _archive/       COLD STORAGE, committed. Do not read unless investigating history
 ```
 
