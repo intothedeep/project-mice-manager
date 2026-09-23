@@ -292,7 +292,7 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 46,
                                             location: 'untagged',
-                                            effectiveAt: '2025-08-10',
+                                            effectiveAt: '2026-05-20',
                                         },
                                     ],
                                     pupNumber: 7,
@@ -304,7 +304,7 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         'reporter-only animal — carries the ccEGFP catalogue row',
-                                    dob: '2025-08-10',
+                                    dob: '2026-05-20',
                                     genotypeColor: genoOf(G_CCEGFP),
                                     mates: [],
                                 },
@@ -314,7 +314,7 @@ const COLONY_GRID: ColonyGrid = {
                                         {
                                             punchId: 51,
                                             location: 'untagged',
-                                            effectiveAt: '2025-08-10',
+                                            effectiveAt: '2026-05-20',
                                         },
                                     ],
                                     pupNumber: 8,
@@ -326,7 +326,7 @@ const COLONY_GRID: ColonyGrid = {
                                     isAlive: true,
                                     attention:
                                         "M7AZZ's littermate, homozygous for the reporter — carries the ccEGFP(hmo) catalogue row",
-                                    dob: '2025-08-10',
+                                    dob: '2026-05-20',
                                     genotypeColor: genoOf(G_CCEGFP_HMO),
                                     mates: [],
                                 },
