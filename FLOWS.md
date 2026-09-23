@@ -130,9 +130,17 @@ then set the maternal and paternal side independently from `+`, `-`, `f`, `Tg`,
 or leave either as *not recorded*. Leaving both unset is normal for a newly
 added animal — you do not know a genotype at the moment you create a mouse.
 
-**Still ambiguous on screen:** a transgene confirmed to have one copy and a
-transgene nobody has assessed yet both read as `ccEGFP`. The `(het)` question
-above would separate them.
+**Still ambiguous on screen**, and there is a live example to look at. In cage
+2413 slot C8, two mice both read `ccEGFP`:
+
+```
+M7AZZ    one copy, confirmed
+F10AZZ   never assessed
+```
+
+Same text, different facts. The `(het)` question above is what would separate
+them — and `F10AZZ` is exactly what the app produces today when someone ticks
+`ccEGFP` and saves without setting the copies.
 
 ## 4 · Marking
 

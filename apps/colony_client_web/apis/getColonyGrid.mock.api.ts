@@ -25,6 +25,16 @@ import { genotypeOf, UNKNOWN_GENOTYPE } from '@/lib/genotype';
 //   - F8AZZ    : "ccEGFP(hmo)" — the SAME ccEGFP gene with 'Tg' on BOTH sides.
 //                Homozygosity is a fact about the mouse, so it is composed from
 //                this row, never read from a catalogue code (28acb8b unwound)
+//   - M9AZZ    : "ccEGFP Tg/?" — a transgene with ONE side recorded, the
+//                transgene twin of F6BCW's "Nf1 f/?"
+//   - F10AZZ   : bare "ccEGFP" from NULL/NULL — never assessed. It renders the
+//                SAME STRING as M7AZZ's confirmed single copy, so the two sit
+//                in one slot (C8) and put that ambiguity on the screen; it is
+//                an open question for the professor, not a defect here
+//   - F1BGY    : "PlpCre;Ai14 -/+" — M6BGX mirrored. The transgene came from
+//                the FATHER ('+'/'Tg', still bare "PlpCre") and the '-' from
+//                the mother, so parent of origin shows in the locus pair and
+//                survives ONLY in the columns for the transgene
 //
 // NOTE (T6): activeTasks removed from all MouseCell objects. Badges are now
 // derived from the case store (useTasks + signalColorOf) in ColonyGridView,
@@ -211,6 +221,56 @@ const G_CCEGFP_HMO: GeneRef[] = [
         alleleMat: 'Tg',
         allelePat: 'Tg',
         sortKey: 40,
+    },
+];
+// The transgene twin of G_NF1_F_UNKNOWN: one copy seen on the maternal side,
+// the paternal side NEVER ASSESSED. Renders "ccEGFP Tg/?" — NOT the bare code,
+// which would claim hemizygous about a mouse that could still be homozygous.
+const G_CCEGFP_TG_UNKNOWN: GeneRef[] = [
+    {
+        code: 'ccEGFP',
+        kind: 'transgene',
+        alleleMat: 'Tg',
+        allelePat: null,
+        sortKey: 40,
+    },
+];
+// A reporter marker on a mouse NOBODY HAS ASSESSED — both sides not recorded,
+// which renders the bare code "ccEGFP". That is THE SAME STRING as M7AZZ's
+// confirmed single copy ('Tg'/'+'), and the two are different facts: this pair
+// and that one are in the fixture together so the ambiguity is visible on the
+// screen rather than only in the professor's question list (FLOWS.md).
+const G_CCEGFP_NOT_ASSESSED: GeneRef[] = [
+    {
+        code: 'ccEGFP',
+        kind: 'transgene',
+        alleleMat: null,
+        allelePat: null,
+        sortKey: 40,
+    },
+];
+// The MIRROR of G_PLPCRE_AI14_PLUS_MINUS, both markers inherited from the
+// OTHER parent: the PlpCre insert came from the FATHER ('+' absent maternal,
+// 'Tg' paternal) and the knockout allele is the MOTHER's ('-'/'+').
+// Maternal-first (owner, 2026-09-17) is what keeps these two mice apart:
+//   locus     'Ai14 -/+'  renders differently from 'Ai14 +/-'
+//   transgene both render the bare "PlpCre" — one copy is one copy — so for a
+//             transgene the parent of origin survives ONLY in these two
+//             columns, which is the information '(hmo)' could never carry.
+const G_PLPCRE_PAT_AI14_MINUS_PLUS: GeneRef[] = [
+    {
+        code: 'PlpCre',
+        kind: 'transgene',
+        alleleMat: '+',
+        allelePat: 'Tg',
+        sortKey: 10,
+    },
+    {
+        code: 'Ai14',
+        kind: 'locus',
+        alleleMat: '-',
+        allelePat: '+',
+        sortKey: 30,
     },
 ];
 
@@ -418,6 +478,52 @@ const COLONY_GRID: ColonyGrid = {
                                         'M7AZZ\'s littermate, homozygous for the reporter — two ccEGFP copies compose "ccEGFP(hmo)"',
                                     dob: '2026-05-20',
                                     genotypeColor: genoOf(G_CCEGFP_HMO),
+                                    mates: [],
+                                },
+                                {
+                                    metaId: 107,
+                                    punches: [
+                                        {
+                                            punchId: 52,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-05-20',
+                                        },
+                                    ],
+                                    pupNumber: 9,
+                                    litterCode: 'AZZ',
+                                    pupOffsets: [],
+                                    sex: 'M',
+                                    genes: G_CCEGFP_TG_UNKNOWN,
+                                    signal: 'flag',
+                                    isAlive: true,
+                                    attention:
+                                        'paternal ccEGFP side never assessed — renders "ccEGFP Tg/?", the transgene twin of F6BCW',
+                                    dob: '2026-05-20',
+                                    genotypeColor: genoOf(G_CCEGFP_TG_UNKNOWN),
+                                    mates: [],
+                                },
+                                {
+                                    metaId: 108,
+                                    punches: [
+                                        {
+                                            punchId: 53,
+                                            location: 'untagged',
+                                            effectiveAt: '2026-05-20',
+                                        },
+                                    ],
+                                    pupNumber: 10,
+                                    litterCode: 'AZZ',
+                                    pupOffsets: [],
+                                    sex: 'F',
+                                    genes: G_CCEGFP_NOT_ASSESSED,
+                                    signal: 'flag',
+                                    isAlive: true,
+                                    attention:
+                                        'ccEGFP never assessed — renders the SAME bare "ccEGFP" as M7AZZ\'s confirmed single copy',
+                                    dob: '2026-05-20',
+                                    genotypeColor: genoOf(
+                                        G_CCEGFP_NOT_ASSESSED
+                                    ),
                                     mates: [],
                                 },
                             ],
@@ -774,6 +880,34 @@ const COLONY_GRID: ColonyGrid = {
                                     dob: '2025-01-15',
                                     genotypeColor: genoOf(
                                         G_PLPCRE_AI14_PLUS_MINUS
+                                    ),
+                                    mates: [],
+                                },
+                                {
+                                    metaId: 303,
+                                    punches: [
+                                        {
+                                            punchId: 54,
+                                            location: 'untagged',
+                                            effectiveAt: '2025-02-20',
+                                        },
+                                    ],
+                                    pupNumber: 1,
+                                    // Its OWN litter, not BGX: the BGX dam already
+                                    // contributes 'f' (F5BGX) and '+' (M6BGX), so a
+                                    // third maternal allele '-' would need a third
+                                    // copy in one mother.
+                                    litterCode: 'BGY',
+                                    pupOffsets: [],
+                                    sex: 'F',
+                                    genes: G_PLPCRE_PAT_AI14_MINUS_PLUS,
+                                    signal: 'done',
+                                    isAlive: true,
+                                    attention:
+                                        "M6BGX mirrored — PlpCre inherited from the FATHER, and the '-' allele from the mother",
+                                    dob: '2025-02-20',
+                                    genotypeColor: genoOf(
+                                        G_PLPCRE_PAT_AI14_MINUS_PLUS
                                     ),
                                     mates: [],
                                 },
