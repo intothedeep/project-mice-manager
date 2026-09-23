@@ -4,7 +4,7 @@
 // passes `state` to them at write time (not `SEED_COLONY`) so they always
 // reflect the live colony tree.
 
-import type { ColonyGrid, PunchHistoryEntry } from '@repo/types';
+import type { ColonyGrid, PunchRow } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
 
 /** Highest metaId currently in the grid — new-mouse counter seeds above it. */
@@ -23,7 +23,7 @@ export function maxMetaId(grid: ColonyGrid): number {
 // ACTIVE rows alone would re-issue the removed punch's id the moment it drops
 // out of view. This scan is safe ONLY because it runs once at module init,
 // before any removal has happened, so the grid IS the full row set at that
-// instant (zero tombstones exist yet). Once step 7 seeds `punchLog` from this
+// instant (zero tombstones exist yet). Once step 7 seeds `punches` from this
 // same fixture, the counter's source of truth moves to the log (the set that
 // keeps holding every row, including tombstones) — this function stays for
 // that one-time seed scan, it does not become the ongoing source.
@@ -42,8 +42,8 @@ export function maxPunchId(grid: ColonyGrid): number {
 // 7): SEED_COLONY carries only ACTIVE rows (plan §4), so every seeded entry
 // comes back with deletedAt unset — a seed fixture never ships pre-tombstoned.
 // Runs once at module init, same as maxPunchId above.
-export function seedPunchLog(grid: ColonyGrid): PunchHistoryEntry[] {
-    const log: PunchHistoryEntry[] = [];
+export function seedPunches(grid: ColonyGrid): PunchRow[] {
+    const log: PunchRow[] = [];
     for (const l of grid.lines)
         for (const c of l.cages)
             for (const s of c.slots)

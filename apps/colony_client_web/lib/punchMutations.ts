@@ -4,10 +4,10 @@
 // exactly as addMouse's punchEffectiveAt is (colonyMutationHelpers.ts
 // MouseSpec).
 //
-// `punchLog` is the SINGLE SOURCE for every punch (colonyMutationHelpers.ts
+// `punches` is the SINGLE SOURCE for every punch (colonyMutationHelpers.ts
 // header) — mintPunch is the only append, projectPunches is the only place
 // the grid's MouseCell.punches (active rows only, plan §4) is derived. A
-// removed punch is tombstoned (deletedAt set) in punchLog, never spliced out
+// removed punch is tombstoned (deletedAt set) in punches, never spliced out
 // (rules/core.md: never hard-DELETE, mask at read — the projection is the
 // mask; the RECORD in the log is never hard-deleted).
 //
@@ -43,7 +43,7 @@ function findMouse(grid: ColonyGrid, metaId: number): MouseCell | undefined {
     return undefined;
 }
 
-// Mints a punch into punchLog (the single append path, mintPunch) and
+// Mints a punch into punches (the single append path, mintPunch) and
 // re-derives the grid from it, so the view and the log cannot diverge.
 export function addPunch(
     state: ColonyState,
@@ -72,7 +72,7 @@ export function addPunch(
         };
     }
 
-    const minted = mintPunch(state.punchLog, counters, {
+    const minted = mintPunch(state.punches, counters, {
         metaId: input.metaId,
         location: input.location,
         effectiveAt: input.effectiveAt,
@@ -82,14 +82,14 @@ export function addPunch(
     return {
         state: {
             grid: projectPunches(state.grid, minted.log),
-            punchLog: minted.log,
+            punches: minted.log,
         },
         counters: minted.counters,
         result: { ok: true },
     };
 }
 
-// Tombstones the RECORD in punchLog (deletedAt set, never hard-deleted) and
+// Tombstones the RECORD in punches (deletedAt set, never hard-deleted) and
 // re-derives the grid — the projection is what masks it out of the grid VIEW
 // (rules/core.md: never hard-DELETE, mask at read). punchId is globally
 // unique, so the target row is found directly in the log, not via the grid.
@@ -103,7 +103,7 @@ export function removePunch(
     counters: Counters,
     input: RemovePunchInput
 ): { state: ColonyState; counters: Counters; result: AddMouseResult } {
-    const active = state.punchLog.find(
+    const active = state.punches.find(
         (e) => e.punchId === input.punchId && !e.deletedAt
     );
     if (!active) {
@@ -120,14 +120,14 @@ export function removePunch(
         };
     }
 
-    const newLog = state.punchLog.map((e) =>
+    const newLog = state.punches.map((e) =>
         e.punchId === input.punchId ? { ...e, deletedAt: input.deletedAt } : e
     );
 
     return {
         state: {
             grid: projectPunches(state.grid, newLog),
-            punchLog: newLog,
+            punches: newLog,
         },
         counters,
         result: { ok: true },

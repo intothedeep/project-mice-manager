@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { MouseCell, PunchLocation } from '@repo/types';
-import { addPunch, removePunch, usePunchLog } from '@/lib/mockColonyStore';
+import { addPunch, removePunch, usePunches } from '@/lib/mockColonyStore';
 import { TODAY } from '@/lib/dueDates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,11 +20,11 @@ const ADDABLE_LOCATIONS = PUNCH_LOCATION_OPTIONS.filter(
 // and IdentitySection's read-only "N active ear punches" projection. No
 // second add/remove control belongs anywhere else.
 //
-// History comes from usePunchLog(metaId), not MouseCell.punches — a removed
+// History comes from usePunches(metaId), not MouseCell.punches — a removed
 // row stays visible here with deletedAt set while it drops out of the grid's
 // active list.
 export function PunchSection({ mouse }: { mouse: MouseCell }) {
-    const log = usePunchLog(mouse.metaId);
+    const log = usePunches(mouse.metaId);
     const [location, setLocation] = useState<PunchLocation>('ear');
     const [effectiveAt, setEffectiveAt] = useState(TODAY);
     const [note, setNote] = useState('');

@@ -7,11 +7,11 @@
 // `punches.deleted_at`; rules/core.md: never hard-DELETE, mask at read).
 //
 // step 6a (P0.7-b) defines this shape; step 7 seeds it from SEED_COLONY and
-// exposes usePunchLog(metaId) — this file does not seed or select, it only
+// exposes usePunches(metaId) — this file does not seed or select, it only
 // declares the entry shape.
 import type { PunchLocation } from './grid';
 
-export interface PunchHistoryEntry {
+export interface PunchRow {
     punchId: number;
     metaId: number; // which mouse this row belongs to (grid.ts PunchRef omits it — implicit via MouseCell.punches)
     location: PunchLocation;

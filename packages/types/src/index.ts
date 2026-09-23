@@ -17,7 +17,7 @@ export type {
     ColonyGrid,
 } from './grid';
 
-export type { PunchHistoryEntry } from './punchHistory';
+export type { PunchRow } from './punchRow';
 
 // task.ts: old 4-value TaskStatus ('open'|'done'|'verified'|'cancelled') and
 // TaskCard — kept intact while apps/colony_client_web (parallel wave) migrates

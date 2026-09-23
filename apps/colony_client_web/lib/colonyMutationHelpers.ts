@@ -8,22 +8,22 @@ import type {
     ColonyGrid,
     GridCage,
     MouseCell,
-    PunchHistoryEntry,
+    PunchRow,
     PunchLocation,
     Sex,
 } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
 
-// Mock-store state: `punchLog` is the SINGLE SOURCE for every punch, active
+// Mock-store state: `punches` is the SINGLE SOURCE for every punch, active
 // or tombstoned (deletedAt set). `grid.MouseCell.punches` is not a second
-// store — it is a read-time PROJECTION of punchLog (see projectPunches
+// store — it is a read-time PROJECTION of punches (see projectPunches
 // below), filtered to active rows, mirroring the real server's two queries
 // over one `punches` table (one `WHERE deleted_at IS NULL`, one without —
 // migration 0026's partial index exists for exactly that). This is
 // mock-store state, not a DTO — it does not belong in packages/types.
 export interface ColonyState {
     grid: ColonyGrid;
-    punchLog: PunchHistoryEntry[];
+    punches: PunchRow[];
 }
 
 export interface Counters {
@@ -56,7 +56,7 @@ export type AddMouseResult = { ok: true } | { ok: false; error: string };
 // one true source; the rendered label composes from it at read time
 // (lib/mouseIdentity.ts), never stored here.
 // `punches` starts empty — the creation punch is minted separately into
-// punchLog (colonyMutations.ts:addMouse, the SOLE mint site) and reaches this
+// punches (colonyMutations.ts:addMouse, the SOLE mint site) and reaches this
 // mouse only through projectPunches, same as every other punch.
 export function buildMouseCell(
     spec: MouseSpec,
@@ -85,7 +85,7 @@ export function buildMouseCell(
 // this only ever appends, removePunch tombstones in place). Every mint —
 // addMouse's creation punch, PunchSection's addPunch — funnels through here.
 export function mintPunch(
-    log: PunchHistoryEntry[],
+    log: PunchRow[],
     counters: Counters,
     input: {
         metaId: number;
@@ -93,9 +93,9 @@ export function mintPunch(
         effectiveAt: string;
         note?: string;
     }
-): { log: PunchHistoryEntry[]; counters: Counters } {
+): { log: PunchRow[]; counters: Counters } {
     const punchId = counters.nextPunchId;
-    const entry: PunchHistoryEntry = {
+    const entry: PunchRow = {
         punchId,
         metaId: input.metaId,
         location: input.location,
@@ -109,12 +109,9 @@ export function mintPunch(
 }
 
 // Derives MouseCell.punches (active rows only, plan §4) for every mouse in
-// the grid from punchLog — the read-time projection that makes punchLog the
+// the grid from punches — the read-time projection that makes punches the
 // single source (grid never carries its own punch array independently).
-export function projectPunches(
-    grid: ColonyGrid,
-    log: PunchHistoryEntry[]
-): ColonyGrid {
+export function projectPunches(grid: ColonyGrid, log: PunchRow[]): ColonyGrid {
     return {
         ...grid,
         lines: grid.lines.map((l) => ({

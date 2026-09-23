@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useSyncExternalStore } from 'react';
-import type { ColonyGrid, PunchHistoryEntry } from '@repo/types';
+import type { ColonyGrid, PunchRow } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import { moveMouse, type MoveTarget } from '@/lib/gridMove';
 import { formatLitterCode, parseLitterCode } from '@/lib/litterCode';
@@ -13,7 +13,7 @@ import {
     maxCageId,
     maxLineId,
     maxSeedLitterOrdinal,
-    seedPunchLog,
+    seedPunches,
 } from '@/lib/colonySeed';
 import {
     addMouse as pureAddMouse,
@@ -67,14 +67,14 @@ export type {
 
 // ---- state -----------------------------------------------------------------
 
-// punchLog is the SINGLE SOURCE (colonyMutationHelpers.ts header) — it seeds
+// punches is the SINGLE SOURCE (colonyMutationHelpers.ts header) — it seeds
 // from every punch row already in SEED_COLONY (the seed carries ACTIVE rows
 // only, so no seeded entry starts tombstoned), and `grid` is projectPunches'
 // derived view over it from the very first snapshot.
-const initialPunchLog = seedPunchLog(SEED_COLONY);
+const initialPunches = seedPunches(SEED_COLONY);
 let state: ColonyState = {
-    grid: projectPunches(SEED_COLONY, initialPunchLog),
-    punchLog: initialPunchLog,
+    grid: projectPunches(SEED_COLONY, initialPunches),
+    punches: initialPunches,
 };
 let counters: Counters = {
     nextMetaId: maxMetaId(SEED_COLONY) + 1,
@@ -114,11 +114,11 @@ export function useColonyGrid(): ColonyGrid {
 // array is a fresh reference only when the underlying log actually changed.
 // Under option B this is the drawer's ONLY route to a removed punch's
 // deletedAt — MouseCell.punches never carries it (plan §4).
-export function usePunchLog(metaId: number): PunchHistoryEntry[] {
+export function usePunches(metaId: number): PunchRow[] {
     const log = useSyncExternalStore(
         subscribe,
-        () => state.punchLog,
-        () => state.punchLog
+        () => state.punches,
+        () => state.punches
     );
     return useMemo(() => log.filter((e) => e.metaId === metaId), [log, metaId]);
 }
@@ -160,8 +160,8 @@ export function suggestNextCageNumber(): string {
 // Shared by every write below: commit state/counters only when the pure
 // function actually produced a new state (the no-op/failure paths return the
 // SAME state reference back), emit only then. All six pure mutations now
-// take/return ColonyState (grid + punchLog) — addMouse's creation punch is
-// minted straight into punchLog by the pure layer (colonyMutations.ts), so
+// take/return ColonyState (grid + punches) — addMouse's creation punch is
+// minted straight into punches by the pure layer (colonyMutations.ts), so
 // there is no separate seam to close here any more.
 function commit<R extends { ok: boolean }>(r: {
     state: ColonyState;

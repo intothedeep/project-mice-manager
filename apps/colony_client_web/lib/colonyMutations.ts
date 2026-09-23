@@ -12,8 +12,8 @@
 // original state/counters (not the tentative ones), so a failed addLine
 // never leaves a dangling cages: [] line behind.
 //
-// All four take/return ColonyState (grid + punchLog), not a bare ColonyGrid —
-// addMouse appends to punchLog, so every caller in the chain must carry it
+// All four take/return ColonyState (grid + punches), not a bare ColonyGrid —
+// addMouse appends to punches, so every caller in the chain must carry it
 // through.
 //
 // Split out of this file (P0.7-b 8b): updateMouse.ts (edits an existing
@@ -121,7 +121,7 @@ export function addMouse(
     // (P0.7-b: "we never delete an untagged record"). Real tags are added
     // beside it afterward via addPunch.
     const minted = mintPunch(
-        state.punchLog,
+        state.punches,
         { ...counters, nextMetaId: nextMeta + 1, nextLitterOrd: newLitterOrd },
         {
             metaId: nextMeta,
@@ -133,7 +133,7 @@ export function addMouse(
     return {
         state: {
             grid: projectPunches(gridWithMouse, minted.log),
-            punchLog: minted.log,
+            punches: minted.log,
         },
         counters: minted.counters,
         result: { ok: true },
@@ -190,7 +190,7 @@ export function addSlot(
     };
     const stateWithSlot: ColonyState = {
         grid: gridWithSlot,
-        punchLog: state.punchLog,
+        punches: state.punches,
     };
     const countersWithSlot: Counters = { ...counters, nextSlotId: slotId + 1 };
 
@@ -261,7 +261,7 @@ export function addCage(
     };
     const stateWithCage: ColonyState = {
         grid: gridWithCage,
-        punchLog: state.punchLog,
+        punches: state.punches,
     };
     const countersWithCage: Counters = { ...counters, nextCageId: cageId + 1 };
 
@@ -316,7 +316,7 @@ export function addLine(
     };
     const stateWithLine: ColonyState = {
         grid: gridWithLine,
-        punchLog: state.punchLog,
+        punches: state.punches,
     };
     const countersWithLine: Counters = { ...counters, nextLineId: lineId + 1 };
 
