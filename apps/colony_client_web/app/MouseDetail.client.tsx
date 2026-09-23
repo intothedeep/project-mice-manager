@@ -66,7 +66,9 @@ export function MouseDetailDrawer({
     const [expandedCaseId, setExpandedCaseId] = useState<number | null>(null);
 
     // Not-found fallback (e.g. mid-transition) keeps the stale snapshot rather
-    // than crashing; the sex editor below never fires for a mouse it can't find.
+    // than crashing. Editing still WORKS on that path: Save calls updateMouse,
+    // which returns {ok:false} for an unknown metaId, and IdentitySection shows
+    // the error instead of writing anything.
     const m = selected
         ? (findMouseByMetaId(colony, selected.mouse.metaId) ?? selected.mouse)
         : undefined;
@@ -143,7 +145,7 @@ export function MouseDetailDrawer({
                             ) : null}
 
                             <IdentitySection
-                                key={metaId}
+                                key={`identity-${metaId}`}
                                 mouse={m}
                                 reclipCount={
                                     buildReclipIndex(cases).get(metaId) ?? 0
@@ -151,7 +153,7 @@ export function MouseDetailDrawer({
                             />
 
                             <PunchSection
-                                key={metaId}
+                                key={`punch-${metaId}`}
                                 mouse={m}
                             />
 
