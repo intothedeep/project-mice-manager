@@ -479,10 +479,12 @@ enforced at DB level.
 > Newest movements: **Q45 RESOLVED 2026-09-18** (offset storage = migration
 > 0027 `pup_number_offsets` + `MouseCell.pupOffsets`); **Q46 DECIDED
 > 2026-09-22 (owner): option C** for the `ParentCell` label → implemented by
-> P0.7-b task 9d. Gating what is being built right now: **Q42** (real name of
-> the third punch location) and **Q43's narrower sub-question** (does a
-> Tissue-collection case also mint a `toe` punch row?) — Q43-narrow gates
-> P0.7-b step 10 only; neither gates task 8c. Q40 is DISSOLVED.
+> P0.7-b task 9d; **Q43 FULLY RESOLVED 2026-09-22 (owner): a Tissue-collection
+> case does NOT mint a `toe` punch row** (*"tissue is independent each other with
+> toe"*) — `punches` records identification marks only, `.N` and punch rows are
+> DIFFERENT events, and it no longer gates P0.7-b task 13 (the 10+12 merge).
+> Gating what is being built right now: **Q42** alone (real name of the third
+> punch location); it does not gate task 8c. Q40 is DISSOLVED.
 > Record every answer as a RESOLVED / DECIDED / DISSOLVED line UNDER its
 > question — never rewrite or renumber a question.
 > Detail: [docs/phases/open-questions.plan.md](./docs/phases/open-questions.plan.md)

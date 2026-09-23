@@ -104,7 +104,7 @@ Each task lists AC = deterministic acceptance criteria.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.6.tasks.md](./docs/phases/p0.6.tasks.md)
 
-### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 4 = professor GATE; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + NEW 8d (`untagged` punch location) + 9e + 10 + NEW 12 (replacement edit surface, design RULED) + SEED_COLONY note [ ] · 6 base tasks [ ])
+### P0.7 Litter recording + auto tasks — P0-b (MVP v0.2) — IN PROGRESS (v1 [x] · P0.7-b steps 1,2,3,5,8,8b,8c,9a,9b,9c,9d [x] + inline sex editor [x] SUPERSEDED-not-shipped; 4 = professor GATE; 6 + NEW 11 (remove inline cell editing) [~] IN FLIGHT; NEW 6a + 7 + NEW 8d (`untagged` punch location) + 9e + NEW 13 (10+12 MERGED — the mouse-editing drawer) + SEED_COLONY note + `x_`-inert-in-packages note [ ] · 6 base tasks [ ])
 
 > Add-mouse v1 SHIPPED mock-era (archived). P0.7-b add-flow split + punch records:
 > migration 0026, `PunchRef` types, the `extractLitterCode` blocker fix, the FOUR
@@ -126,9 +126,12 @@ Each task lists AC = deterministic acceptance criteria.
 > so it is not re-litigated.
 > Step 4 is the professor GATE — Q39/Q41/Q44 answered, Q40 dissolved, **Q45
 > RESOLVED 2026-09-18** (migration 0027 `pup_number_offsets` +
-> `MouseCell.pupOffsets`); only **Q42** and **Q43's narrower sub-question** (does
-> a Tissue-collection case also mint a `toe` punch row?) remain, and Q43-narrow
-> gates step 10 only.
+> `MouseCell.pupOffsets`); **Q43-narrow RESOLVED 2026-09-22 (owner:
+> *"tissue is independent each other with toe"* — a Tissue-collection case does
+> NOT mint a `toe` punch row; `.N` and punch rows are DIFFERENT events, one mint
+> site)**, leaving only **Q42**, which was never recorded as a blocker on 10,
+> 12 or 13 and by its own text gates nothing on the creation path — so the step-4
+> GATE may now hold nothing. Not closed here; Q42 left untouched.
 > **PUNCH TOMBSTONES — OWNER DECIDED 2026-09-22, option B** ("B: correct.
 > because we can update punch record's deleted_at"): `MouseCell.punches` stays
 > ACTIVE ROWS ONLY and a removed punch is tombstoned in a separate append-only
@@ -139,8 +142,8 @@ Each task lists AC = deterministic acceptance criteria.
 > task **6a (punch history contract)** carries the type/store work and BLOCKS 6;
 > step 6's AC was REWRITTEN (the old one is the defect — see below) and its
 > in-flight work REBASES rather than restarts; step 7 grows to own the
-> `punchLog` seed + `usePunchLog(metaId)`; step 10's AC is unchanged and only
-> TIGHTENED to name the selector. SIXTH AC defect logged in the phase file's
+> `punchLog` seed + `usePunchLog(metaId)`; old step 10's AC is unchanged and only
+> TIGHTENED to name the selector (it is now task 13's punch-half AC). SIXTH AC defect logged in the phase file's
 > PATTERN block, a NEW SUB-SHAPE: an AC that silently MANDATES a schema change
 > because the state shape it operates on has no room for what it demands.
 > **IN FLIGHT (developers dispatched 2026-09-22): step 6** `lib/punchMutations.ts`
@@ -160,7 +163,7 @@ Each task lists AC = deterministic acceptance criteria.
 > Radix registers on `ownerDocument` with `capture: true`, ahead of React, making
 > `editable-cell.tsx:115-116`'s "stop propagation" comment false; and
 > pick-then-overlay-dismiss can SILENTLY LOSE the edit (Radix dismisses on
-> `pointerdown`). KEPT through the removal (task 12 is their consumer): the
+> `pointerdown`). KEPT through the removal (task 13 is their consumer): the
 > drawer's live-lookup staleness fix (ruled ENTAILED by the AC, not scope creep —
 > the click-time snapshot renders `U5BFA` after the edit and fails the AC) and
 > the store-direct `updateMouse` wiring. The earlier "the control goes in the
@@ -171,9 +174,13 @@ Each task lists AC = deterministic acceptance criteria.
 > + its three consumers (grid genotype + dob, drawer sex); the cells go read-only
 > with no dead double-click affordance; nothing else changes. An `x_` rename is
 > NOT a soft delete here (both tsconfigs `exclude: ["**/x_*"]`), so the file goes
-> as an ordinary reviewable diff, recoverable from git. **NEW 12** (`[ ]`,
-> BLOCKED-BY 11, SEQUENCED AFTER 10) is the replacement edit surface — **DESIGN
-> RULED 2026-09-22:** the surface is the **DRAWER** (`MouseDetailDrawer` exists,
+> as an ordinary reviewable diff, recoverable from git. **NEW 13** (`[ ]`, the 10+12
+> MERGE — **OWNER DECIDED 2026-09-22, *"merge into one task"***: same surface, and
+> 12's punch row only pointed at 10's section, so the split's 12-blocked-by-10
+> dependency dissolves. 13 owns the WHOLE mouse-editing drawer — field editing AND
+> punch add/remove, one mutation path, two views. BLOCKED-BY 7 + 11 only —
+> Q43-narrow was the punch half's last gate and was answered 2026-09-22. 10 and 12
+> keep merge notes in the phase file and no checkbox) — **DESIGN RULED 2026-09-22:** the surface is the **DRAWER** (`MouseDetailDrawer` exists,
 > is store-driven, already carries the live-lookup fix a modal would re-solve);
 > the shape is an **EDIT MODE on the Identity section** — pencil toggle, LOCAL
 > draft, Save/Cancel, ONE atomic `updateMouse(metaId, patch)` on Save, NOT
@@ -184,8 +191,9 @@ Each task lists AC = deterministic acceptance criteria.
 > its reason shown: `pupNumber` (birth number, immutable — typo correction OPEN
 > for the owner), `litterCode` (membership, not text — re-parenting is a separate
 > flow), `pupOffsets` ("assigned on transfer"; P0.8's transfer flow is the only
-> writer), punches (read-only projection → step 10's section, no second
-> add/remove UI), `.N` (derived from done/verified Tissue-collection cases). The
+> writer), punches (the Identity section shows the composed `e…` projection; the
+> punch section of the SAME drawer is where rows are added and removed — no
+> second add/remove UI), `.N` (derived from done/verified Tissue-collection cases). The
 > live result composes through `composeMouseLabel(buildMouseLabel(...))` — never
 > a template string, never a second builder; ACs are DATA-FLOW DIRECTION (labels
 > flow OUT to render, never IN to a mutation) plus the 603 probe (`U5BFA`→`F5BFA`
@@ -195,9 +203,9 @@ Each task lists AC = deterministic acceptance criteria.
 > not reintroduce either. **The window between 11 and 12, in which NO mouse field
 > is editable in the app, is DELIBERATE (owner chose removal first and REAFFIRMED
 > it 2026-09-22 — no stopgap control) — not a regression, and SETTLED.**
-> Still open: 6a (blocks 6), 7 (BLOCKED-BY 6), 10 (BLOCKED-BY 6a + 7 +
-> Q43-narrow), **NEW 11 `[~]` / 12 `[ ]` (inline-edit removal + replacement
-> surface — see the paragraph above)**, **NEW 8d — the `untagged` punch location
+> Still open: 6a (blocks 6), 7 (BLOCKED-BY 6), **NEW 11 `[~]` (inline-edit
+> removal, landed `28d38df`, close pass pending) and NEW 13 `[ ]` (the 10+12
+> MERGED mouse-editing drawer, BLOCKED-BY 7 + 11 — see the paragraph above)**, **NEW 8d — the `untagged` punch location
 > (owner DECIDED the value AND the default 2026-09-22): migration `0028`
 > re-ADDs the `punch_location` CHECK as `('toe','ear','other','untagged')` after
 > VERIFYING the constraint name in `pg_constraint`, `PunchLocation` gains the
@@ -221,7 +229,7 @@ Each task lists AC = deterministic acceptance criteria.
 > and the creation default is now `untagged`, not `toe`.** Still
 > OPEN (recorded, not designed): the ZERO-ACTIVE-PUNCHES
 > question (floor vs no floor) — adopting `untagged` did not pick a branch.
-> Three collisions recorded on step 10:
+> Three collisions recorded on task 13 (formerly step 10):
 > `punch_location` is a CLOSED CHECK in `0026` (a fourth value is a migration),
 > **plan §5 Q42 is open and asks exactly whether that CHECK is closed**, and it
 > may contradict shipped task 8c, which mints `location: 'toe'` at creation.
@@ -257,7 +265,9 @@ Each task lists AC = deterministic acceptance criteria.
 > `@repo/types` Case/Task/isOverdue) in progress; Wave 2 (server tx + two SOP
 > TaskGenerators + runner + client lifecycle UI) not started; Wave 3 (batch case
 > 1:N via `case_mice` 0024, grid quick-create v1, `.N` re-clip derived label) in
-> progress. `.N` vs toe-punch double-representation parked on Q43.
+> progress. `.N` vs toe-punch double-representation is NOT a thing — Q43 RESOLVED 2026-09-22
+> (owner): a Tissue-collection case does not mint a `toe` punch row, so the two
+> describe different events.
 > <!-- DETAIL: active, read on demand -->
 > Detail: [docs/phases/p0.9.tasks.md](./docs/phases/p0.9.tasks.md)
 

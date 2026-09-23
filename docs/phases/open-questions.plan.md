@@ -373,6 +373,14 @@
     SCOPE NOTE 2026-09-22: this sub-question is about a DIFFERENT mint site
     (the tissue case), so it does NOT gate P0.7-b task 8c, which covers the
     creation path only.
+    **RESOLVED 2026-09-22 (owner) — NO: a Tissue-collection case does NOT mint a
+    `toe` punch row.** Owner's words: *"tissue is independent each other with
+    toe."* That is this question's SECOND branch as framed above: `punches`
+    records IDENTIFICATION MARKS only and tissue clips stay out of it. `.N`
+    (derived from done/verified Tissue-collection cases) and punch rows therefore
+    describe DIFFERENT events — there is NO double-counting to avoid, and the
+    punch UI shows ONE mint site, not two. Q43 is now fully resolved; it gated
+    P0.7-b task 13 (the 10+12 merged mouse-editing drawer) and that gate is GONE.
 44. **Cage-column section headers (added 2026-09-16) — ANSWERED 2026-09-16
     (user): (b) spreadsheet-only VISUAL device.** The workbook's cage column
     holds non-numeric headers (`Ps Breed.`, `Ps Exp.`, `Back ups`) grouping
