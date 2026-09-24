@@ -19,11 +19,14 @@ import { MoveMenu } from './MoveMenu.client';
 
 export function MoveDialog({
     metaId,
+    note,
     initialCageCode,
     onMoved,
     onClose,
 }: {
     metaId: number;
+    // mice.change_note — why this move happened. Omitted for a grid move.
+    note?: string;
     // A Move case's destination, as the cage CODE the case stores.
     initialCageCode?: string;
     onMoved: () => void;
@@ -40,7 +43,7 @@ export function MoveDialog({
         // A move can be REFUSED (a duplicate new-slot label, a cage that went
         // away). Keep the dialog open and say so — closing it on failure is
         // how a refusal becomes invisible and looks like a silent success.
-        const result = applyColonyMove(metaId, target, TODAY);
+        const result = applyColonyMove(metaId, target, TODAY, note);
         if (!result.ok) {
             setError(result.error);
             return;

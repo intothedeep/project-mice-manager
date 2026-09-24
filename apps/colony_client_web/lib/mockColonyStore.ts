@@ -262,13 +262,18 @@ export function removePunch(input: RemovePunchInput): AddMouseResult {
 // correcting a misplacement does not require a task (owner ruling) — but it
 // is no longer recordless: the move IS a version row, and the grid re-renders
 // because that row was appended, not because the tree was edited.
+// `note` lands in the row's mice.change_note. A move made from the grid has
+// none — nobody asked for it in writing. A move that completes a Move case
+// carries which case, so the history says WHY the mouse is where it is and
+// not merely that it went there.
 export function applyColonyMove(
     metaId: number,
     target: MoveTarget,
-    effectiveAt: string
+    effectiveAt: string,
+    note?: string
 ): AddMouseResult {
     return commit(
-        pureMoveMouse(state, counters, { metaId, target, effectiveAt })
+        pureMoveMouse(state, counters, { metaId, target, effectiveAt, note })
     );
 }
 

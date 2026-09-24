@@ -57,6 +57,9 @@ export function useCaseAdvance(role: Role): {
         error,
         moveDialog: pending ? (
             <MoveDialog
+                // Provenance: the row records WHICH case moved the mouse, so
+                // history answers "why is it here", not just "it went there".
+                note={`Move case #${pending.caseId}`}
                 key={pending.metaId}
                 metaId={pending.metaId}
                 initialCageCode={pending.toCage}
