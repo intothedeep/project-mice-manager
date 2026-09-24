@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { TaskSignal } from '@repo/types';
+import type { Sex, TaskSignal } from '@repo/types';
 import { addTask, useTasks } from '@/lib/mockStore';
 import { useColonyGrid, useLitterCodes } from '@/lib/mockColonyStore';
 import { buildMouseLabelIndex } from '@/lib/mouseLabel';
@@ -30,6 +30,7 @@ type Values = Record<string, string | string[]>;
 interface MouseOption {
     metaId: number;
     label: string;
+    sex: Sex;
 }
 
 const SELECT_CLASS =
@@ -84,9 +85,24 @@ export function NewTaskDialog({
         () => buildMouseLabelIndex(grid, cases),
         [grid, cases]
     );
+    // sex rides along so a breeding field can offer only the sex it needs.
+    // Read from the grid, not stored on the label index, which is about names.
+    const sexByMetaId = useMemo(() => {
+        const index = new Map<number, Sex>();
+        for (const l of grid.lines)
+            for (const c of l.cages)
+                for (const s of c.slots)
+                    for (const m of s.mice) index.set(m.metaId, m.sex);
+        return index;
+    }, [grid]);
     const mouseOptions = useMemo(
-        () => Array.from(mouseLabels, ([metaId, label]) => ({ metaId, label })),
-        [mouseLabels]
+        () =>
+            Array.from(mouseLabels, ([metaId, label]) => ({
+                metaId,
+                label,
+                sex: sexByMetaId.get(metaId) ?? ('U' as Sex),
+            })),
+        [mouseLabels, sexByMetaId]
     );
     // BASE names (no ".N"), for the one stored string that still names mice: a
     // mate's "mother × father". Storing the suffixed form would freeze a count
@@ -323,10 +339,12 @@ function FieldInput({
             // never the key. Cage and litter fields have no id of their own.
             const opts: { value: string; text: string }[] =
                 field.kind === 'mouse'
-                    ? mouseOptions.map((m) => ({
-                          value: String(m.metaId),
-                          text: m.label,
-                      }))
+                    ? mouseOptions
+                          .filter((m) => !field.sex || m.sex === field.sex)
+                          .map((m) => ({
+                              value: String(m.metaId),
+                              text: m.label,
+                          }))
                     : field.kind === 'cage'
                       ? cageOptions.map((c) => ({
                             value: c,

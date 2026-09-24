@@ -1,4 +1,4 @@
-import type { TaskSubjectKind } from '@repo/types';
+import type { Sex, TaskSubjectKind } from '@repo/types';
 import { GENE_CATALOG_CODES } from '@/apis/getGenes.mock.api';
 
 // Data-driven form schema for creating tasks. task_type selects which extra
@@ -18,10 +18,18 @@ export const GENE_CODES: readonly string[] = GENE_CATALOG_CODES.filter(
 export type FieldKind =
     'mouse' | 'cage' | 'litter' | 'genes' | 'date' | 'number' | 'text';
 
+// Optional constraint on a `mouse` field: the picker offers only mice of this
+// sex. Present on the breeding fields only — a mating needs a known female and
+// a known male, so 'U' (sex not yet recorded) is excluded by construction
+// rather than by a validation message (owner, 2026-09-24).
+// Deliberately NOT a separate FieldKind: a 'dam' kind would render exactly
+// like 'mouse' and duplicate the branch. One optional field, no new branch.
+
 export interface FormField {
     key: string;
     label: string;
     kind: FieldKind;
+    sex?: Sex; // `mouse` fields only — see the note above FormField
     required?: boolean;
 }
 
@@ -46,12 +54,14 @@ export const TASK_TYPES: TaskTypeDef[] = [
                 key: 'mother',
                 label: 'Mother (♀)',
                 kind: 'mouse',
+                sex: 'F',
                 required: true,
             },
             {
                 key: 'father',
                 label: 'Father (♂)',
                 kind: 'mouse',
+                sex: 'M',
                 required: true,
             },
             {
@@ -71,7 +81,13 @@ export const TASK_TYPES: TaskTypeDef[] = [
         subjectKind: 'mouse',
         subjectFrom: 'mouse',
         fields: [
-            { key: 'mouse', label: 'Mouse', kind: 'mouse', required: true },
+            {
+                key: 'mouse',
+                label: 'Dam (♀)',
+                kind: 'mouse',
+                sex: 'F',
+                required: true,
+            },
         ],
     },
     {
@@ -86,7 +102,13 @@ export const TASK_TYPES: TaskTypeDef[] = [
         subjectKind: 'mouse',
         subjectFrom: 'mouse',
         fields: [
-            { key: 'mouse', label: 'Mouse', kind: 'mouse', required: true },
+            {
+                key: 'mouse',
+                label: 'Dam (♀)',
+                kind: 'mouse',
+                sex: 'F',
+                required: true,
+            },
             { key: 'pupCount', label: 'Pup count', kind: 'number' },
         ],
     },
