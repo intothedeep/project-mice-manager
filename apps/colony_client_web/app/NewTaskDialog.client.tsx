@@ -411,21 +411,21 @@ function pickedLitterCode(def: TaskTypeDef, values: Values): string | null {
 // has a single mouse slot, so nothing on the row can resolve it. Built from
 // BASE names — a stored ".N" would freeze a count that moves on every tissue
 // collection. Every other kind returns null and carries an id or a code.
+//
+// `Mate` is now the only 'mate' def, and it cascades — Plug check and
+// Birth/delivery moved to the dam (owner, 2026-09-24). The old
+// `if (def.subjectFrom)` fallback that served those two is gone rather than
+// left unreachable; a future non-cascading mate type must decide for itself
+// what it stores, not inherit a branch written for cages.
 function buildSubjectLabel(
     def: TaskTypeDef,
     values: Values,
     baseMouseLabels: Map<number, string>
 ): string | null {
-    if (def.subjectKind !== 'mate') return null;
-    if (def.cascade) {
-        const name = (key: string) =>
-            baseMouseLabels.get(Number(values[key])) ?? '?';
-        return `${name('mother')} × ${name('father')}`;
-    }
-    if (def.subjectFrom) {
-        return String(values[def.subjectFrom] ?? '') || null;
-    }
-    return null;
+    if (def.subjectKind !== 'mate' || !def.cascade) return null;
+    const name = (key: string) =>
+        baseMouseLabels.get(Number(values[key])) ?? '?';
+    return `${name('mother')} × ${name('father')}`;
 }
 
 function buildDetail(def: TaskTypeDef, values: Values): string | null {

@@ -75,14 +75,18 @@ export const TASK_TYPES: TaskTypeDef[] = [
         ],
     },
     {
-        // Mate-cycle event: birth/delivery follows plug check. Still keyed to
-        // a cage; the dam is the real subject here too (see Plug check above),
-        // but that change is the owner's to make.
+        // Mate-cycle event: birth/delivery follows plug check, and the dam is
+        // the subject of both — she is the one who delivers. The cage is only
+        // where she lives. Same correction as Plug check above (owner,
+        // 2026-09-24). Like plug check, 'mate'/'cage' did not route this
+        // anywhere: buildDateCaseIndex reads caseType for the column and
+        // subjectMouseId for the row, so the old shape only kept it OUT of the
+        // deliv column it was already mapped to.
         type: 'Birth / delivery',
-        subjectKind: 'mate',
-        subjectFrom: 'cage',
+        subjectKind: 'mouse',
+        subjectFrom: 'mouse',
         fields: [
-            { key: 'cage', label: 'Cage', kind: 'cage', required: true },
+            { key: 'mouse', label: 'Mouse', kind: 'mouse', required: true },
             { key: 'pupCount', label: 'Pup count', kind: 'number' },
         ],
     },
