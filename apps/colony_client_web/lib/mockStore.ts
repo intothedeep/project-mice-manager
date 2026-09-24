@@ -12,7 +12,7 @@ import {
 } from '@/apis/getTasks.mock.api';
 import { SEED_UPCOMING, type UpcomingItem } from '@/apis/getUpcoming.mock.api';
 import { expectedDeliveryOn, plugCheckOn, TODAY } from '@/lib/dueDates';
-import { moveMouseToCage } from '@/lib/mockColonyStore';
+import { cageIdOfCode, currentCageIdOf } from '@/lib/mockColonyStore';
 import type { TaskTypeDef } from '@/lib/taskTypes';
 
 // Mock-era shared store. Both /tasks and /upcoming read from it, so a task
@@ -93,27 +93,47 @@ export function useTaskLog(): ClientTask[] {
 
 // ---- public writes ---------------------------------------------------------
 
-type SetTaskStatusResult = { ok: true } | { ok: false; error: string };
+// A refusal carries `error` for display. `needsMove` additionally says the
+// refusal is SATISFIABLE by a human move — the caller opens MoveMenu (see
+// app/useCaseAdvance.tsx) and calls again. A caller that ignores `needsMove`
+// still shows a correct message and still does not advance the case.
+export type PendingMove = { metaId: number; toCage: string };
+export type SetTaskStatusResult =
+    { ok: true } | { ok: false; error: string; needsMove?: PendingMove };
 
-// A Move case that reaches `done` must MOVE THE MOUSE (owner ruling) — a case
-// marked done with the animal still in its old cage is the bug this exists to
-// close. The move is attempted BEFORE the status is written and a refusal
-// ABORTS the advance: a `done` Move whose mouse did not move would be the
-// same lie in a new place.
+// A Move case that reaches `done` must be TRUE: the mouse is in the cage the
+// case names. This function does not move anything — it CHECKS, and refuses
+// the advance while the mouse is somewhere else.
 //
-// 'verified' acts too, and not as a duplicate: an ADMIN may jump straight
+// The move itself belongs to the person completing the case, because a case
+// names a cage and never a slot: when the task is written nobody knows which
+// slot will be free days later. A refusal with `needsMove` is the caller's cue
+// to open MoveMenu — the same dialog the Move button opens — prefilled with
+// the target cage. Guessing the cage's first slot instead relocated a mouse
+// that was already in the right cage (the owner's report).
+//
+// Because the gate lives HERE and not in the dialog's wiring, a CANCELLED
+// modal cannot advance the case: nothing was written, and the next attempt is
+// refused again on the same terms.
+//
+// A mouse already in the target cage passes with no modal and no version row —
+// the instruction is already carried out, and minting a row for it is the move
+// nobody asked for.
+//
+// 'verified' is gated too, and not as a duplicate: an ADMIN may jump straight
 // from 'doing' to 'verified' (taskFlow.ts — admin is any→any), which would
-// otherwise verify a move that never happened. Running it twice is harmless
-// because a move to where the mouse already is is refused as a no-op by the
-// pure layer, so no second version row is minted.
+// otherwise verify a move that never happened.
 //
-// 'cancelled'/'todo' undo nothing: a version log is append-only, so putting
-// the mouse back is its own move, not the erasure of this one.
+// 'cancelled'/'todo' are ungated: a version log is append-only, so putting the
+// mouse back is its own move, not the erasure of this one.
 //
-// A BATCH Move (subjectKind 'mice') moves every member. It aborts on the
-// first refusal rather than half-moving the batch and reporting success —
-// the mice already moved keep their rows, which is the truth about the rack.
-function enactCase(c: SeedCaseRow, to: CaseTaskStatus): SetTaskStatusResult {
+// A BATCH Move (subjectKind 'mice') reports the FIRST member still out of
+// place. The caller moves that one and calls again, so the batch resolves one
+// modal per mouse and members already in the cage are skipped.
+function pendingMoveFor(
+    c: SeedCaseRow,
+    to: CaseTaskStatus
+): SetTaskStatusResult {
     if (c.caseType !== 'Move') return { ok: true };
     if (to !== 'done' && to !== 'verified') return { ok: true };
 
@@ -133,14 +153,25 @@ function enactCase(c: SeedCaseRow, to: CaseTaskStatus): SetTaskStatusResult {
             error: 'This Move case names no destination cage.',
         };
     }
+    // A target cage that is GONE is refused outright, with no `needsMove`:
+    // opening the dialog unfilled would let the person put the mouse anywhere
+    // and then mark an unsatisfiable instruction done.
+    const toCageId = cageIdOfCode(toCage);
+    if (toCageId === undefined) {
+        return { ok: false, error: `Cage ${toCage} no longer exists.` };
+    }
     for (const metaId of metaIds) {
-        const moved = moveMouseToCage(
-            metaId,
-            toCage,
-            TODAY,
-            `Move case #${c.id}`
-        );
-        if (!moved.ok) return moved;
+        const at = currentCageIdOf(metaId);
+        if (at === undefined) {
+            return { ok: false, error: `Mouse ${metaId} is not on the rack.` };
+        }
+        if (at !== toCageId) {
+            return {
+                ok: false,
+                error: `Move the mouse into cage ${toCage} first.`,
+                needsMove: { metaId, toCage },
+            };
+        }
     }
     return { ok: true };
 }
@@ -153,12 +184,11 @@ export function setTaskStatus(
     to: CaseTaskStatus,
     role: Role
 ): SetTaskStatusResult {
-    // 0. Carry out what the case ACTUALLY asks for, before recording that it
-    //    was carried out.
+    // 0. Refuse to record that the case was carried out unless it WAS.
     const target = cases.find((c) => c.id === caseId);
     if (target) {
-        const enacted = enactCase(target, to);
-        if (!enacted.ok) return enacted;
+        const gate = pendingMoveFor(target, to);
+        if (!gate.ok) return gate;
     }
 
     // 1. Update the case's mutable status cache.

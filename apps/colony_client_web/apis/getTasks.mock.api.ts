@@ -150,7 +150,8 @@ export const SEED_CASES: SeedCaseRow[] = [
         // The DESTINATION, machine-readable. `detail` above is display text
         // and completing the case cannot act on it; direction.toCage is the
         // cage CODE the picker stores (cages.code is globally unique), which
-        // is what setTaskStatus resolves when this case reaches `done`.
+        // is the cage setTaskStatus requires the mouse to be in before this
+        // case may reach `done`.
         direction: { toCage: '2414' },
         dueDate: '2026-09-07',
         createdAt: '2026-09-03',

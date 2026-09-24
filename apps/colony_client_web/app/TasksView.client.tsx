@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 import { availableActions } from '@/lib/taskFlow';
 import { TODAY } from '@/lib/dueDates';
 import { taskSignalBg, taskSignalText } from '@/lib/signal';
-import { useTasks, setTaskStatus } from '@/lib/mockStore';
+import { useTasks } from '@/lib/mockStore';
 import { formatDate } from '@/lib/dueDates';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
 import { buildMouseLabelIndex } from '@/lib/mouseLabel';
@@ -18,6 +18,7 @@ import {
 import { useColonyGrid } from '@/lib/mockColonyStore';
 import { CaseTimeline } from './CaseTimeline.client';
 import { NewTaskDialog } from './NewTaskDialog.client';
+import { useCaseAdvance } from './useCaseAdvance';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -36,7 +37,9 @@ export function TasksView() {
     const tasks = useTasks();
     const [role, setRole] = useState<Role>('staff');
     const [creating, setCreating] = useState(false);
-    const [actError, setActError] = useState<string | null>(null);
+    // Advancing a case — including the Move dialog a Move case needs — is the
+    // hook's, shared with CaseList so the two surfaces cannot diverge.
+    const { advance, error: actError, moveDialog } = useCaseAdvance(role);
     // Pinned, not the real clock — see lib/colors.ts lifeStage for why a mock
     // whose display depends on when you open it cannot be checked.
     const today = TODAY;
@@ -51,14 +54,6 @@ export function TasksView() {
     );
     // cageId -> cage code, the same shape for the kind that points at a cage.
     const cageCodes = useMemo(() => buildCageCodeIndex(grid), [grid]);
-
-    // act uses the case id (c.id) — each card represents one case.
-    // See CaseList: a refused advance (a Move whose mouse cannot be moved)
-    // must say so rather than look like a button that does nothing.
-    function act(c: ClientCaseCard, to: CaseTaskStatus) {
-        const result = setTaskStatus(c.id, to, role);
-        setActError(result.ok ? null : result.error);
-    }
 
     return (
         <div className="space-y-3">
@@ -91,6 +86,8 @@ export function TasksView() {
                 open={creating}
                 onClose={() => setCreating(false)}
             />
+
+            {moveDialog}
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
                 {COLUMNS.map((col) => {
@@ -125,7 +122,9 @@ export function TasksView() {
                                             today={today}
                                             mouseLabels={mouseLabels}
                                             cageCodes={cageCodes}
-                                            onAct={act}
+                                            onAct={(card, to) =>
+                                                advance(card.id, to)
+                                            }
                                         />
                                     ))
                                 )}

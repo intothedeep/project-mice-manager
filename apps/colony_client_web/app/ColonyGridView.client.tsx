@@ -20,7 +20,6 @@ import {
     toggleIn,
     type GridFilter,
 } from '@/lib/gridFilter';
-import { type MoveTarget } from '@/lib/gridMove';
 import {
     resolvePath,
     isOnSelection,
@@ -40,14 +39,10 @@ import {
     type DateColumn,
     type DateCaseHit,
 } from '@/lib/dateSignal';
-import { formatDate, TODAY } from '@/lib/dueDates';
+import { formatDate } from '@/lib/dueDates';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { useTasks, useTaskLog, addTask } from '@/lib/mockStore';
-import {
-    useColonyGrid,
-    applyColonyMove,
-    updateMouse,
-} from '@/lib/mockColonyStore';
+import { useColonyGrid, updateMouse } from '@/lib/mockColonyStore';
 import { buildReclipIndex, composeMouseLabel } from '@/lib/mouseLabel';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
 import { genotypeOf } from '@/lib/genotype';
@@ -56,7 +51,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useNavSlotNode } from './NavSlot.client';
-import { MoveMenu } from './MoveMenu.client';
+import { MoveDialog } from './MoveDialog.client';
 import { MouseDetailDrawer, type SelectedMouse } from './MouseDetail.client';
 import {
     MouseCaseDrawer,
@@ -68,13 +63,6 @@ import { AddMouseDialog } from './AddMouseDialog.client';
 import { AddLineDialog } from './AddLineDialog.client';
 
 const SEXES: Sex[] = ['M', 'F', 'U'];
-
-interface Moving {
-    mouse: MouseCell;
-    lineId: number;
-    cageId: number;
-    slotId: number;
-}
 
 const lineMice = (l: GridLine) =>
     l.cages.flatMap((c) => c.slots.flatMap((s) => s.mice));
@@ -111,8 +99,9 @@ export function ColonyGridView() {
         return () => window.removeEventListener('keydown', onKey);
     }, []);
     const [selection, setSelection] = useState<Selection | null>(null);
-    const [moving, setMoving] = useState<Moving | null>(null);
-    const [moveError, setMoveError] = useState<string | null>(null);
+    // The mouse being moved, by metaId only — MoveDialog reads its placement
+    // from the grid, so this cannot hold a stale line/cage/slot.
+    const [movingMetaId, setMovingMetaId] = useState<number | null>(null);
     const [detail, setDetail] = useState<SelectedMouse | null>(null);
     const [selected, setSelected] = useState<Record<number, string>>({});
     const [taskOpen, setTaskOpen] = useState(false);
@@ -428,20 +417,6 @@ export function ColonyGridView() {
             return next;
         });
     }
-    function applyMove(target: MoveTarget) {
-        if (!moving) return;
-        // A move can be REFUSED (a duplicate new-slot label, a cage that went
-        // away). Keep the dialog open and say so — closing it on failure is
-        // how a refusal becomes invisible and looks like a silent success.
-        const result = applyColonyMove(moving.mouse.metaId, target, TODAY);
-        if (!result.ok) {
-            setMoveError(result.error);
-            return;
-        }
-        setMoveError(null);
-        setMoving(null);
-    }
-
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-2">
             {navNode
@@ -908,13 +883,8 @@ export function ColonyGridView() {
                                                                                             );
                                                                                         }}
                                                                                         onMove={() =>
-                                                                                            setMoving(
-                                                                                                {
-                                                                                                    mouse: m,
-                                                                                                    lineId: l.lineId,
-                                                                                                    cageId: c.cageId,
-                                                                                                    slotId: s.slotId,
-                                                                                                }
+                                                                                            setMovingMetaId(
+                                                                                                m.metaId
                                                                                             )
                                                                                         }
                                                                                         onGenotype={() =>
@@ -1006,19 +976,11 @@ export function ColonyGridView() {
                 </div>
             ) : null}
 
-            {moving ? (
-                <MoveMenu
-                    colony={colony}
-                    mouse={moving.mouse}
-                    currentLineId={moving.lineId}
-                    currentCageId={moving.cageId}
-                    currentSlotId={moving.slotId}
-                    error={moveError}
-                    onMove={applyMove}
-                    onClose={() => {
-                        setMoveError(null);
-                        setMoving(null);
-                    }}
+            {movingMetaId != null ? (
+                <MoveDialog
+                    metaId={movingMetaId}
+                    onMoved={() => setMovingMetaId(null)}
+                    onClose={() => setMovingMetaId(null)}
                 />
             ) : null}
 

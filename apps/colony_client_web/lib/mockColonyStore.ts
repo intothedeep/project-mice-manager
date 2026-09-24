@@ -5,12 +5,11 @@ import { useSyncExternalStore } from 'react';
 import type { ColonyGrid, MouseLocationRow, PunchRow } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
 import {
-    defaultSlotOfCage,
     findCageIdByCode,
     moveMouse as pureMoveMouse,
     type MoveTarget,
 } from '@/lib/gridMove';
-import { locationsOf } from '@/lib/mouseLocations';
+import { currentLocationOf, locationsOf } from '@/lib/mouseLocations';
 import { formatLitterCode, parseLitterCode } from '@/lib/litterCode';
 import {
     maxMetaId,
@@ -273,32 +272,19 @@ export function applyColonyMove(
     );
 }
 
-// moveMouseToCage: the Move CASE's path. A case names a cage CODE and nothing
-// finer, so the code and the slot are resolved HERE, against the live grid —
-// mockStore owns cases and cannot see the colony tree.
-export function moveMouseToCage(
-    metaId: number,
-    cageCode: string,
-    effectiveAt: string,
-    note: string
-): AddMouseResult {
-    const cageId = findCageIdByCode(state.grid, cageCode);
-    if (cageId === undefined) {
-        return { ok: false, error: `Cage ${cageCode} no longer exists.` };
-    }
-    const slotId = defaultSlotOfCage(state.grid, cageId);
-    if (slotId === undefined) {
-        return {
-            ok: false,
-            error: `Cage ${cageCode} has no slot to move into.`,
-        };
-    }
-    return commit(
-        pureMoveMouse(state, counters, {
-            metaId,
-            target: { cageId, slotId },
-            effectiveAt,
-            note,
-        })
-    );
+// The two reads the CASE path needs. It no longer moves anything: a Move case
+// names a cage and never a slot, so the person completing it picks the slot in
+// MoveMenu and the move goes through applyColonyMove above — one move path,
+// not a second one that guesses.
+//
+// Non-hook reads, same shape as suggestNextCageCode: mockStore owns cases and
+// cannot see the colony tree, so it asks these two questions instead.
+export function cageIdOfCode(cageCode: string): number | undefined {
+    return findCageIdByCode(state.grid, cageCode);
+}
+
+// The cage the mouse is in NOW, from the head location row — the log is the
+// fact and the tree is its projection (mouseLocations.ts).
+export function currentCageIdOf(metaId: number): number | undefined {
+    return currentLocationOf(state.locations, metaId)?.cageId;
 }

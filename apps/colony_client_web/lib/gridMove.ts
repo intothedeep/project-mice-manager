@@ -43,16 +43,11 @@ function refuse(
 }
 
 // A Move CASE names a cage and nothing finer (taskTypes.ts: the only field is
-// `toCage`), so completing one has to choose a slot. It takes the cage's
-// FIRST slot — the one the cage was created with, and the only choice that is
-// stable across renders and re-runs. OPEN: the owner may want the case to
-// carry a slot, or the mouse to land in the least-occupied slot instead.
-export function defaultSlotOfCage(
-    grid: ColonyGrid,
-    cageId: number
-): number | undefined {
-    return findCage(grid, cageId)?.slots[0]?.slotId;
-}
+// `toCage`), so completing one cannot know the slot — nobody does when the
+// task is written days earlier. There is therefore NO default slot here: the
+// person completing the case picks it in MoveMenu, the same dialog the Move
+// button opens. Guessing the cage's first slot relocated a mouse that was
+// already in the right cage (the owner's report).
 
 // Resolves a cage CODE (what a Move case's `toCage` direction field stores —
 // the picker offers codes, cages.code being globally unique) to its cageId.

@@ -58,3 +58,26 @@ export function mapMice(
         return changed ? { ...slot, mice } : slot;
     });
 }
+
+// Where a mouse sits, as the four references the move dialog needs. The grid
+// is the location log's PROJECTION (mouseLocations.ts), so reading placement
+// off the tree here is reading the log — not a second source.
+export function findMousePlacement(
+    grid: ColonyGrid,
+    metaId: number
+):
+    | { mouse: MouseCell; lineId: number; cageId: number; slotId: number }
+    | undefined {
+    for (const line of grid.lines)
+        for (const cage of line.cages)
+            for (const slot of cage.slots)
+                for (const mouse of slot.mice)
+                    if (mouse.metaId === metaId)
+                        return {
+                            mouse,
+                            lineId: line.lineId,
+                            cageId: cage.cageId,
+                            slotId: slot.slotId,
+                        };
+    return undefined;
+}

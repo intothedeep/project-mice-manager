@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import type { Role, CaseTaskStatus } from '@repo/types';
-import { setTaskStatus, useTaskLog } from '@/lib/mockStore';
+import { useTaskLog } from '@/lib/mockStore';
 import { availableActions } from '@/lib/taskFlow';
 import { taskSignalBg, taskSignalText } from '@/lib/signal';
 import { StatusBadge } from '@/components/task-status';
 import { CaseTimeline } from './CaseTimeline.client';
+import { useCaseAdvance } from './useCaseAdvance';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ClientCaseCard } from '@/apis/getTasks.mock.api';
@@ -34,18 +34,15 @@ export function CaseList({
     const activeCases = cases.filter((c) => c.status !== 'cancelled');
     const historyCases = cases.filter((c) => c.status === 'cancelled');
 
-    // A status change can be REFUSED — a Move case cannot reach `done` unless
-    // the mouse actually moves (mockStore.enactCase). Show why; a button that
-    // silently does nothing is the bug this whole change exists to remove.
-    const [error, setError] = useState<string | null>(null);
-
-    function handleAction(caseId: number, to: CaseTaskStatus) {
-        const result = setTaskStatus(caseId, to, role);
-        setError(result.ok ? null : result.error);
-    }
+    // A status change can be REFUSED — a Move case cannot reach `done` while
+    // the mouse is in the wrong cage (mockStore.pendingMoveFor) — and a Move
+    // case needs the slot picker before it can be done at all. Both live in
+    // the hook, shared with the Tasks board.
+    const { advance, error, moveDialog } = useCaseAdvance(role);
 
     return (
         <>
+            {moveDialog}
             {error ? (
                 <p className="text-xs font-medium text-signal-instruction">
                     {error}
@@ -58,7 +55,7 @@ export function CaseList({
                     role={role}
                     expandedCaseId={expandedCaseId}
                     onToggle={onToggle}
-                    onAction={handleAction}
+                    onAction={advance}
                 />
             ) : null}
 
@@ -69,7 +66,7 @@ export function CaseList({
                     role={role}
                     expandedCaseId={expandedCaseId}
                     onToggle={onToggle}
-                    onAction={handleAction}
+                    onAction={advance}
                 />
             ) : null}
         </>

@@ -32,6 +32,9 @@ interface Props {
     currentLineId: number;
     currentCageId: number;
     currentSlotId: number;
+    // Opened for a Move CASE: the cage the case names, already chosen. The
+    // case never names a slot, so step 3 is still the person's to answer.
+    initialCageId?: number;
     error: string | null; // a REFUSED move (duplicate slot label, cage gone)
     onMove: (target: MoveTarget) => void;
     onClose: () => void;
@@ -54,12 +57,21 @@ export function MoveMenu({
     currentLineId,
     currentCageId,
     currentSlotId,
+    initialCageId,
     error,
     onMove,
     onClose,
 }: Props) {
-    const [lineId, setLineId] = useState(currentLineId);
-    const [cageId, setCageId] = useState<number | null>(null);
+    // A prefilled cage may sit on ANOTHER line, and step 2 only lists the
+    // selected line's cages — so the line follows the cage, not currentLineId.
+    // (The cross-line warning then fires, which is correct: it is one.)
+    const [lineId, setLineId] = useState(
+        () =>
+            colony.lines.find((l) =>
+                l.cages.some((c) => c.cageId === initialCageId)
+            )?.lineId ?? currentLineId
+    );
+    const [cageId, setCageId] = useState<number | null>(initialCageId ?? null);
     const [slotChoice, setSlotChoice] = useState<string | null>(null);
     const [newLabel, setNewLabel] = useState('');
     // The SAME index the grid and the task board read, so the dialog cannot
