@@ -19,9 +19,23 @@ export type FieldKind =
     'mouse' | 'cage' | 'litter' | 'genes' | 'date' | 'number' | 'text';
 
 // Optional constraint on a `mouse` field: the picker offers only mice of this
-// sex. Present on the breeding fields only — a mating needs a known female and
-// a known male, so 'U' (sex not yet recorded) is excluded by construction
-// rather than by a validation message (owner, 2026-09-24).
+// sex. Present on the breeding fields only (owner, 2026-09-24).
+//
+// 'U' is therefore not offered for a mating. That is NOT the same question as
+// the NULL-vs-'+/+' and untagged-vs-absent distinctions elsewhere in this
+// codebase, and reading it as one leads to the wrong conclusion:
+//
+//   recording a fact      what do we know about this mouse?
+//                         'unknown' is a first-class answer and must survive,
+//                         which is what gives you a queue of work to do
+//   permitting an action  can this mouse do this job?
+//                         a mating needs a KNOWN female and a KNOWN male, so
+//                         an unconfirmed sex is a prerequisite not yet met
+//
+// Nothing is collapsed here: the mouse's record still says 'U', faithfully.
+// Only the picker declines to offer it. Storage keeps saying "we do not know";
+// the form says "you cannot breed what you have not confirmed". Both true.
+//
 // Deliberately NOT a separate FieldKind: a 'dam' kind would render exactly
 // like 'mouse' and duplicate the branch. One optional field, no new branch.
 
