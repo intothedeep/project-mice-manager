@@ -173,8 +173,8 @@ stored (sexing U→M changes the label, metaId stays stable); genotype renders
 - **v1.1 — add-flow split into FOUR mutations (AGREED 2026-09-16, user; NOT
   built — TASKS P0.7-b step 8).** Replaces today's `addMouse` + `addLine`
   in `lib/colonyMutations.ts`:
-  `addLine(lineName, cageNumber, slotLabel, mouse?)` → line+cage+slot(+mouse);
-  `addCage(lineId, cageNumber, slotLabel, mouse?)` → cage+slot(+mouse);
+  `addLine(lineName, cageCode, slotLabel, mouse?)` → line+cage+slot(+mouse);
+  `addCage(lineId, cageCode, slotLabel, mouse?)` → cage+slot(+mouse);
   `addSlot(cageId, slotLabel, mouse?)` → slot(+mouse);
   `addMouse(cageId, slotId, mouse)` → mouse. Each creates what its name says
   and fills required descendants DOWN TO SLOT; mouse optional except in
@@ -343,7 +343,7 @@ enforced at DB level.
 
 - Normalize P0-a: **Breeders only** (header row 2, data 3+, cols A:P 1–16 — never
   crawl max_col). Column map: B Mouse line→forward-fill (resolves to
-  `mouse_line` entity / `mouse.line_id`, R2 below); D Cage#→cage.cage_number
+  `mouse_line` entity / `mouse.line_id`, R2 below); D Cage#→`cages.code`
   (forward-fill); E Slot→`slot.label` under the cage (forward-fill — R1 slot
   entity below); F MOUSE ID→tiered parser;
   G GENOTYPE→mouse.raw_genotype (PLAIN string — no tokenizing in MVP;
@@ -365,7 +365,8 @@ enforced at DB level.
   disambiguation only, NOT part of uniqueness; only unparseable rows are a
   real exception — they match by raw `raw_mouse_id`;
   `mouse_label` = rendered LABEL, non-unique — R2 below);
-  cage = (cage_number). Rows absent
+  cage = (`cages.code`, renamed from `cage_number` 2026-09-23 —
+  `0002_core_tables.sql:185-188`; matched via `cages_code_key`). Rows absent
   in a new version → `deleted_at` tombstone, human-confirmed in P1 diff;
   label/sex/state diffs on a MATCHED mouse APPEND `mouse_attr_log` rows
   (actor = import user), never tombstone+reinsert (R7 below).
@@ -408,7 +409,9 @@ enforced at DB level.
     set, slot.cage_id = mouse.cage_id.
   - R2 surrogate `id` PK (read as string); label = DERIVED non-unique
     projection — **NO UNIQUE constraint**; natural re-import key
-    `(litter_id, pup_number)`; `mouse_lines` entity; `cage_number` UNIQUE alone.
+    `(litter_id, pup_number)`; `mouse_lines` entity; `cages.code` UNIQUE alone
+    (the column was `cage_number` when R2 was written — renamed 2026-09-23,
+    c879714; the archived R2 detail keeps the old name on purpose).
   - R5 add-marker = role-gated INSERT, no schema change per marker. R6
     genotype label = derived `;`-join, NEVER overwrites `raw_genotype` (P1).
   - R8 tables PLURAL, columns/FKs SINGULAR (`cages` ⟷ `cage_id`);

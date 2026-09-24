@@ -78,6 +78,13 @@ Two consequences that drive Topic 1:
   (or via `cages.line_id` → live cages). Recommend **block, not cascade** (see 1.4).
 
 **Cage (`cages`) — flat.** UNIQUE `(cage_number) WHERE deleted_at IS NULL`.
+> CORRECTION 2026-09-24 (note only — this file is a dated design artifact and
+> its body is FROZEN as written): the column is now `cages.code`, index
+> `cages_code_key ON cages (code) WHERE deleted_at IS NULL` (renamed
+> 2026-09-23, `0002_core_tables.sql:185-188`). The constraint SHAPE above is
+> unchanged; only the name moved. See also the stale §1.2 Slot block below —
+> its "CONSTRAINT DISCREPANCY" was ratified in favour of the GLOBAL index on
+> 2026-09-12 (plan §5 Q19), so that block records the question, not the answer.
 - Create/update/delete = INSERT / UPDATE / tombstone.
 - Delete validation: BLOCK if any live head `mice` row with `cage_id = X AND is_alive` — you
   cannot dissolve a cage that still physically holds live mice. Also cascade-tombstone its

@@ -116,9 +116,19 @@
     Naming also RESOLVED (R9 naming note): persisted as `pup_number`;
     "litter seq" survives as lab vocabulary only.
 12. **Cage-number allocation:** header "Next cage #: 2482" shows the professor
-    pre-computes it → P0-b could own a cage_number_seq (seed 2482), same pattern
-    as litter codes. Confirm with professor. R2's cage_number-UNIQUE-alone
+    pre-computes it → P0-b could own a `cage_code_seq` (seed 2482), same pattern
+    as litter codes. Confirm with professor. R2's `cages.code`-UNIQUE-alone
     (2026-09-04) is consistent with this global sequence.
+    RENAME NOTE 2026-09-24 (question content, not a typo): the DB object this Q
+    proposes is named `cage_code_seq` — the column became `cages.code`
+    2026-09-23 (`0002_core_tables.sql:185-188`), so a sequence built now would
+    carry the new name. The workbook's own `cage_number_seq` (cited at
+    `0002_core_tables.sql:187`) is an EXCEL object and keeps its name. Still
+    OPEN, and nothing here resolves it: no DB sequence for cages exists (`0002`
+    defines only `litter_code_seq`), and what shipped mock-era is the max+1
+    suggestion `suggestNextCageCode` (`lib/colonyMutationHelpers.ts:295`),
+    which is not a sequence — "same pattern as litter codes" may still mean a
+    real sequence at MVP2. Owner's call.
     UPDATE 2026-09-16 (user): CONFIRMED — cage number is SUGGESTED as `max+1`
     but EDITABLE; cage:slot is 1:N (the sampled workbook's 1:1 was
     coincidence). No Excel header sync (Q10 UPDATE).
