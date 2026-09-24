@@ -330,14 +330,17 @@ CREATE TRIGGER mouse_meta_set_updated_at
 -- NOTE: no UNIQUE constraint can be placed on a column here, because every
 -- version row repeats its value. Uniqueness belongs on mouse_meta.
 --
--- EVERY VERSION ROW MUST CARRY THE FULL STATE, NEVER A DELTA. Inserting a
--- partial row silently DESTROYS whatever it omits: recording only a death
--- leaves cage_id and sex NULL, and the mouse vanishes from its cage. Verified
--- in packages/db/scenarios/flow-probes.sql.
+-- EVERY VERSION ROW MUST CARRY THE FULL STATE, NEVER A DELTA — read the
+-- current head row and carry every field forward. Inserting a partial row
+-- silently DESTROYS whatever it omits: recording only a death leaves cage_id
+-- and sex NULL, and the mouse vanishes from its cage. Verified in
+-- packages/db/scenarios/flow-probes.sql.
 -- The schema CANNOT catch this — NULL cage is also the legitimate "unplaced"
 -- value a newly created mouse needs (scenario P5), so the two are
--- indistinguishable to a constraint. The write service must read the current
--- head row and carry every field forward.
+-- indistinguishable to a constraint.
+-- The rule is UNCONDITIONAL, including the first row: a newly created mouse
+-- has no previous row to carry forward and still writes every field, with
+-- cage/slot NULL meaning "unplaced" rather than "unchanged".
 CREATE TABLE mice (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     mouse_meta_id   BIGINT      NOT NULL REFERENCES mouse_meta (id),
