@@ -63,16 +63,21 @@ export const TASK_TYPES: TaskTypeDef[] = [
         ],
     },
     {
-        // Mate-cycle event: the plug check follows a mating, subject is the breeding pair/dam.
-        // subjectKind='mate' so buildDateCaseIndex can route it to the DAM's date column.
+        // Mate-cycle event following a mating, but the subject is the DAM: a
+        // plug check is performed on one female mouse, not on a cage and not
+        // on the pair. So it keys by subjectMouseId like every other
+        // mouse-subject case, which is also what the fixture already does.
         type: 'Plug check',
-        subjectKind: 'mate',
-        subjectFrom: 'cage',
-        fields: [{ key: 'cage', label: 'Cage', kind: 'cage', required: true }],
+        subjectKind: 'mouse',
+        subjectFrom: 'mouse',
+        fields: [
+            { key: 'mouse', label: 'Mouse', kind: 'mouse', required: true },
+        ],
     },
     {
-        // Mate-cycle event: birth/delivery follows plug check.
-        // subjectKind='mate' for the same reason as Plug check above.
+        // Mate-cycle event: birth/delivery follows plug check. Still keyed to
+        // a cage; the dam is the real subject here too (see Plug check above),
+        // but that change is the owner's to make.
         type: 'Birth / delivery',
         subjectKind: 'mate',
         subjectFrom: 'cage',

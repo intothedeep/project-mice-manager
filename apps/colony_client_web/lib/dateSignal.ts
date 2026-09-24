@@ -37,10 +37,12 @@ function pick(a: DateCaseHit, b: DateCaseHit): DateCaseHit {
     return (a.date ?? '') >= (b.date ?? '') ? a : b;
 }
 
-// buildDateCaseIndex — Map<metaId, {col: hit}>. mouse-subject cases (tissue,
-// genotyping) key by subjectMouseId / mice[]. mate-subject cases (plug, deliv)
-// are seeded onto the DAM's metaId in the mock (subjectMouseId/mice) — the join
-// only reads subjectMouseId/mice. TODO real: resolve subject_mate_id -> dam.
+// buildDateCaseIndex — Map<metaId, {col: hit}>. The column comes from the
+// case TYPE; the rows come from subjectMouseId / mice[], so a case reaches a
+// date cell only if it carries a mouse key. Plug check and Tissue collection
+// are as much a mouse's case as genotyping: a plug check is done on the dam.
+// Birth / delivery still stores a cage string with no mouse key, so a
+// dialog-created one reaches no cell; the fixture has no such row.
 export function buildDateCaseIndex(
     cases: ClientCaseCard[],
     taskLog: ClientTask[]

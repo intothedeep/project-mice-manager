@@ -50,7 +50,10 @@ export interface AddSlotInput {
 
 export interface AddCageInput {
     lineId: number;
-    cageCode: number;
+    // A cage code is an IDENTIFIER, not a quantity: cages.code is TEXT and
+    // GridCage.code is string, so a leading zero has to survive the write
+    // path. "digits only" is a UI rule and lives in the dialogs.
+    cageCode: string;
     slotLabel: string;
     mouse?: MouseSpec;
 }
@@ -58,7 +61,7 @@ export interface AddCageInput {
 export interface AddLineInput {
     lineName: string;
     nominalGenotypeColor?: string | null;
-    cageCode: number;
+    cageCode: string;
     slotLabel: string;
     mouse?: MouseSpec;
 }
@@ -215,14 +218,21 @@ export function addCage(
     counters: Counters,
     input: AddCageInput
 ): { state: ColonyState; counters: Counters; result: AddMouseResult } {
-    const cageCodeStr = String(input.cageCode);
+    const cageCodeStr = input.cageCode.trim();
+    if (!cageCodeStr) {
+        return {
+            state,
+            counters,
+            result: { ok: false, error: 'A new cage requires a cage code.' },
+        };
+    }
     if (cageCodeSet(state.grid).has(cageCodeStr)) {
         return {
             state,
             counters,
             result: {
                 ok: false,
-                error: `Cage number "${input.cageCode}" already exists — cage numbers are unique colony-wide.`,
+                error: `Cage number "${cageCodeStr}" already exists — cage numbers are unique colony-wide.`,
             },
         };
     }

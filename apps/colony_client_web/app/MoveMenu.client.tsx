@@ -1,9 +1,11 @@
 'use client';
 
 import type { ColonyGrid, MouseCell } from '@repo/types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import type { MoveTarget } from '@/lib/gridMove';
+import { useTasks } from '@/lib/mockStore';
+import { buildMouseLabelIndex } from '@/lib/mouseLabel';
 import { mouseLabelOf } from '@/lib/mouseIdentity';
 import { Button } from '@/components/ui/button';
 import {
@@ -58,7 +60,16 @@ export function MoveMenu({
     const [cageId, setCageId] = useState<number | null>(null);
     const [slotChoice, setSlotChoice] = useState<string | null>(null);
     const [newLabel, setNewLabel] = useState('');
-    const mouseLabel = mouseLabelOf(mouse);
+    // The SAME index the grid and the task board read, so the dialog cannot
+    // name the animal differently from the cell it was opened from: a bare
+    // mouseLabelOf() here dropped the ".N" reclip suffix. Falls back to the
+    // base name only if the mouse is not on the rack the index walked.
+    const cases = useTasks();
+    const mouseLabels = useMemo(
+        () => buildMouseLabelIndex(colony, cases),
+        [colony, cases]
+    );
+    const mouseLabel = mouseLabels.get(mouse.metaId) ?? mouseLabelOf(mouse);
 
     const line = colony.lines.find((l) => l.lineId === lineId);
     const cage = line?.cages.find((c) => c.cageId === cageId) ?? null;

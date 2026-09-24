@@ -46,7 +46,7 @@ export function AddLineDialog({
         const result = addLine({
             lineName: lineName.trim(),
             nominalGenotypeColor: color.trim() || null,
-            cageCode: cageCodeNum,
+            cageCode: cageCode.trim(),
             slotLabel: slotLabel.trim(),
         });
         if (!result.ok) {

@@ -106,7 +106,7 @@ export function buildSubmitAction(params: {
     needsMouse: boolean;
     mouse: MouseSpec;
     lineId: number;
-    newCageCode: number;
+    newCageCode: string;
     slotLabel: string;
     cageId?: number;
     existingSlotId?: number;
@@ -359,7 +359,7 @@ export function AddMouseDialog({
             needsMouse,
             mouse,
             lineId,
-            newCageCode: newCageCodeNum,
+            newCageCode: cageValue.trim(),
             slotLabel: slotValue.trim(),
             cageId: cageMatch?.cageId,
             existingSlotId: slotMatch?.slotId ?? cageMatch?.slots[0]?.slotId,

@@ -408,9 +408,9 @@ export const SEED_CASES: SeedCaseRow[] = [
         assignee: 'Sam',
     },
 
-    // date-colour demo: PLUG on a dam (mock keys it to the dam; TODO real
-    // subject_mate_id→dam) → open instruction = RED; a clean done Tissue →
-    // NORMAL ink (completion date). red/blue also via cases 1 (genotyping) + 9 (plan).
+    // date-colour demo: PLUG on a dam → open instruction = RED; a clean done
+    // Tissue → NORMAL ink (completion date). red/blue also via cases 1
+    // (genotyping) + 9 (plan).
     {
         id: 22,
         caseType: 'Plug check',
