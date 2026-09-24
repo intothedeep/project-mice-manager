@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { Role, CaseTaskStatus } from '@repo/types';
 import { setTaskStatus, useTaskLog } from '@/lib/mockStore';
 import { availableActions } from '@/lib/taskFlow';
@@ -33,12 +34,23 @@ export function CaseList({
     const activeCases = cases.filter((c) => c.status !== 'cancelled');
     const historyCases = cases.filter((c) => c.status === 'cancelled');
 
+    // A status change can be REFUSED — a Move case cannot reach `done` unless
+    // the mouse actually moves (mockStore.enactCase). Show why; a button that
+    // silently does nothing is the bug this whole change exists to remove.
+    const [error, setError] = useState<string | null>(null);
+
     function handleAction(caseId: number, to: CaseTaskStatus) {
-        setTaskStatus(caseId, to, role);
+        const result = setTaskStatus(caseId, to, role);
+        setError(result.ok ? null : result.error);
     }
 
     return (
         <>
+            {error ? (
+                <p className="text-xs font-medium text-signal-instruction">
+                    {error}
+                </p>
+            ) : null}
             {activeCases.length > 0 ? (
                 <CaseGroup
                     label="Active"

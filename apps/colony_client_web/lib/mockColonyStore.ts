@@ -2,9 +2,15 @@
 
 import { useMemo } from 'react';
 import { useSyncExternalStore } from 'react';
-import type { ColonyGrid, PunchRow } from '@repo/types';
+import type { ColonyGrid, MouseLocationRow, PunchRow } from '@repo/types';
 import { SEED_COLONY } from '@/apis/getColonyGrid.mock.api';
-import { moveMouse, type MoveTarget } from '@/lib/gridMove';
+import {
+    defaultSlotOfCage,
+    findCageIdByCode,
+    moveMouse as pureMoveMouse,
+    type MoveTarget,
+} from '@/lib/gridMove';
+import { locationsOf } from '@/lib/mouseLocations';
 import { formatLitterCode, parseLitterCode } from '@/lib/litterCode';
 import {
     maxMetaId,
@@ -13,6 +19,7 @@ import {
     maxCageId,
     maxLineId,
     maxSeedLitterOrdinal,
+    seedLocations,
     seedPunches,
 } from '@/lib/colonySeed';
 import {
@@ -38,7 +45,7 @@ import {
 } from '@/lib/punchMutations';
 import {
     suggestNextCageCode as pureSuggestNextCageCode,
-    projectPunches,
+    deriveColonyState,
     assertPunchInvariants,
     type ColonyState,
     type MouseSpec,
@@ -72,14 +79,20 @@ export type {
 // from every punch row already in SEED_COLONY (the seed carries ACTIVE rows
 // only, so no seeded entry starts tombstoned), and `grid` is projectPunches'
 // derived view over it from the very first snapshot.
+// `locations` is the SINGLE SOURCE for placement on the same terms: it seeds
+// one row per mouse from the fixture's own cage/slot, so the first derive is
+// an identity and the grid on load is SEED_COLONY unchanged.
 const initialPunches = seedPunches(SEED_COLONY);
-let state: ColonyState = {
-    grid: projectPunches(SEED_COLONY, initialPunches),
-    punches: initialPunches,
-};
+const initialLocations = seedLocations(SEED_COLONY);
+let state: ColonyState = deriveColonyState(
+    SEED_COLONY,
+    initialPunches,
+    initialLocations
+);
 let counters: Counters = {
     nextMetaId: maxMetaId(SEED_COLONY) + 1,
     nextPunchId: maxPunchId(SEED_COLONY) + 1,
+    nextLocationId: initialLocations.length + 1,
     nextSlotId: maxSlotId(SEED_COLONY) + 1,
     nextCageId: maxCageId(SEED_COLONY) + 1,
     nextLitterOrd: maxSeedLitterOrdinal(SEED_COLONY) + 1,
@@ -126,6 +139,19 @@ export function usePunches(metaId: number): PunchRow[] {
         () => state.punches
     );
     return useMemo(() => log.filter((e) => e.metaId === metaId), [log, metaId]);
+}
+
+// Placement HISTORY for one mouse, oldest first — the drawer's move list.
+// Same shape as usePunches: subscribe to the whole append-only log, filter
+// here, no separate cache. The list is what makes a move read as from → to
+// WITHOUT storing either end as text: row N-1 is the "from" of row N.
+export function useMouseLocations(metaId: number): MouseLocationRow[] {
+    const log = useSyncExternalStore(
+        subscribe,
+        () => state.locations,
+        () => state.locations
+    );
+    return useMemo(() => locationsOf(log, metaId), [log, metaId]);
 }
 
 // Returns the DISTINCT litter codes currently present in the colony, sorted
@@ -233,8 +259,46 @@ export function removePunch(input: RemovePunchInput): AddMouseResult {
     return commit(pureRemovePunch(state, counters, input));
 }
 
-// applyColonyMove: wraps gridMove.moveMouse and emits so the grid re-renders.
-export function applyColonyMove(metaId: number, target: MoveTarget): void {
-    state = { ...state, grid: moveMouse(state.grid, metaId, target) };
-    emit();
+// applyColonyMove: the Move BUTTON's path. The mouse moves immediately —
+// correcting a misplacement does not require a task (owner ruling) — but it
+// is no longer recordless: the move IS a version row, and the grid re-renders
+// because that row was appended, not because the tree was edited.
+export function applyColonyMove(
+    metaId: number,
+    target: MoveTarget,
+    effectiveAt: string
+): AddMouseResult {
+    return commit(
+        pureMoveMouse(state, counters, { metaId, target, effectiveAt })
+    );
+}
+
+// moveMouseToCage: the Move CASE's path. A case names a cage CODE and nothing
+// finer, so the code and the slot are resolved HERE, against the live grid —
+// mockStore owns cases and cannot see the colony tree.
+export function moveMouseToCage(
+    metaId: number,
+    cageCode: string,
+    effectiveAt: string,
+    note: string
+): AddMouseResult {
+    const cageId = findCageIdByCode(state.grid, cageCode);
+    if (cageId === undefined) {
+        return { ok: false, error: `Cage ${cageCode} no longer exists.` };
+    }
+    const slotId = defaultSlotOfCage(state.grid, cageId);
+    if (slotId === undefined) {
+        return {
+            ok: false,
+            error: `Cage ${cageCode} has no slot to move into.`,
+        };
+    }
+    return commit(
+        pureMoveMouse(state, counters, {
+            metaId,
+            target: { cageId, slotId },
+            effectiveAt,
+            note,
+        })
+    );
 }

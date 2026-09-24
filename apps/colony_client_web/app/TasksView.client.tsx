@@ -36,6 +36,7 @@ export function TasksView() {
     const tasks = useTasks();
     const [role, setRole] = useState<Role>('staff');
     const [creating, setCreating] = useState(false);
+    const [actError, setActError] = useState<string | null>(null);
     // Pinned, not the real clock — see lib/colors.ts lifeStage for why a mock
     // whose display depends on when you open it cannot be checked.
     const today = TODAY;
@@ -52,8 +53,11 @@ export function TasksView() {
     const cageCodes = useMemo(() => buildCageCodeIndex(grid), [grid]);
 
     // act uses the case id (c.id) — each card represents one case.
+    // See CaseList: a refused advance (a Move whose mouse cannot be moved)
+    // must say so rather than look like a button that does nothing.
     function act(c: ClientCaseCard, to: CaseTaskStatus) {
-        setTaskStatus(c.id, to, role);
+        const result = setTaskStatus(c.id, to, role);
+        setActError(result.ok ? null : result.error);
     }
 
     return (
@@ -76,6 +80,12 @@ export function TasksView() {
                     </Button>
                 </div>
             </div>
+
+            {actError ? (
+                <p className="text-xs font-medium text-signal-instruction">
+                    {actError}
+                </p>
+            ) : null}
 
             <NewTaskDialog
                 open={creating}

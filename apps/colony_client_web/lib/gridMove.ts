@@ -1,10 +1,24 @@
-import type { ColonyGrid, GridCage } from '@repo/types';
+// Pure move mutation: (state, counters, input) → { state, counters, result },
+// the same shape as punchMutations.ts and for the same reason. A move does
+// NOT edit the tree: it appends a version row to the location log
+// (mintLocation) and lets projectLocations put the mouse where that row says.
+// There is therefore no "moved the grid but recorded nothing" path left — the
+// record IS the move.
+//
+// In the real backend this is the INSERT of a new `mice` version row with the
+// new cage_id/slot_id. See packages/types/src/mouseLocationRow.ts for how the
+// mock's row diverges from that table's full-state rule.
 
-// Pure move core — mirrors the server's append-only move without any I/O.
-// In the real backend a move INSERTs a new `mice` version row with the new
-// cage_id/slot_id (prev_id = current head, CAS). Here we just recompute the
-// derived "current state" tree the same way the API would return it, so the
-// demo shows the exact post-move shape.
+import type { ColonyGrid } from '@repo/types';
+import {
+    findCage,
+    mintLocation,
+    type AddMouseResult,
+    type ColonyState,
+    type Counters,
+} from '@/lib/colonyMutationHelpers';
+import { addSlot } from '@/lib/colonyMutations';
+import { currentLocationOf } from '@/lib/mouseLocations';
 
 export interface MoveTarget {
     cageId: number;
@@ -12,68 +26,105 @@ export interface MoveTarget {
     newSlotLabel?: string; // create a fresh slot in the target cage
 }
 
-// Returns a NEW colony with the mouse relocated. No-op-safe: if the mouse or
-// target cage is missing, returns the input unchanged.
-export function moveMouse(
-    colony: ColonyGrid,
-    metaId: number,
-    target: MoveTarget
-): ColonyGrid {
-    const next: ColonyGrid = structuredClone(colony);
-
-    // 1. detach the mouse from wherever it currently sits, dropping now-empty slots.
-    let moved: import('@repo/types').MouseCell | undefined;
-    for (const line of next.lines) {
-        for (const cage of line.cages) {
-            for (const slot of cage.slots) {
-                const i = slot.mice.findIndex((m) => m.metaId === metaId);
-                if (i >= 0) {
-                    moved = slot.mice.splice(i, 1)[0];
-                }
-            }
-            // Emptied slots are KEPT. A slot may legitimately be empty (owner-
-            // confirmed invariant: line ≥ 1 cage, cage ≥ 1 slot, slot MAY be
-            // empty) — pruning here would silently delete a slot that addSlot
-            // had just created, and strand its cage with no add affordance.
-        }
-    }
-    if (!moved) return colony;
-
-    // 2. attach to the target cage / slot.
-    const targetCage = findCage(next, target.cageId);
-    if (!targetCage) return colony;
-
-    if (target.slotId != null) {
-        const slot = targetCage.slots.find((s) => s.slotId === target.slotId);
-        if (!slot) return colony;
-        slot.mice.push(moved);
-    } else {
-        targetCage.slots.push({
-            slotId: nextSlotId(next),
-            label: target.newSlotLabel?.trim() || 'NEW',
-            mice: [moved],
-        });
-    }
-    return next;
+interface MoveMouseInput {
+    metaId: number;
+    target: MoveTarget;
+    effectiveAt: string; // ISO date — WHEN the mouse physically moved
+    reason?: string; // mice.reason; defaults to 'move'
+    note?: string; // mice.change_note
 }
 
-function findCage(colony: ColonyGrid, cageId: number): GridCage | undefined {
-    for (const line of colony.lines) {
-        const cage = line.cages.find((c) => c.cageId === cageId);
-        if (cage) return cage;
-    }
+function refuse(
+    state: ColonyState,
+    counters: Counters,
+    error: string
+): { state: ColonyState; counters: Counters; result: AddMouseResult } {
+    return { state, counters, result: { ok: false, error } };
+}
+
+// A Move CASE names a cage and nothing finer (taskTypes.ts: the only field is
+// `toCage`), so completing one has to choose a slot. It takes the cage's
+// FIRST slot — the one the cage was created with, and the only choice that is
+// stable across renders and re-runs. OPEN: the owner may want the case to
+// carry a slot, or the mouse to land in the least-occupied slot instead.
+export function defaultSlotOfCage(
+    grid: ColonyGrid,
+    cageId: number
+): number | undefined {
+    return findCage(grid, cageId)?.slots[0]?.slotId;
+}
+
+// Resolves a cage CODE (what a Move case's `toCage` direction field stores —
+// the picker offers codes, cages.code being globally unique) to its cageId.
+export function findCageIdByCode(
+    grid: ColonyGrid,
+    cageCode: string
+): number | undefined {
+    for (const line of grid.lines)
+        for (const cage of line.cages)
+            if (cage.code === cageCode) return cage.cageId;
     return undefined;
 }
 
-// Demo-only surrogate id for a freshly created slot (real DB assigns it).
-function nextSlotId(colony: ColonyGrid): number {
-    let max = 0;
-    for (const line of colony.lines) {
-        for (const cage of line.cages) {
-            for (const slot of cage.slots) {
-                if (slot.slotId > max) max = slot.slotId;
-            }
+export function moveMouse(
+    state: ColonyState,
+    counters: Counters,
+    input: MoveMouseInput
+): { state: ColonyState; counters: Counters; result: AddMouseResult } {
+    // The mouse's CURRENT place is the head row, not a search of the tree —
+    // the tree is the projection, the log is the fact.
+    const current = currentLocationOf(state.locations, input.metaId);
+    if (!current) return refuse(state, counters, 'Mouse not found.');
+
+    const cage = findCage(state.grid, input.target.cageId);
+    if (!cage)
+        return refuse(state, counters, 'Selected cage no longer exists.');
+
+    let working = state;
+    let workingCounters = counters;
+    let slotId: number;
+
+    if (input.target.slotId != null) {
+        if (!cage.slots.some((s) => s.slotId === input.target.slotId)) {
+            return refuse(state, counters, 'Selected slot no longer exists.');
         }
+        slotId = input.target.slotId;
+    } else {
+        // Creating the destination slot is a STRUCTURAL change and stays with
+        // addSlot, which owns the colony-wide unique-label rule. Its id is
+        // counters.nextSlotId — read before the call, not inferred after it.
+        slotId = counters.nextSlotId;
+        const added = addSlot(state, counters, {
+            cageId: input.target.cageId,
+            slotLabel: input.target.newSlotLabel ?? '',
+        });
+        // Restore the CALLER's state on failure (same guard as addCage/addLine).
+        if (!added.result.ok) {
+            return { state, counters, result: added.result };
+        }
+        working = added.state;
+        workingCounters = added.counters;
     }
-    return max + 1;
+
+    // Refused HERE and not only in MoveMenu's disabled radio: a UI-only guard
+    // is bypassable from the store, and a move to where the mouse already is
+    // would mint a version row recording nothing — which is how re-marking a
+    // Move case `done` would otherwise grow the history without end.
+    if (slotId === current.slotId) {
+        return { state, counters, result: { ok: true } };
+    }
+
+    const minted = mintLocation(working, workingCounters, {
+        metaId: input.metaId,
+        cageId: input.target.cageId,
+        slotId,
+        effectiveAt: input.effectiveAt,
+        reason: input.reason ?? 'move',
+        ...(input.note !== undefined ? { note: input.note } : {}),
+    });
+    return {
+        state: minted.state,
+        counters: minted.counters,
+        result: { ok: true },
+    };
 }

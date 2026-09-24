@@ -4,7 +4,7 @@
 // passes `state` to them at write time (not `SEED_COLONY`) so they always
 // reflect the live colony tree.
 
-import type { ColonyGrid, PunchRow } from '@repo/types';
+import type { ColonyGrid, MouseLocationRow, PunchRow } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
 
 /** Highest metaId currently in the grid — new-mouse counter seeds above it. */
@@ -56,6 +56,37 @@ export function seedPunches(grid: ColonyGrid): PunchRow[] {
                             effectiveAt: p.effectiveAt,
                             ...(p.note !== undefined ? { note: p.note } : {}),
                         });
+    return log;
+}
+
+// Projects the fixture's own placement into the location LOG: one row per
+// mouse, naming the cage and slot the fixture already put it in, so the very
+// first projectLocations is an IDENTITY and the grid on load is the fixture
+// unchanged. Ids are handed out in traversal order, which is what keeps each
+// slot's occupants in fixture order once projectLocations sorts by them.
+// reason 'import' mirrors the ETL rows the real table is seeded with, and
+// every seeded row shares ONE import date: the fixture records no placement
+// date per mouse, and dob is a different fact (a mouse is not placed in a
+// cage on the day it is born — it is placed when the sheet was imported).
+// Runs once at module init, same as seedPunches above.
+//
+// MOCK MARKER: this date is the fixture's import, not a lab event.
+const SEED_IMPORT_DATE = '2026-09-01';
+
+export function seedLocations(grid: ColonyGrid): MouseLocationRow[] {
+    const log: MouseLocationRow[] = [];
+    for (const l of grid.lines)
+        for (const c of l.cages)
+            for (const s of c.slots)
+                for (const m of s.mice)
+                    log.push({
+                        locationId: log.length + 1,
+                        metaId: m.metaId,
+                        cageId: c.cageId,
+                        slotId: s.slotId,
+                        effectiveAt: SEED_IMPORT_DATE,
+                        reason: 'import',
+                    });
     return log;
 }
 

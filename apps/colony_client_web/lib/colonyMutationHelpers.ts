@@ -8,6 +8,7 @@ import type {
     ColonyGrid,
     GridCage,
     MouseCell,
+    MouseLocationRow,
     PunchRef,
     PunchRow,
     PunchLocation,
@@ -15,6 +16,8 @@ import type {
 } from '@repo/types';
 import { parseLitterCode } from '@/lib/litterCode';
 import { mintGeneRefs } from '@/lib/genotype';
+import { mapMice } from '@/lib/gridWalk';
+import { projectLocations } from '@/lib/mouseLocations';
 
 // Mock-store state: `punches` is the SINGLE SOURCE for every punch, active
 // or tombstoned (deletedAt set). `grid.MouseCell.punches` is not a second
@@ -32,14 +35,20 @@ import { mintGeneRefs } from '@/lib/genotype';
 // checks the log's internal consistency, never that a write came through
 // mintPunch/deriveColonyState. Making it structural needs a branded punchId,
 // which the 8h ruling rejected on cost.
+// `locations` is the SINGLE SOURCE for where every mouse is, on exactly the
+// same terms as `punches` above: the grid's placement is projectLocations'
+// derived view over it (lib/mouseLocations.ts), never a second store. A move
+// appends a row; it does not edit the tree.
 export interface ColonyState {
     grid: ColonyGrid;
     readonly punches: readonly PunchRow[];
+    readonly locations: readonly MouseLocationRow[];
 }
 
 export interface Counters {
     nextMetaId: number;
     nextPunchId: number;
+    nextLocationId: number;
     nextSlotId: number;
     nextCageId: number;
     nextLitterOrd: number;
@@ -100,11 +109,19 @@ export function buildMouseCell(
 // both go through this, so neither call site hand-rolls the pair itself
 // (8h AC 1: no site outside the sanctioned re-derivation path constructs a
 // punch-write pair).
+// Both projections run here, locations first: projectPunches only rewrites
+// MouseCell.punches, so it is indifferent to which slot the mouse sits in,
+// while projectLocations moves whole MouseCell references between slots.
 export function deriveColonyState(
     grid: ColonyGrid,
-    punches: readonly PunchRow[]
+    punches: readonly PunchRow[],
+    locations: readonly MouseLocationRow[]
 ): ColonyState {
-    return { grid: projectPunches(grid, punches), punches };
+    return {
+        grid: projectPunches(projectLocations(grid, locations), punches),
+        punches,
+        locations,
+    };
 }
 
 // ONE append path into the punch store (rules/core.md: never hard-DELETE —
@@ -133,59 +150,48 @@ export function mintPunch(
         ...(input.note !== undefined ? { note: input.note } : {}),
     };
     return {
-        state: deriveColonyState(state.grid, [...state.punches, entry]),
+        state: deriveColonyState(
+            state.grid,
+            [...state.punches, entry],
+            state.locations
+        ),
         counters: { ...counters, nextPunchId: punchId + 1 },
     };
 }
 
-// Generic reuse-preserving map: returns the ORIGINAL array reference when no
-// element actually changed (by `fn`'s own reference test), and a fresh array
-// only when at least one element did. mapMice below composes four of these,
-// one per grid level, so identity survives all the way up to the root when
-// nothing under it changed (step 6's AC: every unaffected mouse/slot/cage/
-// line stays `===` its previous self).
-function mapReuse<T>(
-    arr: T[],
-    fn: (item: T) => T
-): { list: T[]; changed: boolean } {
-    let changed = false;
-    const list = arr.map((item) => {
-        const next = fn(item);
-        if (next !== item) changed = true;
-        return next;
-    });
-    return { list: changed ? list : arr, changed };
-}
-
-// Walks all four grid levels (line → cage → slot → mouse) and applies `fn` to
-// every mouse, preserving reference identity at every level whose contents
-// did not change. Shared by projectPunches (below) and updateMouse.ts — the
-// single generic walker for "touch one mouse, leave the rest `===`" (step 6's
-// AC), so a caller never hand-rolls the four-level nest again.
-export function mapMice(
-    grid: ColonyGrid,
-    fn: (mouse: MouseCell) => MouseCell
-): ColonyGrid {
-    const { list: lines, changed } = mapReuse(grid.lines, (line) => {
-        const { list: cages, changed: cagesChanged } = mapReuse(
-            line.cages,
-            (cage) => {
-                const { list: slots, changed: slotsChanged } = mapReuse(
-                    cage.slots,
-                    (slot) => {
-                        const { list: mice, changed: miceChanged } = mapReuse(
-                            slot.mice,
-                            fn
-                        );
-                        return miceChanged ? { ...slot, mice } : slot;
-                    }
-                );
-                return slotsChanged ? { ...cage, slots } : cage;
-            }
-        );
-        return cagesChanged ? { ...line, cages } : line;
-    });
-    return changed ? { ...grid, lines } : grid;
+// ONE append path into the location log — the move counterpart of mintPunch,
+// and for the same reason: a caller can never advance the version counter
+// without re-deriving the grid from the log it just appended to, so the
+// rendered placement and the head row cannot disagree.
+export function mintLocation(
+    state: ColonyState,
+    counters: Counters,
+    input: {
+        metaId: number;
+        cageId: number;
+        slotId: number;
+        effectiveAt: string;
+        reason: string;
+        note?: string;
+    }
+): { state: ColonyState; counters: Counters } {
+    const locationId = counters.nextLocationId;
+    const entry: MouseLocationRow = {
+        locationId,
+        metaId: input.metaId,
+        cageId: input.cageId,
+        slotId: input.slotId,
+        effectiveAt: input.effectiveAt,
+        reason: input.reason,
+        ...(input.note !== undefined ? { note: input.note } : {}),
+    };
+    return {
+        state: deriveColonyState(state.grid, state.punches, [
+            ...state.locations,
+            entry,
+        ]),
+        counters: { ...counters, nextLocationId: locationId + 1 },
+    };
 }
 
 // Elementwise PunchRef equality (never JSON/rendered-string comparison) —

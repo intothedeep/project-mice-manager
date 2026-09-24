@@ -12,9 +12,9 @@
 // original state/counters (not the tentative ones), so a failed addLine
 // never leaves a dangling cages: [] line behind.
 //
-// All four take/return ColonyState (grid + punches), not a bare ColonyGrid —
-// addMouse appends to punches, so every caller in the chain must carry it
-// through.
+// All four take/return ColonyState (grid + punches + locations), not a bare
+// ColonyGrid — addMouse appends to both logs, so every caller in the chain
+// must carry them through.
 //
 // Split out of this file (P0.7-b 8b): updateMouse.ts (edits an existing
 // mouse — no call chain with the four add mutations below) and
@@ -28,6 +28,7 @@ import {
     buildMouseCell,
     advanceLitterCounter,
     findCage,
+    mintLocation,
     mintPunch,
     type AddMouseResult,
     type ColonyState,
@@ -119,18 +120,38 @@ export function addMouse(
         })),
     };
 
-    // Creation always mints 'untagged' — it is no longer a caller choice
-    // (P0.7-b: "we never delete an untagged record"). Real tags are added
-    // beside it afterward via addPunch.
-    const minted = mintPunch(
-        { grid: gridWithMouse, punches: state.punches },
+    // The location row comes FIRST and is not optional: projectLocations
+    // places a mouse by its head row and REFUSES a mouse that has none, so a
+    // mouse added without one would blow up the very next derive — which
+    // mintPunch below performs. Creation is where a mouse gets its first
+    // version row, exactly as it is where it gets its 'untagged' punch.
+    // effectiveAt is punchEffectiveAt (the caller's TODAY): entering the
+    // colony and being placed in a cage are the same instant, and neither is
+    // the mouse's dob.
+    const placed = mintLocation(
+        {
+            grid: gridWithMouse,
+            punches: state.punches,
+            locations: state.locations,
+        },
         { ...counters, nextMetaId: nextMeta + 1, nextLitterOrd: newLitterOrd },
         {
             metaId: nextMeta,
-            location: 'untagged',
+            cageId: input.cageId,
+            slotId: input.slotId,
             effectiveAt: input.punchEffectiveAt,
+            reason: 'created',
         }
     );
+
+    // Creation always mints 'untagged' — it is no longer a caller choice
+    // (P0.7-b: "we never delete an untagged record"). Real tags are added
+    // beside it afterward via addPunch.
+    const minted = mintPunch(placed.state, placed.counters, {
+        metaId: nextMeta,
+        location: 'untagged',
+        effectiveAt: input.punchEffectiveAt,
+    });
 
     return {
         state: minted.state,
@@ -190,6 +211,7 @@ export function addSlot(
     const stateWithSlot: ColonyState = {
         grid: gridWithSlot,
         punches: state.punches,
+        locations: state.locations,
     };
     const countersWithSlot: Counters = { ...counters, nextSlotId: slotId + 1 };
 
@@ -268,6 +290,7 @@ export function addCage(
     const stateWithCage: ColonyState = {
         grid: gridWithCage,
         punches: state.punches,
+        locations: state.locations,
     };
     const countersWithCage: Counters = { ...counters, nextCageId: cageId + 1 };
 
@@ -323,6 +346,7 @@ export function addLine(
     const stateWithLine: ColonyState = {
         grid: gridWithLine,
         punches: state.punches,
+        locations: state.locations,
     };
     const countersWithLine: Counters = { ...counters, nextLineId: lineId + 1 };
 

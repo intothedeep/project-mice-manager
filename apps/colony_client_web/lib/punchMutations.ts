@@ -122,7 +122,7 @@ export function removePunch(
     );
 
     return {
-        state: deriveColonyState(state.grid, newLog),
+        state: deriveColonyState(state.grid, newLog, state.locations),
         counters,
         result: { ok: true },
     };

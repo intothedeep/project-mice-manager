@@ -147,6 +147,11 @@ export const SEED_CASES: SeedCaseRow[] = [
         subjectLabel: null,
         subjectMouseId: 101, // metaId: M4BCW in pNf1 flox cage 2413 slot A8
         detail: 'cage 2413 → 2414',
+        // The DESTINATION, machine-readable. `detail` above is display text
+        // and completing the case cannot act on it; direction.toCage is the
+        // cage CODE the picker stores (cages.code is globally unique), which
+        // is what setTaskStatus resolves when this case reaches `done`.
+        direction: { toCage: '2414' },
         dueDate: '2026-09-07',
         createdAt: '2026-09-03',
         assignee: 'Jia',

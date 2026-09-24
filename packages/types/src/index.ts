@@ -20,6 +20,11 @@ export type {
 
 export type { PunchRow } from './punchRow';
 
+// mouseLocationRow.ts: the mouse's placement history — a LOCATION slice of the
+// `mice` version table. The grid's placement is projected from it; see that
+// file's header for how it diverges from 0002's full-state rule.
+export type { MouseLocationRow } from './mouseLocationRow';
+
 // gene.ts: the gene CATALOGUE row. What a mouse carries is GeneRef (grid.ts).
 export type { Gene, GeneKind } from './gene';
 

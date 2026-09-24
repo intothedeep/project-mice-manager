@@ -40,7 +40,7 @@ import {
     type DateColumn,
     type DateCaseHit,
 } from '@/lib/dateSignal';
-import { formatDate } from '@/lib/dueDates';
+import { formatDate, TODAY } from '@/lib/dueDates';
 import { SEX_TINT, lifeStage, DOB_TINT } from '@/lib/colors';
 import { useTasks, useTaskLog, addTask } from '@/lib/mockStore';
 import {
@@ -112,6 +112,7 @@ export function ColonyGridView() {
     }, []);
     const [selection, setSelection] = useState<Selection | null>(null);
     const [moving, setMoving] = useState<Moving | null>(null);
+    const [moveError, setMoveError] = useState<string | null>(null);
     const [detail, setDetail] = useState<SelectedMouse | null>(null);
     const [selected, setSelected] = useState<Record<number, string>>({});
     const [taskOpen, setTaskOpen] = useState(false);
@@ -429,7 +430,15 @@ export function ColonyGridView() {
     }
     function applyMove(target: MoveTarget) {
         if (!moving) return;
-        applyColonyMove(moving.mouse.metaId, target);
+        // A move can be REFUSED (a duplicate new-slot label, a cage that went
+        // away). Keep the dialog open and say so — closing it on failure is
+        // how a refusal becomes invisible and looks like a silent success.
+        const result = applyColonyMove(moving.mouse.metaId, target, TODAY);
+        if (!result.ok) {
+            setMoveError(result.error);
+            return;
+        }
+        setMoveError(null);
         setMoving(null);
     }
 
@@ -1004,8 +1013,12 @@ export function ColonyGridView() {
                     currentLineId={moving.lineId}
                     currentCageId={moving.cageId}
                     currentSlotId={moving.slotId}
+                    error={moveError}
                     onMove={applyMove}
-                    onClose={() => setMoving(null)}
+                    onClose={() => {
+                        setMoveError(null);
+                        setMoving(null);
+                    }}
                 />
             ) : null}
 

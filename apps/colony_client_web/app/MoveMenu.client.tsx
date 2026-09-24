@@ -32,6 +32,7 @@ interface Props {
     currentLineId: number;
     currentCageId: number;
     currentSlotId: number;
+    error: string | null; // a REFUSED move (duplicate slot label, cage gone)
     onMove: (target: MoveTarget) => void;
     onClose: () => void;
 }
@@ -53,6 +54,7 @@ export function MoveMenu({
     currentLineId,
     currentCageId,
     currentSlotId,
+    error,
     onMove,
     onClose,
 }: Props) {
@@ -239,6 +241,12 @@ export function MoveMenu({
                 <div className="mt-3 rounded-md bg-muted px-3 py-2 font-mono text-xs">
                     {crumb}
                 </div>
+
+                {error ? (
+                    <p className="mt-1 text-xs font-medium text-signal-instruction">
+                        {error}
+                    </p>
+                ) : null}
 
                 <DialogFooter>
                     <Button

@@ -11,6 +11,7 @@ import { RoleSwitch } from '@/components/task-status';
 import { CaseList } from './CaseList.client';
 import { IdentitySection } from './IdentitySection.client';
 import { PunchSection } from './PunchSection.client';
+import { MoveSection } from './MoveSection.client';
 import {
     Sheet,
     SheetContent,
@@ -20,19 +21,30 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-// metaId -> MouseCell over the whole colony. `selected.mouse` is a snapshot
-// captured at click-time by ColonyGridView, so it goes stale the moment the
-// drawer itself writes a patch (e.g. sex) via the store — look the live cell
-// up fresh on every render instead of trusting the snapshot for anything that
-// can change while the drawer stays open.
-function findMouseByMetaId(
+// metaId -> the live cell AND where it currently sits. `selected` is a
+// snapshot captured at click-time by ColonyGridView, so it goes stale the
+// moment the drawer itself writes via the store — a sex patch, and now a Move
+// case completed from the drawer's own case list, which relocates the animal
+// while its breadcrumb is on screen. Look both up fresh on every render
+// instead of trusting the snapshot for anything that can change while the
+// drawer stays open.
+function findLiveMouse(
     colony: ColonyGrid,
     metaId: number
-): MouseCell | undefined {
+): { mouse: MouseCell; placement: Omit<SelectedMouse, 'mouse'> } | undefined {
     for (const l of colony.lines)
         for (const c of l.cages)
             for (const s of c.slots)
-                for (const m of s.mice) if (m.metaId === metaId) return m;
+                for (const m of s.mice)
+                    if (m.metaId === metaId)
+                        return {
+                            mouse: m,
+                            placement: {
+                                lineName: l.lineName,
+                                cageCode: c.code,
+                                slotLabel: s.label,
+                            },
+                        };
     return undefined;
 }
 
@@ -73,9 +85,11 @@ export function MouseDetailDrawer({
     // than crashing. Editing still WORKS on that path: Save calls updateMouse,
     // which returns {ok:false} for an unknown metaId, and IdentitySection shows
     // the error instead of writing anything.
-    const m = selected
-        ? (findMouseByMetaId(colony, selected.mouse.metaId) ?? selected.mouse)
+    const live = selected
+        ? findLiveMouse(colony, selected.mouse.metaId)
         : undefined;
+    const m = selected ? (live?.mouse ?? selected.mouse) : undefined;
+    const placement = live?.placement ?? selected;
     const metaId = m?.metaId ?? -1;
 
     // This mouse's cases (single-subject or batch membership).
@@ -131,8 +145,9 @@ export function MouseDetailDrawer({
                                 </Badge>
                             </SheetTitle>
                             <p className="font-mono text-xs text-muted-foreground">
-                                {selected.lineName} › cage {selected.cageCode} ›
-                                slot {selected.slotLabel}
+                                {placement?.lineName} › cage{' '}
+                                {placement?.cageCode} › slot{' '}
+                                {placement?.slotLabel}
                             </p>
                         </SheetHeader>
 
@@ -158,6 +173,11 @@ export function MouseDetailDrawer({
 
                             <PunchSection
                                 key={`punch-${metaId}`}
+                                mouse={m}
+                            />
+
+                            <MoveSection
+                                key={`move-${metaId}`}
                                 mouse={m}
                             />
 

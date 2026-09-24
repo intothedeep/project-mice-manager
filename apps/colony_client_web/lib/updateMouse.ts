@@ -5,15 +5,15 @@
 //
 // Split out of colonyMutations.ts (P0.7-b 8b): updateMouse edits an existing
 // mouse and shares no call chain with the four add mutations — only the
-// Counters/AddMouseResult shapes and the mapMice walker in
-// colonyMutationHelpers.ts.
+// Counters/AddMouseResult shapes in colonyMutationHelpers.ts and the mapMice
+// walker in gridWalk.ts.
 
 import type { ColonyGrid, MouseCell, Sex, SignalColor } from '@repo/types';
 import {
-    mapMice,
     type AddMouseResult,
     type Counters,
 } from '@/lib/colonyMutationHelpers';
+import { mapMice } from '@/lib/gridWalk';
 import {
     geneCodesOf,
     geneRefsEqual,

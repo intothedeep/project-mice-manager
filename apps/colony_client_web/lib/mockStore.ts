@@ -12,6 +12,7 @@ import {
 } from '@/apis/getTasks.mock.api';
 import { SEED_UPCOMING, type UpcomingItem } from '@/apis/getUpcoming.mock.api';
 import { expectedDeliveryOn, plugCheckOn, TODAY } from '@/lib/dueDates';
+import { moveMouseToCage } from '@/lib/mockColonyStore';
 import type { TaskTypeDef } from '@/lib/taskTypes';
 
 // Mock-era shared store. Both /tasks and /upcoming read from it, so a task
@@ -92,6 +93,58 @@ export function useTaskLog(): ClientTask[] {
 
 // ---- public writes ---------------------------------------------------------
 
+type SetTaskStatusResult = { ok: true } | { ok: false; error: string };
+
+// A Move case that reaches `done` must MOVE THE MOUSE (owner ruling) — a case
+// marked done with the animal still in its old cage is the bug this exists to
+// close. The move is attempted BEFORE the status is written and a refusal
+// ABORTS the advance: a `done` Move whose mouse did not move would be the
+// same lie in a new place.
+//
+// 'verified' acts too, and not as a duplicate: an ADMIN may jump straight
+// from 'doing' to 'verified' (taskFlow.ts — admin is any→any), which would
+// otherwise verify a move that never happened. Running it twice is harmless
+// because a move to where the mouse already is is refused as a no-op by the
+// pure layer, so no second version row is minted.
+//
+// 'cancelled'/'todo' undo nothing: a version log is append-only, so putting
+// the mouse back is its own move, not the erasure of this one.
+//
+// A BATCH Move (subjectKind 'mice') moves every member. It aborts on the
+// first refusal rather than half-moving the batch and reporting success —
+// the mice already moved keep their rows, which is the truth about the rack.
+function enactCase(c: SeedCaseRow, to: CaseTaskStatus): SetTaskStatusResult {
+    if (c.caseType !== 'Move') return { ok: true };
+    if (to !== 'done' && to !== 'verified') return { ok: true };
+
+    const metaIds =
+        c.mice && c.mice.length > 0
+            ? c.mice
+            : c.subjectMouseId != null
+              ? [c.subjectMouseId]
+              : [];
+    if (metaIds.length === 0) {
+        return { ok: false, error: 'This Move case names no mouse.' };
+    }
+    const toCage = c.direction?.toCage;
+    if (typeof toCage !== 'string' || !toCage) {
+        return {
+            ok: false,
+            error: 'This Move case names no destination cage.',
+        };
+    }
+    for (const metaId of metaIds) {
+        const moved = moveMouseToCage(
+            metaId,
+            toCage,
+            TODAY,
+            `Move case #${c.id}`
+        );
+        if (!moved.ok) return moved;
+    }
+    return { ok: true };
+}
+
 // setTaskStatus: dual write — appends a child task-log row AND updates the
 // case's current_status cache. Mirrors the real server's ADVANCE transaction
 // (INSERT child tasks row + UPDATE cases.current_status).
@@ -99,7 +152,15 @@ export function setTaskStatus(
     caseId: number,
     to: CaseTaskStatus,
     role: Role
-): void {
+): SetTaskStatusResult {
+    // 0. Carry out what the case ACTUALLY asks for, before recording that it
+    //    was carried out.
+    const target = cases.find((c) => c.id === caseId);
+    if (target) {
+        const enacted = enactCase(target, to);
+        if (!enacted.ok) return enacted;
+    }
+
     // 1. Update the case's mutable status cache.
     cases = cases.map((c) => (c.id !== caseId ? c : { ...c, status: to }));
 
@@ -116,6 +177,7 @@ export function setTaskStatus(
     taskLog = [...taskLog, taskRow];
 
     emit();
+    return { ok: true };
 }
 
 // NewTaskInput — shape passed from the dialog into addTask.
