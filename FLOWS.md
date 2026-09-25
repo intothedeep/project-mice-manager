@@ -7,14 +7,14 @@
 
 **Everything below runs in a web browser on 27 sample mice. Nothing is saved to a
 server yet — reload the page and edits are gone.** That is deliberate: the shape of
-the data and the flow of work are being proven first, and the database is built
+the data and the flow of work are being proven first, and the database is half-builtuilt
 after they are right, not before.
 
 Each flow is marked:
 
-- **① Working** — you can do it in the browser today
-- **② Half-built** — the data model exists, but there is no screen for it yet
-- **③ Not started**
+- **Working** — you can do it in the browser today
+- **Half-built** — the data model exists, but there is no screen for it yet
+- **Not started**
 
 ---
 
@@ -39,7 +39,7 @@ dead: the checker passes its own value whenever it runs. They simply never meet
 today, because the screen does not call the checker. Only one can be right.
 
 Whatever you decide, these move into a settings table so they can be changed
-without a programmer (③, not built).
+without a programmer (not started).
 
 Two more, smaller:
 
@@ -47,7 +47,7 @@ Two more, smaller:
   show no copies at all. Is that the right distinction — some markers carry a pair
   and some do not?
 - **Transgene notation.** `PlpCre` and `ccEGFP` are inserted transgenes, so they
-  have no allele pair — only one copy or two. The app is being changed to record
+  have no allele pair — only one copy or two. The app is half-builteing changed to record
   that as `Tg/+` for one copy and `Tg/Tg` for two, which displays as `ccEGFP` and
   `ccEGFP(hmo)`. Two things to confirm: **is `Tg` the token you use**, and **is
   `(hmo)` written only for homozygous**, or do you also mark the one-copy case
@@ -61,17 +61,17 @@ Two more, smaller:
 
 | # | Flow | State | What you can do today |
 |---|---|---|---|
-| 1 | See the colony | ① | Rack view: lines → cages → slots → mice. Click any level to highlight it and everything under it. Filter by genotype, sex, age. |
-| 2 | Mouse identity | ① | Every mouse shows a computed name, e.g. `M4BCW.2`. |
-| 3 | Genotype | ① | Each mouse carries a list of gene rows; the genotype string is assembled from them. |
-| 4 | Ear / toe marking | ① | Record and remove toe, ear and other marks. Removals stay in the history. |
-| 5 | Add animals | ① | Add a mouse, a slot, a cage or a whole line. |
-| 6 | Move a mouse | ① | Drag a mouse to another cage or slot. |
-| 7 | Tasks (“cases”) | ① | Create any of 10 task types, assign, and move them through todo → doing → done → verified. |
-| 8 | Task auto-generation | ② | Nothing is generated automatically yet. All tasks are created by hand. |
-| 9 | Breeding records | ② | Mates, litters, plug, delivery and wean exist as task types, but there is no “record this litter” screen. |
-| 10 | Spreadsheet import | ② | The structure to hold imported rows exists; there is no import screen. |
-| 11 | Genotype colours | ① | Mutant genotypes are tinted; wild-type and unknown are left blank so mutants stand out. |
+| 1 | See the colony | Working | Rack view: lines → cages → slots → mice. Click any level to highlight it and everything under it. Filter by genotype, sex, age. |
+| 2 | Mouse identity | Working | Every mouse shows a computed name, e.g. `M4BCW.2`. |
+| 3 | Genotype | Working | Each mouse carries a list of gene rows; the genotype string is assembled from them. |
+| 4 | Ear / toe marking | Working | Record and remove toe, ear and other marks. Removals stay in the history. |
+| 5 | Add animals | Working | Add a mouse, a slot, a cage or a whole line. |
+| 6 | Move a mouse | Working | Drag a mouse to another cage or slot. |
+| 7 | Tasks (“cases”) | Working | Create any of 10 task types, assign, and move them through todo → doing → done → verified. |
+| 8 | Task auto-generation | Half-built | Nothing is generated automatically yet. All tasks are created by hand. |
+| 9 | Breeding records | Half-built | Mates, litters, plug, delivery and wean exist as task types, but there is no “record this litter” screen. |
+| 10 | Spreadsheet import | Half-built | The structure to hold imported rows exists; there is no import screen. |
+| 11 | Genotype colours | Working | Mutant genotypes are tinted; wild-type and unknown are left blank so mutants stand out. |
 
 ---
 
@@ -113,7 +113,7 @@ shown: PlpCre;Nf1 f/+
 
 - The **left copy is maternal**, the right paternal.
 - **No rows at all** means *not yet genotyped* and shows `?`. This is what would
-  trigger a "genes to check" task (③, not wired yet).
+  trigger a "genes to check" task (c, not wired yet).
 - **`WT`** is a real marker row meaning wild type, which is a different statement
   from "not yet genotyped".
 - Markers are shown in a fixed order set per marker, so the same mouse always reads
@@ -187,9 +187,9 @@ difference between what was designed and what runs.
 ## 9 · Breeding
 
 Mating, litters, plug checks, delivery and weaning all exist as *task types* you can
-create by hand (①), and the underlying record structure exists (②) — but there is no
+create by hand (a), and the underlying record structure exists (b) — but there is no
 screen that says "this litter was born, here are the pups." That screen, and the
-automatic litter code and pup numbering that go with it, are ③.
+automatic litter code and pup numbering that go with it, are c.
 
 ## 10 · Spreadsheet import
 
@@ -207,7 +207,7 @@ shows both `M1A` and `M1+10A`, are those the same animal? About 4% of rows
 Mutant genotypes are tinted; **wild type and unknown are deliberately left blank** so
 mutants stand out on a full rack. The tints are currently hand-assigned per genotype.
 The agreed replacement — every genotype gets a colour automatically the first time it
-appears — is designed but not built (②).
+appears — is designed but not built (b).
 
 ---
 

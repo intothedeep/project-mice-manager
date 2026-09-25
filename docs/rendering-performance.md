@@ -50,7 +50,7 @@ problem.
 
 ## 3. Options (ranked by impact, with trade-offs)
 
-### ① Virtualization / windowing — the standard fix, biggest win
+### a. Virtualization / windowing — the standard fix, biggest win
 Render only the ~30–50 visible rows via `@tanstack/react-virtual` (or
 react-window). DOM drops from ~50k to a few hundred; 6000 (and tens of
 thousands) scroll smoothly.
@@ -58,25 +58,25 @@ thousands) scroll smoothly.
   **cage/slot headers are interleaved**, so the tree must be flattened into a
   single list of `{header | row}` items driven by one virtualizer.
 
-### ② Server-scoped fetch (load the active unit only) — cuts data *and* DOM
+### b. Server-scoped fetch (load the active unit only) — cuts data *and* DOM
 Make Pane 3 render only the **selected cage (or line)**, not everything — i.e.
 the original drill. `GET /cages/:id/mice` returns ~20–50 rows.
 - **Pro:** minimal fetch and DOM; fits the real API naturally.
 - **Con:** gives up "all 6000 at once" — but 6000 rows are not humanly scannable
-  anyway. Pairs well with ① (virtualize inside the scoped set).
+  anyway. Pairs well with (a) (virtualize inside the scoped set).
 
-### ③ Collapse cages / lazy sections — low-cost middle ground
+### c. Collapse cages / lazy sections — low-cost middle ground
 Render cage headers first; render a cage's mice only when it is expanded or
 scrolls into view (IntersectionObserver). Collapsed by default → 300 headers +
 whatever is expanded.
 
-### ④ Reduce re-render cost (necessary alongside ①, insufficient alone)
+### d. Reduce re-render cost (necessary alongside (a), insufficient alone)
 `React.memo` on `MouseRow` + stable callbacks; move **selection** into a context
 / external store so toggling one checkbox doesn't re-render all rows; **debounce**
 the search input; memoize counts. Cuts interaction lag — but does **not** solve
-the initial 50k-node problem; needs ① or ②.
+the initial 50k-node problem; needs a or b.
 
-### ⑤ Server-side filtering + pagination
+### e. Server-side filtering + pagination
 Push the filter to the server; receive **only matching rows + counts**. Keyset
 (seek) pagination for large result sets. DOM only ever holds matches.
 
@@ -86,9 +86,9 @@ replace `moveMouse`'s full `structuredClone` with a targeted update.
 
 ## 4. Recommended combination (when implemented)
 
-**② active-cage/line scope + ① virtualization inside it + ④ memo/debounce.**
-When the real server arrives, add **⑤ server-side filter + keyset pagination**.
+**b active-cage/line scope + a virtualization inside it + d memo/debounce.**
+When the real server arrives, add **e server-side filter + keyset pagination**.
 This is the realistic path to smooth handling of 300 cages / 6000 mice.
 
 Today (mock, small fixture) there is no problem; the natural time to adopt
-**②+⑤** is at the real-server integration.
+**b+e** is at the real-server integration.
